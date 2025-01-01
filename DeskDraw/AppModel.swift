@@ -27,16 +27,12 @@ protocol DataModelControllerObserver {
   func dataModelChanged()
 }
 
-struct ThumbnailModel {
-  var image: UIImage
-}
-
 @MainActor
 @Observable
 class AppModel {
   var dataModel = DataModel()
-  var thumbnails = [ThumbnailModel]()
-  
+  var thumbnails = [UIImage]()
+
   var drawingIndex: Int = 0
 
   var drawings: [PKDrawing] {
@@ -114,7 +110,7 @@ class AppModel {
       }
     }
   }
-  
+
   func saveNewNote(drawing: PKDrawing) {
     dataModel.drawings.append(drawing)
     saveDataModel()
@@ -135,9 +131,21 @@ class AppModel {
   /// Helper method to set the current data model to a data model created on a background queue.
   private func setLoadedDataModel(_ dataModel: DataModel) {
     self.dataModel = dataModel
-    thumbnails = Array(repeating: ThumbnailModel(image: UIImage()), count: dataModel.drawings.count)
+    thumbnails = Array(repeating: UIImage(), count: dataModel.drawings.count)
     print(#function, "thumbnails \(thumbnails)")
     generateAllThumbnails()
+  }
+
+  func addNewDrawing() {
+    dataModel.drawings.append(PKDrawing())
+    thumbnails.append(UIImage())
+  }
+
+  /// Update a drawing at `index` and generate a new thumbnail.
+  func updateDrawing(_ index: Int) {
+    print(#function, "updateDrawing \(index)")
+    generateThumbnail(index)
+    saveDataModel()
   }
 
   /// Helper method to cause regeneration of all thumbnails.
@@ -170,6 +178,10 @@ class AppModel {
 
   /// Helper method to replace a thumbnail at a given index.
   private func updateThumbnail(_ image: UIImage, at index: Int) {
-    thumbnails[index].image = image
+    if index <= thumbnails.count - 1 {
+      thumbnails[index] = image
+    } else {
+      thumbnails.append(image)
+    }
   }
 }

@@ -22,77 +22,86 @@ struct DrawingView: View {
   var body: some View {
     GeometryReader3D { proxy in
       let _ = print(#function, "proxy \(proxy.size)")
-      RealityView { content, attachments in
-        if let drawingView = attachments.entity(for: "drawingView") {
-          drawingView.name = "drawingView"
-          drawingView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
-          drawingView.position = .init(x: 0, y: 0.001, z: 0)
-          content.add(drawingView)
+      drawingRealityView(proxy: proxy)
+        .overlay {
+          topToolbarView(proxy: proxy)
         }
-        if let scene = try? await Entity(named: "Scene", in: realityKitContentBundle), let board = scene.findEntity(named: "Board") {
-          print(#function, "board \(board)")
-          content.add(board)
-        }
-      } update: { content, attachments in
-        content.entities.forEach { entity in
-          entity.position = .init(x: 0, y: (entity.name == "drawingView" ? 0.001 : 0) + boradHeight, z: 0)
-        }
-      } attachments: {
-        Attachment(id: "drawingView") {
-          drawingView
-            .cornerRadius(20)
-            .frame(width: proxy.size.width, height: proxy.size.depth - 60)
-        }
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func drawingRealityView(proxy: GeometryProxy3D) -> some View {
+    RealityView { content, attachments in
+      if let drawingView = attachments.entity(for: "drawingView") {
+        drawingView.name = "drawingView"
+        drawingView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        drawingView.position = .init(x: 0, y: 0.001, z: 0)
+        content.add(drawingView)
       }
-      .offset(y: proxy.size.height / 2)
-      .offset(z: 30)
-      .overlay {
-        RealityView { content, attachments in
-          if let toolbarView = attachments.entity(for: "toolbarView") {
-            toolbarView.position = .init(x: 0, y: 0, z: 0)
-            toolbarView.components.set(BillboardComponent())
-            content.add(toolbarView)
-          }
-        } update: { content, attachments in
-          content.entities.forEach { entity in
-            entity.position = .init(x: 0, y: boradHeight, z: 0)
-          }
-        } attachments: {
-          Attachment(id: "toolbarView") {
-            navigationBarTool
-          }
-        }
-        .offset(y: proxy.size.height / 2 - 36)
-        .offset(z: -proxy.size.depth + 60)
+      if let scene = try? await Entity(named: "Scene", in: realityKitContentBundle), let board = scene.findEntity(named: "Board") {
+        print(#function, "board \(board)")
+        content.add(board)
+      }
+    } update: { content, attachments in
+      content.entities.forEach { entity in
+        entity.position = .init(x: 0, y: (entity.name == "drawingView" ? 0.001 : 0) + boradHeight, z: 0)
+      }
+    } attachments: {
+      Attachment(id: "drawingView") {
+        drawingView
+          .cornerRadius(20)
+          .frame(width: proxy.size.width, height: proxy.size.depth - 60)
       }
     }
-//    .toolbar {
-//      ToolbarItem(placement: .bottomOrnament) {
-//        Button(action: {
-//          openWindow(id: "ToolWindow")
-//        }, label: {
-//          Text("Open Tool Window")
-//        })
-//      }
-//    }
-//    .onAppear {
-//      openWindow(id: "NotesView")
-//    }
+    .offset(y: proxy.size.height / 2)
+    .offset(z: 30)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func topToolbarView(proxy: GeometryProxy3D) -> some View {
+    RealityView { content, attachments in
+      if let toolbarView = attachments.entity(for: "toolbarView") {
+        toolbarView.position = .init(x: 0, y: 0, z: 0)
+        toolbarView.components.set(BillboardComponent())
+        content.add(toolbarView)
+      }
+    } update: { content, attachments in
+      content.entities.forEach { entity in
+        entity.position = .init(x: 0, y: boradHeight, z: 0)
+      }
+    } attachments: {
+      Attachment(id: "toolbarView") {
+        navigationBarTool
+      }
+    }
+    .offset(y: proxy.size.height / 2 - 36)
+    .offset(z: -proxy.size.depth + 60)
   }
 
   @MainActor
   @ViewBuilder
   private var drawingView: some View {
-//    @Bindable var appModel = appModel
     if appModel.dataModel.drawings.isEmpty {
       ProgressView()
     } else {
-      DrawingUIView(canvas: $canvas, drawing: Binding(
-        get: { appModel.dataModel.drawings[appModel.drawingIndex] },
-        set: { newValue in
-          appModel.dataModel.drawings[appModel.drawingIndex] = newValue
+      DrawingUIViewRepresentable(
+        canvas: $canvas,
+        drawing: Binding(
+          get: { appModel.dataModel.drawings[appModel.drawingIndex] },
+          set: { newValue in
+            appModel.dataModel.drawings[appModel.drawingIndex] = newValue
+          }
+        ),
+        isDrawing: $isDrawing,
+        pencilType: $pencilType,
+        color: $color,
+        toolPicker: $toolPicker,
+        saveDrawing: {
+          appModel.updateDrawing(appModel.drawingIndex)
         }
-      ), isDrawing: $isDrawing, pencilType: $pencilType, color: $color, toolPicker: $toolPicker)
+      )
     }
   }
 
@@ -102,11 +111,9 @@ struct DrawingView: View {
     HStack {
       Button(action: {
         openWindow(id: "NotesView")
-//        appModel.saveNewNote(drawing: canvas.drawing)
       }, label: {
         Label("Home", systemImage: "square.grid.2x2")
       })
-//      Slider(value: $boradHeight, in: -0.5...0.5)
     }
     .padding(12)
     .buttonStyle(.plain)
@@ -154,14 +161,6 @@ struct DrawingView: View {
     .buttonStyle(.plain)
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-  }
-
-  func saveDrawing() {
-    // Get the drawing image from the canvas
-    let drawingImage = canvas.drawing.image(from: canvas.drawing.bounds, scale: 1.0)
-
-    // Save drawings to the Photos Album
-    UIImageWriteToSavedPhotosAlbum(drawingImage, nil, nil, nil)
   }
 }
 

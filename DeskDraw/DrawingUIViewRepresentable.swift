@@ -8,7 +8,7 @@
 import PencilKit
 import SwiftUI
 
-struct DrawingUIView: UIViewRepresentable {
+struct DrawingUIViewRepresentable: UIViewRepresentable {
   // Capture drawings for saving in the photos library
   @Binding var canvas: PKCanvasView
   @Binding var drawing: PKDrawing
@@ -18,6 +18,8 @@ struct DrawingUIView: UIViewRepresentable {
   // Ability to change a pencil color
   @Binding var color: Color
   @Binding var toolPicker: PKToolPicker
+
+  var saveDrawing: () -> Void
 
   // let ink = PKInkingTool(.pencil, color: .black)
   // Update ink type
@@ -40,7 +42,10 @@ struct DrawingUIView: UIViewRepresentable {
     // canvas.tool = PKInkingTool(.fountainPen, color: .brown, width: 4)
 
     // From Brian Advent: Show the default toolpicker
-//    canvas.alwaysBounceVertical = true
+    canvas.alwaysBounceVertical = true
+    canvas.alwaysBounceHorizontal = true
+    canvas.contentSize = CGSize(width: 1000, height: 1000)
+//    canvas.scrollIndicatorInsets = canvas.contentInset
     toolPicker.setVisible(true, forFirstResponder: canvas)
     toolPicker.colorUserInterfaceStyle = .dark
     toolPicker.prefersDismissControlVisible = false
@@ -62,15 +67,16 @@ struct DrawingUIView: UIViewRepresentable {
   }
 
   class Coordinator: NSObject, PKCanvasViewDelegate {
-    var parent: DrawingUIView
+    var parent: DrawingUIViewRepresentable
 
-    init(_ parent: DrawingUIView) {
+    init(_ parent: DrawingUIViewRepresentable) {
       self.parent = parent
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
       if parent.drawing != canvasView.drawing {
-          parent.drawing = canvasView.drawing
+        parent.drawing = canvasView.drawing
+        parent.saveDrawing()
       }
     }
   }

@@ -9,7 +9,9 @@ import SwiftUI
 
 @main
 struct DeskDrawApp: App {
-  @State var appModel = AppModel()
+  @Environment(\.scenePhase) private var scenePhase
+  @State private var appModel = AppModel()
+
   var body: some Scene {
     WindowGroup {
       DrawingView()
@@ -20,13 +22,13 @@ struct DeskDrawApp: App {
     .volumeWorldAlignment(.gravityAligned)
     .defaultSize(width: 0.6, height: 0, depth: 0.25, in: .meters)
     .windowResizability(.contentSize)
-    
+
     WindowGroup(id: "NotesView") {
       NotesView()
         .environment(appModel)
     }
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.above(context.windows.last!))
+      WindowPlacement(.above(context.windows.last!))
     }
   }
 }
