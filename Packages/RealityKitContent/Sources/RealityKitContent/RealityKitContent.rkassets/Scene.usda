@@ -53,5 +53,98 @@ def Xform "Root"
             uniform token info:id = "RealityKit.GroundingShadow"
         }
     }
+
+    def "fountain_pen" (
+        active = true
+        customData = {
+            float3 rotationEulerHint = (0, -0.78539807, 0)
+        }
+        prepend references = @fountain_pen.usdz@
+    )
+    {
+        quatf xformOp:orient = (0.92387956, 0, -0.3826834, 0)
+        float3 xformOp:scale = (0.1, 0.1, 0.1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        over "Geom"
+        {
+            over "Sketchfab_model"
+            {
+                over "_728de158804e493386d2c0aa0e08257d_fbx"
+                {
+                    over "RootNode"
+                    {
+                        over "HeroObjectGroup"
+                        {
+                            over "Object001"
+                            {
+                                over "Object001_Stainless_Steel_0"
+                                {
+                                    def RealityKitComponent "GroundingShadow"
+                                    {
+                                        bool enableIBLShadow = 1
+                                        bool enableMeshShadow = 1
+                                        uniform token info:id = "RealityKit.GroundingShadow"
+                                    }
+                                }
+                            }
+
+                            over "Object005"
+                            {
+                                over "Object005_red_plastic_0"
+                                {
+                                    def RealityKitComponent "GroundingShadow"
+                                    {
+                                        bool enableIBLShadow = 1
+                                        bool enableMeshShadow = 1
+                                        uniform token info:id = "RealityKit.GroundingShadow"
+                                    }
+                                }
+                            }
+
+                            over "Object006"
+                            {
+                                over "Object006_red_plastic_0"
+                                {
+                                    def RealityKitComponent "GroundingShadow"
+                                    {
+                                        bool enableIBLShadow = 1
+                                        bool enableMeshShadow = 1
+                                        uniform token info:id = "RealityKit.GroundingShadow"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        def RealityKitComponent "Collider"
+        {
+            uint group = 1
+            uniform token info:id = "RealityKit.Collider"
+            uint mask = 4294967295
+            token type = "Trigger"
+
+            def RealityKitStruct "Shape"
+            {
+                float3 extent = (0.68978477, 0.7661845, 0.19251758)
+                float height = 0.7661845
+                float radius = 0.34489238
+                token shapeType = "Capsule"
+
+                def RealityKitStruct "pose"
+                {
+                    float3 position = (-0.015927985, 0.34827265, -0.000008802861)
+                }
+            }
+        }
+
+        def RealityKitComponent "InputTarget"
+        {
+            uniform token info:id = "RealityKit.InputTarget"
+        }
+    }
 }
 

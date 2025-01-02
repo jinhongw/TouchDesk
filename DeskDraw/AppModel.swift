@@ -34,6 +34,9 @@ class AppModel {
   var thumbnails = [UIImage]()
 
   var drawingIndex: Int = 0
+  var hideInMini = false
+  var showDrawing = true
+  var showNotes = false
 
   var drawings: [PKDrawing] {
     get { dataModel.drawings }
@@ -111,11 +114,6 @@ class AppModel {
     }
   }
 
-  func saveNewNote(drawing: PKDrawing) {
-    dataModel.drawings.append(drawing)
-    saveDataModel()
-  }
-
   /// Construct an initial data model when no data model already exists.
   private func loadDefaultDrawings() -> DataModel {
     var testDataModel = DataModel()
@@ -134,18 +132,6 @@ class AppModel {
     thumbnails = Array(repeating: UIImage(), count: dataModel.drawings.count)
     print(#function, "thumbnails \(thumbnails)")
     generateAllThumbnails()
-  }
-
-  func addNewDrawing() {
-    dataModel.drawings.append(PKDrawing())
-    thumbnails.append(UIImage())
-  }
-
-  /// Update a drawing at `index` and generate a new thumbnail.
-  func updateDrawing(_ index: Int) {
-    print(#function, "updateDrawing \(index)")
-    generateThumbnail(index)
-    saveDataModel()
   }
 
   /// Helper method to cause regeneration of all thumbnails.
@@ -183,5 +169,37 @@ class AppModel {
     } else {
       thumbnails.append(image)
     }
+  }
+}
+
+extension AppModel {
+  func addNewDrawing() {
+    dataModel.drawings.append(PKDrawing())
+    thumbnails.append(UIImage())
+    drawingIndex = dataModel.drawings.count - 1
+  }
+
+  /// Update a drawing at `index` and generate a new thumbnail.
+  func updateDrawing(_ index: Int) {
+    print(#function, "updateDrawing \(index)")
+    generateThumbnail(index)
+    saveDataModel()
+  }
+  
+  func deleteDrawing(_ index: Int) {
+    print(#function, "deleteDrawing \(index)")
+    dataModel.drawings.remove(at: index)
+    thumbnails.remove(at: index)
+    if drawingIndex == index {
+      drawingIndex = 0
+    }
+    if dataModel.drawings.isEmpty {
+      addNewDrawing()
+    }
+    saveDataModel()
+  }
+
+  func hideDrawing() {
+    showDrawing = false
   }
 }
