@@ -10,12 +10,13 @@ import SwiftUI
 struct DrawingView: View {
   @Environment(AppModel.self) var appModel
   @Environment(\.openWindow) var openWindow
+//  @Environment(\.undoManager) private var undoManager
 //  @State private var canvas = PKCanvasView()
-  @State private var canvas = PKCanvasView()
+  @State var canvas = PKCanvasView()
 //  @State private var toolPicker = PKToolPicker()
-  @State private var isDrawing = true
-  @State private var pencilType: PKInkingTool.InkType = .pen
-  @State private var boradHeight: Float = 0
+  @State var isDrawing = true
+  @State var pencilType: PKInkingTool.InkType = .pen
+  @State var boradHeight: Float = 0
 
   var body: some View {
     GeometryReader3D { proxy in
@@ -68,6 +69,7 @@ struct DrawingView: View {
         drawingView
           .cornerRadius(20)
           .frame(width: proxy.size.width, height: proxy.size.depth - 36)
+          .colorScheme(.light)
       }
     }
     .frame(width: proxy.size.width)
@@ -128,7 +130,6 @@ struct DrawingView: View {
       if let toolbarView = attachments.entity(for: "toolbarView") {
         toolbarView.position = .init(x: 0, y: 0, z: 0)
         toolbarView.orientation = .init(angle: -45, axis: .init(x: 1, y: 0, z: 0))
-//        toolbarView.components.set(BillboardComponent())
         content.add(toolbarView)
       }
     } update: { content, attachments in
@@ -137,7 +138,7 @@ struct DrawingView: View {
       }
     } attachments: {
       Attachment(id: "toolbarView") {
-        navigationBarTool
+        tools
           .frame(width: proxy.size.width)
       }
     }
@@ -170,143 +171,6 @@ struct DrawingView: View {
         }
       )
     }
-  }
-
-  @MainActor
-  @ViewBuilder
-  private var navigationBarTool: some View {
-    @Bindable var appModel = appModel
-    HStack(spacing: 8) {
-      HStack {
-        Button(action: {
-          appModel.showNotes = true
-        }, label: {
-          Image(systemName: "square.grid.2x2")
-            .frame(width: 20)
-        })
-      }
-      .padding(8)
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      
-      HStack {
-        Button(action: {
-          appModel.hideDrawing()
-        }, label: {
-          Image(systemName: "arrow.down.right.and.arrow.up.left")
-            .frame(width: 20)
-        })
-      }
-      .padding(8)
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-
-      Spacer(minLength: 20)
-      
-      HStack {
-        Button(action: {
-          isDrawing = true
-          pencilType = .pen
-        }, label: {
-          Image(systemName: "pencil.tip")
-            .frame(width: 20)
-        })
-      }
-      .padding(8)
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .background(pencilType == .pen && isDrawing == true ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-
-      HStack {
-        Button(action: {
-          isDrawing = true
-          pencilType = .marker
-        }, label: {
-          Image(systemName: "paintbrush.pointed")
-            .frame(width: 20)
-        })
-      }
-      .padding(8)
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .background(pencilType == .marker && isDrawing == true ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      
-      HStack {
-        Button(action: {
-          isDrawing = false
-        }, label: {
-          Image(systemName: "eraser")
-            .frame(width: 20)
-        })
-      }
-      .padding(8)
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .background(isDrawing == false ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      
-      HStack {
-        ColorPicker("", selection: $appModel.color)
-          .disabled(true)
-          .labelsHidden()
-      }
-      .padding(8)
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .background(isDrawing == false ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      .onTapGesture {
-        openWindow(id: "colorPicker")
-      }
-    }
-    .padding(.leading, 60)
-    .padding(.trailing, 20)
-  }
-
-  @MainActor
-  @ViewBuilder
-  private var toolbarView: some View {
-    HStack {
-      Button {
-        isDrawing = true
-        pencilType = .pencil
-      } label: {
-        VStack(spacing: 8) {
-          Image(systemName: "pencil.and.scribble")
-          Text("Pencil")
-            .foregroundStyle(.white)
-        }
-      }
-
-      Button {
-        isDrawing = true
-        pencilType = .pen
-      } label: {
-        VStack(spacing: 8) {
-          Image(systemName: "applepencil.tip")
-          Text("Pen")
-            .foregroundStyle(.white)
-        }
-      }
-
-      Button {
-        isDrawing = false
-      } label: {
-        VStack(spacing: 8) {
-          Image(systemName: "eraser.line.dashed")
-          Text("Eraser")
-            .foregroundStyle(.white)
-        }
-      }
-    }
-    .padding(12)
-    .buttonStyle(.plain)
-    .controlSize(.small)
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 }
 

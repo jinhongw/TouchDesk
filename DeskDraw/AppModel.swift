@@ -37,7 +37,7 @@ class AppModel {
   var hideInMini = false
   var showDrawing = true
   var showNotes = false
-  var color: Color = .black
+  var color: Color = .white
 //  var colorPicker = false
 
   var drawings: [PKDrawing] {
@@ -155,7 +155,8 @@ class AppModel {
 
     thumbnailQueue.async {
       traitCollection.performAsCurrent {
-        let image = drawing.image(from: thumbnailRect, scale: thumbnailScale)
+        let image = drawing.thumbnail(rect: thumbnailRect, scale: thumbnailScale, traitCollection:UITraitCollection(userInterfaceStyle: .light))
+//        let image = drawing.image(from: thumbnailRect, scale: thumbnailScale)
         DispatchQueue.main.async {
           print(#function, "thumbnail index \(index) \(image)")
           self.updateThumbnail(image, at: index)
@@ -203,5 +204,16 @@ extension AppModel {
 
   func hideDrawing() {
     showDrawing = false
+  }
+}
+
+
+extension PKDrawing {
+  func thumbnail(rect: CGRect, scale: CGFloat, traitCollection: UITraitCollection) -> UIImage {
+    var image = UIImage()
+    traitCollection.performAsCurrent {
+      image = self.image(from: rect, scale: scale)
+    }
+    return image
   }
 }
