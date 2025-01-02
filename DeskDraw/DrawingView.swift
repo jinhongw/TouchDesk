@@ -14,9 +14,7 @@ struct DrawingView: View {
   @State private var canvas = PKCanvasView()
 //  @State private var toolPicker = PKToolPicker()
   @State private var isDrawing = true
-  @State private var color: Color = .black
   @State private var pencilType: PKInkingTool.InkType = .pen
-  @State private var colorPicker = false
   @State private var boradHeight: Float = 0
 
   var body: some View {
@@ -151,6 +149,7 @@ struct DrawingView: View {
   @MainActor
   @ViewBuilder
   private var drawingView: some View {
+    @Bindable var appModel = appModel
     if appModel.dataModel.drawings.isEmpty {
       ProgressView()
     } else {
@@ -164,7 +163,7 @@ struct DrawingView: View {
         ),
         isDrawing: $isDrawing,
         pencilType: $pencilType,
-        color: $color,
+        color: $appModel.color,
 //        toolPicker: $toolPicker,
         saveDrawing: {
           appModel.updateDrawing(appModel.drawingIndex)
@@ -176,6 +175,7 @@ struct DrawingView: View {
   @MainActor
   @ViewBuilder
   private var navigationBarTool: some View {
+    @Bindable var appModel = appModel
     HStack(spacing: 8) {
       HStack {
         Button(action: {
@@ -207,6 +207,7 @@ struct DrawingView: View {
       
       HStack {
         Button(action: {
+          isDrawing = true
           pencilType = .pen
         }, label: {
           Image(systemName: "pencil.tip")
@@ -216,11 +217,12 @@ struct DrawingView: View {
       .padding(8)
       .buttonStyle(.borderless)
       .controlSize(.small)
-      .background(pencilType == .pen ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+      .background(pencilType == .pen && isDrawing == true ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
 
       HStack {
         Button(action: {
+          isDrawing = true
           pencilType = .marker
         }, label: {
           Image(systemName: "paintbrush.pointed")
@@ -230,14 +232,14 @@ struct DrawingView: View {
       .padding(8)
       .buttonStyle(.borderless)
       .controlSize(.small)
-      .background(pencilType == .marker ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+      .background(pencilType == .marker && isDrawing == true ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
       
       HStack {
         Button(action: {
           isDrawing = false
         }, label: {
-          Image(systemName: "eraser.line.dashed")
+          Image(systemName: "eraser")
             .frame(width: 20)
         })
       }
@@ -246,6 +248,20 @@ struct DrawingView: View {
       .controlSize(.small)
       .background(isDrawing == false ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+      
+      HStack {
+        ColorPicker("", selection: $appModel.color)
+          .disabled(true)
+          .labelsHidden()
+      }
+      .padding(8)
+      .buttonStyle(.borderless)
+      .controlSize(.small)
+      .background(isDrawing == false ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+      .onTapGesture {
+        openWindow(id: "colorPicker")
+      }
     }
     .padding(.leading, 60)
     .padding(.trailing, 20)

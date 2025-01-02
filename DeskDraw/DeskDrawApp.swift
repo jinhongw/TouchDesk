@@ -30,5 +30,24 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       WindowPlacement(.above(context.windows.last!))
     }
+    
+    WindowGroup(id: "colorPicker") {
+      ColorPickerView()
+        .environment(appModel)
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      WindowPlacement(.utilityPanel)
+    }
+  }
+}
+
+struct ColorPickerView: View {
+  @Environment(AppModel.self) var appModel
+  var body: some View {
+    @Bindable var appModel = appModel
+    ColorPicker("Pick color", selection: $appModel.color)
+      .labelsHidden()
+      .controlSize(.extraLarge)
   }
 }

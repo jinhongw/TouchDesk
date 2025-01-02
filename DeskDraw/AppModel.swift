@@ -37,6 +37,8 @@ class AppModel {
   var hideInMini = false
   var showDrawing = true
   var showNotes = false
+  var color: Color = .black
+//  var colorPicker = false
 
   var drawings: [PKDrawing] {
     get { dataModel.drawings }

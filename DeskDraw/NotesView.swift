@@ -19,8 +19,8 @@ struct NotesView: View {
     NavigationStack {
       ScrollView {
         LazyVGrid(columns: columns, spacing: 0) {
-          allNotes
           addButton
+          allNotes
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 24)
@@ -42,7 +42,7 @@ struct NotesView: View {
   @MainActor
   @ViewBuilder
   private var allNotes: some View {
-    ForEach(appModel.thumbnails.indices, id: \.self) { index in
+    ForEach(appModel.thumbnails.indices.reversed(), id: \.self) { index in
       ZStack {
         RoundedRectangle(cornerRadius: 20)
           .foregroundStyle(.white.opacity(0.15))
