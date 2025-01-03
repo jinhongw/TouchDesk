@@ -9,13 +9,14 @@ import PencilKit
 import SwiftUI
 
 struct DrawingUIViewRepresentable: UIViewRepresentable {
+  let canvasOverscrollDistance: CGFloat = 500
   @Binding var canvas: PKCanvasView
   @Binding var drawing: PKDrawing
   @Binding var isDrawing: Bool
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var color: Color
-//  @Binding var toolPicker: PKToolPicker
-
+  var canvasWidth: CGFloat
+  var canvasHeight: CGFloat
   var saveDrawing: () -> Void
 
   var ink: PKInkingTool {
@@ -30,25 +31,24 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     canvas.tool = isDrawing ? ink : eraser
     canvas.isRulerActive = true
-    canvas.backgroundColor = .init(red: 1, green: 1, blue: 1, alpha: 0)
+    canvas.backgroundColor = .clear
 
     canvas.alwaysBounceVertical = true
     canvas.alwaysBounceHorizontal = true
-    canvas.contentSize = CGSize(width: 10000, height: 10000)
-//    canvas.scrollIndicatorInsets = canvas.contentInset
-//    toolPicker.setVisible(true, forFirstResponder: canvas)
-//    toolPicker.colorUserInterfaceStyle = .dark
-//    toolPicker.prefersDismissControlVisible = false
-//    toolPicker.addObserver(canvas)
+    canvas.contentSize = CGSize(width: canvasWidth, height: canvasHeight)
     canvas.becomeFirstResponder()
     canvas.delegate = context.coordinator
+    
+    updateContentSizeForDrawing()
     return canvas
   }
 
   func updateUIView(_ uiView: PKCanvasView, context: Context) {
     print(#function)
     if uiView.drawing != drawing {
+      print(#function, "drawing change")
       uiView.drawing = drawing
+      uiView.undoManager?.removeAllActions()
     }
     uiView.tool = isDrawing ? ink : eraser
   }
@@ -66,9 +66,29 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
       if parent.drawing != canvasView.drawing {
+        print(#function, "drawing change")
         parent.drawing = canvasView.drawing
         parent.saveDrawing()
       }
+      parent.updateContentSizeForDrawing()
     }
+  }
+
+  /// Helper method to set a suitable content size for the canvas view.
+  func updateContentSizeForDrawing() {
+    // Update the content size to match the drawing.
+    let drawing = canvas.drawing
+    let contentHeight: CGFloat
+    let contentWidth: CGFloat
+    
+    // Adjust the content size to always be bigger than the drawing height.
+    if !drawing.bounds.isNull {
+      contentHeight = max(canvas.bounds.height, (drawing.bounds.maxY + canvasOverscrollDistance) * canvas.zoomScale)
+      contentWidth = max(canvas.bounds.width, (drawing.bounds.maxX + canvasOverscrollDistance) * canvas.zoomScale)
+    } else {
+      contentHeight = canvas.bounds.height
+      contentWidth = canvas.bounds.width
+    }
+    canvas.contentSize = CGSize(width: contentWidth, height: contentHeight)
   }
 }

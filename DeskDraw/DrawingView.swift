@@ -10,10 +10,7 @@ import SwiftUI
 struct DrawingView: View {
   @Environment(AppModel.self) var appModel
   @Environment(\.openWindow) var openWindow
-//  @Environment(\.undoManager) private var undoManager
-//  @State private var canvas = PKCanvasView()
   @State var canvas = PKCanvasView()
-//  @State private var toolPicker = PKToolPicker()
   @State var isDrawing = true
   @State var pencilType: PKInkingTool.InkType = .pen
   @State var boradHeight: Float = 0
@@ -23,22 +20,22 @@ struct DrawingView: View {
       let _ = print(#function, "proxy \(proxy.size)")
       miniView(proxy: proxy)
         .overlay {
-            drawingRealityView(proxy: proxy)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+          drawingRealityView(proxy: proxy)
+            .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+            .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
         }
         .overlay {
-            topToolbarView(proxy: proxy)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+          topToolbarView(proxy: proxy)
+            .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+            .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
         }
         .overlay {
-            notesView(proxy: proxy)
-              .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showNotes || appModel.hideInMini)
+          notesView(proxy: proxy)
+            .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+            .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            .disabled(!appModel.showNotes || appModel.hideInMini)
         }
         .animation(.spring, value: appModel.showDrawing)
         .animation(.spring, value: appModel.showNotes)
@@ -66,7 +63,7 @@ struct DrawingView: View {
       }
     } attachments: {
       Attachment(id: "drawingView") {
-        drawingView
+        drawingView(proxy: proxy)
           .cornerRadius(20)
           .frame(width: proxy.size.width, height: proxy.size.depth - 36)
           .colorScheme(.light)
@@ -75,9 +72,9 @@ struct DrawingView: View {
     .frame(width: proxy.size.width)
     .frame(depth: proxy.size.depth - 36)
     .offset(y: proxy.size.height / 2)
-    .offset(z:  -proxy.size.depth + 36)
+    .offset(z: -proxy.size.depth + 36)
   }
-  
+
   @MainActor
   @ViewBuilder
   private func notesView(proxy: GeometryProxy3D) -> some View {
@@ -101,12 +98,12 @@ struct DrawingView: View {
     .frame(width: proxy.size.width)
     .frame(depth: proxy.size.depth - 36)
     .offset(y: proxy.size.height / 2)
-    .offset(z:  -proxy.size.depth + 36)
+    .offset(z: -proxy.size.depth + 36)
   }
 
   @MainActor
   @ViewBuilder
-  private func miniView(proxy: GeometryProxy3D) ->  some View {
+  private func miniView(proxy: GeometryProxy3D) -> some View {
     RealityView { content in
       if let scene = try? await Entity(named: "Scene", in: realityKitContentBundle), let pen = scene.findEntity(named: "fountain_pen") {
         print(#function, "fountain_pen \(pen)")
@@ -116,10 +113,10 @@ struct DrawingView: View {
     .offset(x: -proxy.size.width / 2 + 36, y: proxy.size.height / 2)
     .offset(z: -proxy.size.depth / 2 + 36)
     .gesture(
-      TapGesture().targetedToAnyEntity().onEnded({ _ in
+      TapGesture().targetedToAnyEntity().onEnded { _ in
         print(#function, "onTapGesture")
         appModel.hideInMini.toggle()
-      })
+      }
     )
   }
 
@@ -149,7 +146,7 @@ struct DrawingView: View {
 
   @MainActor
   @ViewBuilder
-  private var drawingView: some View {
+  private func drawingView(proxy: GeometryProxy3D) -> some View {
     @Bindable var appModel = appModel
     if appModel.dataModel.drawings.isEmpty {
       ProgressView()
@@ -165,7 +162,8 @@ struct DrawingView: View {
         isDrawing: $isDrawing,
         pencilType: $pencilType,
         color: $appModel.color,
-//        toolPicker: $toolPicker,
+        canvasWidth: proxy.size.width,
+        canvasHeight: proxy.size.height,
         saveDrawing: {
           appModel.updateDrawing(appModel.drawingIndex)
         }

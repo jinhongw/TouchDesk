@@ -27,31 +27,26 @@ protocol DataModelControllerObserver {
   func dataModelChanged()
 }
 
+struct DeletedDrawing {
+  let drawing: PKDrawing
+  let thumbnail: UIImage
+}
+
 @MainActor
 @Observable
 class AppModel {
   var dataModel = DataModel()
   var thumbnails = [UIImage]()
-
+  var deletedDrawings = [DeletedDrawing]()
   var drawingIndex: Int = 0
   var hideInMini = false
   var showDrawing = true
   var showNotes = false
   var color: Color = .white
-//  var colorPicker = false
-
-  var drawings: [PKDrawing] {
-    get { dataModel.drawings }
-    set { dataModel.drawings = newValue }
-  }
-
-  init() {
-    loadDataModel()
-  }
 
   /// The size to use for thumbnail images.
-  static let thumbnailSize = CGSize(width: 192, height: 256)
-
+  static let thumbnailSize = CGSize(width: 256, height: 256)
+  static let drawingIndexKey = "drawingIndexKey"
   /// Dispatch queues for the background operations done by this controller.
   private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
   private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .background)
@@ -66,12 +61,22 @@ class AppModel {
       }
     }
   }
+  
+  var drawings: [PKDrawing] {
+    get { dataModel.drawings }
+    set { dataModel.drawings = newValue }
+  }
 
   /// The URL of the file in which the current data model is saved.
   private var saveURL: URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     let documentsDirectory = paths.first!
     return documentsDirectory.appendingPathComponent("DeskDraw.data")
+  }
+  
+  init() {
+    loadDataModel()
+    loadUserDefaults()
   }
 
   private func loadDataModel() {
@@ -98,6 +103,14 @@ class AppModel {
       DispatchQueue.main.async {
         self.setLoadedDataModel(dataModel)
       }
+    }
+  }
+  
+  private func loadUserDefaults() {
+    if let lastDrawingIndex = UserDefaults.standard.value(forKey: AppModel.drawingIndexKey) as? Int {
+      drawingIndex = lastDrawingIndex
+    } else {
+      drawingIndex = 0
     }
   }
 
@@ -155,8 +168,7 @@ class AppModel {
 
     thumbnailQueue.async {
       traitCollection.performAsCurrent {
-        let image = drawing.thumbnail(rect: thumbnailRect, scale: thumbnailScale, traitCollection:UITraitCollection(userInterfaceStyle: .light))
-//        let image = drawing.image(from: thumbnailRect, scale: thumbnailScale)
+        let image = drawing.thumbnail(rect: thumbnailRect, scale: thumbnailScale, traitCollection: UITraitCollection(userInterfaceStyle: .light))
         DispatchQueue.main.async {
           print(#function, "thumbnail index \(index) \(image)")
           self.updateThumbnail(image, at: index)
@@ -179,7 +191,7 @@ extension AppModel {
   func addNewDrawing() {
     dataModel.drawings.append(PKDrawing())
     thumbnails.append(UIImage())
-    drawingIndex = dataModel.drawings.count - 1
+    selectDrawingIndex(dataModel.drawings.count - 1)
   }
 
   /// Update a drawing at `index` and generate a new thumbnail.
@@ -191,9 +203,13 @@ extension AppModel {
   
   func deleteDrawing(_ index: Int) {
     print(#function, "deleteDrawing \(index)")
+    deletedDrawings.append(DeletedDrawing(drawing: dataModel.drawings[index], thumbnail: thumbnails[index]))
     dataModel.drawings.remove(at: index)
     thumbnails.remove(at: index)
-    if drawingIndex == index {
+    if drawingIndex >= index {
+      drawingIndex -= 1
+    }
+    if drawingIndex < 0 {
       drawingIndex = 0
     }
     if dataModel.drawings.isEmpty {
@@ -201,12 +217,19 @@ extension AppModel {
     }
     saveDataModel()
   }
-
-  func hideDrawing() {
-    showDrawing = false
+  
+  func recoverNote() {
+    if let recover = deletedDrawings.popLast() {
+      dataModel.drawings.append(recover.drawing)
+      thumbnails.append(recover.thumbnail)
+    }
+  }
+  
+  func selectDrawingIndex(_ index: Int) {
+    drawingIndex = index
+    UserDefaults.standard.set(index, forKey: AppModel.drawingIndexKey)
   }
 }
-
 
 extension PKDrawing {
   func thumbnail(rect: CGRect, scale: CGFloat, traitCollection: UITraitCollection) -> UIImage {
