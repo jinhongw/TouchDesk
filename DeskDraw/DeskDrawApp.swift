@@ -22,14 +22,6 @@ struct DeskDrawApp: App {
     .volumeWorldAlignment(.gravityAligned)
     .defaultSize(width: 0.6, height: 0, depth: 0.25, in: .meters)
     .windowResizability(.contentSize)
-
-    WindowGroup(id: "NotesView") {
-      NotesView()
-        .environment(appModel)
-    }
-    .defaultWindowPlacement { content, context in
-      WindowPlacement(.above(context.windows.last!))
-    }
     
     WindowGroup(id: "colorPicker") {
       ColorPickerView()

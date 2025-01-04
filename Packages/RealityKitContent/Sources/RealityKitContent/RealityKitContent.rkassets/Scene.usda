@@ -50,6 +50,8 @@ def Xform "Root"
         {
             bool enableIBLShadow = 1
             bool enableMeshShadow = 1
+            bool enableReceiveIBLShadow = 0
+            bool enableReceiveMeshShadow = 0
             uniform token info:id = "RealityKit.GroundingShadow"
         }
     }
@@ -59,9 +61,10 @@ def Xform "Root"
         customData = {
             float3 rotationEulerHint = (0, -0.78539807, 0)
         }
-        prepend references = @fountain_pen.usdz@
+        references = @fountain_pen.usdz@
     )
     {
+        reorder nameChildren = ["Materials", "Geom", "Collider", "InputTarget", "SpotLight"]
         quatf xformOp:orient = (0.92387956, 0, -0.3826834, 0)
         float3 xformOp:scale = (0.1, 0.1, 0.1)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]

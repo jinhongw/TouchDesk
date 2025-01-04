@@ -43,9 +43,10 @@ class AppModel {
   var showDrawing = true
   var showNotes = false
   var color: Color = .white
+  var isLocked = false
 
   /// The size to use for thumbnail images.
-  static let thumbnailSize = CGSize(width: 256, height: 256)
+  static let thumbnailSize = CGSize(width: 512, height: 512)
   static let drawingIndexKey = "drawingIndexKey"
   /// Dispatch queues for the background operations done by this controller.
   private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
@@ -61,7 +62,7 @@ class AppModel {
       }
     }
   }
-  
+
   var drawings: [PKDrawing] {
     get { dataModel.drawings }
     set { dataModel.drawings = newValue }
@@ -73,7 +74,7 @@ class AppModel {
     let documentsDirectory = paths.first!
     return documentsDirectory.appendingPathComponent("DeskDraw.data")
   }
-  
+
   init() {
     loadDataModel()
     loadUserDefaults()
@@ -105,7 +106,7 @@ class AppModel {
       }
     }
   }
-  
+
   private func loadUserDefaults() {
     if let lastDrawingIndex = UserDefaults.standard.value(forKey: AppModel.drawingIndexKey) as? Int {
       drawingIndex = lastDrawingIndex
@@ -130,7 +131,7 @@ class AppModel {
   }
 
   /// Construct an initial data model when no data model already exists.
-  private func loadDefaultDrawings() -> DataModel {
+  nonisolated private func loadDefaultDrawings() -> DataModel {
     var testDataModel = DataModel()
     for sampleDataName in DataModel.defaultDrawingNames {
       guard let data = NSDataAsset(name: sampleDataName)?.data else { continue }
@@ -162,8 +163,9 @@ class AppModel {
   private func generateThumbnail(_ index: Int) {
     let drawing = drawings[index]
     let aspectRatio = AppModel.thumbnailSize.width / AppModel.thumbnailSize.height
-    let thumbnailRect = CGRect(x: 0, y: 0, width: DataModel.canvasWidth, height: DataModel.canvasWidth / aspectRatio)
-    let thumbnailScale = AppModel.thumbnailSize.width / DataModel.canvasWidth
+    let maxBound = max(drawing.bounds.maxX - drawing.bounds.minX, drawing.bounds.maxY - drawing.bounds.minY)
+    let thumbnailRect = CGRect(x: drawing.bounds.minX, y: drawing.bounds.minY, width: maxBound, height: maxBound / aspectRatio)
+    let thumbnailScale = AppModel.thumbnailSize.width / maxBound
     let traitCollection = thumbnailTraitCollection
 
     thumbnailQueue.async {
@@ -200,7 +202,7 @@ extension AppModel {
     generateThumbnail(index)
     saveDataModel()
   }
-  
+
   func deleteDrawing(_ index: Int) {
     print(#function, "deleteDrawing \(index)")
     deletedDrawings.append(DeletedDrawing(drawing: dataModel.drawings[index], thumbnail: thumbnails[index]))
@@ -217,14 +219,14 @@ extension AppModel {
     }
     saveDataModel()
   }
-  
+
   func recoverNote() {
     if let recover = deletedDrawings.popLast() {
       dataModel.drawings.append(recover.drawing)
       thumbnails.append(recover.thumbnail)
     }
   }
-  
+
   func selectDrawingIndex(_ index: Int) {
     drawingIndex = index
     UserDefaults.standard.set(index, forKey: AppModel.drawingIndexKey)

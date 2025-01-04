@@ -9,12 +9,13 @@ import PencilKit
 import SwiftUI
 
 struct DrawingUIViewRepresentable: UIViewRepresentable {
-  let canvasOverscrollDistance: CGFloat = 500
+  let canvasOverscrollDistance: CGFloat = 1000
   @Binding var canvas: PKCanvasView
   @Binding var drawing: PKDrawing
-  @Binding var isDrawing: Bool
+  @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var color: Color
+  @Binding var isLocked: Bool
   var canvasWidth: CGFloat
   var canvasHeight: CGFloat
   var saveDrawing: () -> Void
@@ -24,12 +25,20 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   }
 
   let eraser = PKEraserTool(.bitmap)
+  let lasso = PKLassoTool()
 
   func makeUIView(context: Context) -> PKCanvasView {
     canvas.drawing = drawing
     canvas.drawingPolicy = .anyInput
-
-    canvas.tool = isDrawing ? ink : eraser
+    canvas.isDrawingEnabled = !isLocked
+    switch toolStatus {
+    case .ink:
+      canvas.tool = ink
+    case .eraser:
+      canvas.tool = eraser
+    case .lasso:
+      canvas.tool = lasso
+    }
     canvas.isRulerActive = true
     canvas.backgroundColor = .clear
 
@@ -38,7 +47,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     canvas.contentSize = CGSize(width: canvasWidth, height: canvasHeight)
     canvas.becomeFirstResponder()
     canvas.delegate = context.coordinator
-    
+
     updateContentSizeForDrawing()
     return canvas
   }
@@ -50,7 +59,15 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       uiView.drawing = drawing
       uiView.undoManager?.removeAllActions()
     }
-    uiView.tool = isDrawing ? ink : eraser
+    switch toolStatus {
+    case .ink:
+      uiView.tool = ink
+    case .eraser:
+      uiView.tool = eraser
+    case .lasso:
+      uiView.tool = lasso
+    }
+    uiView.isDrawingEnabled = !isLocked
   }
 
   func makeCoordinator() -> Coordinator {
@@ -80,7 +97,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     let drawing = canvas.drawing
     let contentHeight: CGFloat
     let contentWidth: CGFloat
-    
+
     // Adjust the content size to always be bigger than the drawing height.
     if !drawing.bounds.isNull {
       contentHeight = max(canvas.bounds.height, (drawing.bounds.maxY + canvasOverscrollDistance) * canvas.zoomScale)

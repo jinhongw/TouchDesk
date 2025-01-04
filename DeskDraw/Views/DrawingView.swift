@@ -10,10 +10,17 @@ import SwiftUI
 struct DrawingView: View {
   @Environment(AppModel.self) var appModel
   @Environment(\.openWindow) var openWindow
+  @Environment(\.dismissWindow) var dismissWindow
   @State var canvas = PKCanvasView()
-  @State var isDrawing = true
+  @State var toolStatus: CanvasToolStatus = .ink
   @State var pencilType: PKInkingTool.InkType = .pen
   @State var boradHeight: Float = 0
+  
+  enum CanvasToolStatus {
+    case ink
+    case eraser
+    case lasso
+  }
 
   var body: some View {
     GeometryReader3D { proxy in
@@ -159,9 +166,10 @@ struct DrawingView: View {
             appModel.dataModel.drawings[appModel.drawingIndex] = newValue
           }
         ),
-        isDrawing: $isDrawing,
+        toolStatus: $toolStatus,
         pencilType: $pencilType,
         color: $appModel.color,
+        isLocked: $appModel.isLocked,
         canvasWidth: proxy.size.width,
         canvasHeight: proxy.size.height,
         saveDrawing: {

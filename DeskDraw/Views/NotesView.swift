@@ -19,40 +19,47 @@ struct NotesView: View {
   var body: some View {
     let _ = print(#function, "appModel.thumbnails.count \(appModel.thumbnails.count))")
     NavigationStack {
-      ScrollView {
-        LazyVGrid(columns: columns, spacing: 0) {
-          addButton
-          allNotes
+      ScrollViewReader { proxy in
+        ScrollView {
+          LazyVGrid(columns: columns, spacing: 0) {
+            addButton
+            allNotes
+          }
+          .padding(.horizontal, 16)
+          .padding(.bottom, 24)
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 24)
-      }
-      .navigationTitle("Notes")
-      .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
-          Button(action: {
-            appModel.showNotes = false
-            appModel.showDrawing = true
-          }, label: {
-            Text("Back")
-          })
-        }
-        if isEditing {
+        .navigationTitle("Notes")
+        .toolbar {
+          ToolbarItem(placement: .topBarLeading) {
+            Button(action: {
+              appModel.showNotes = false
+              appModel.showDrawing = true
+            }, label: {
+              Text("Back")
+            })
+          }
+          if isEditing {
+            ToolbarItem(placement: .topBarTrailing) {
+              Button(action: {
+                appModel.recoverNote()
+              }, label: {
+                Image(systemName: "arrow.uturn.left")
+              })
+              .disabled(appModel.deletedDrawings.isEmpty)
+            }
+          }
           ToolbarItem(placement: .topBarTrailing) {
             Button(action: {
-              appModel.recoverNote()
+              isEditing.toggle()
             }, label: {
-              Image(systemName: "arrow.uturn.left")
+              Text(isEditing ? "Done" : "Edit")
             })
-            .disabled(appModel.deletedDrawings.isEmpty)
           }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-          Button(action: {
-            isEditing.toggle()
-          }, label: {
-            Text(isEditing ? "Done" : "Edit")
-          })
+        .onChange(of: appModel.showNotes) { _, newValue in
+          guard newValue else { return }
+          print(#function, "scrollTo \(appModel.drawingIndex)")
+          proxy.scrollTo(appModel.drawingIndex, anchor: .center)
         }
       }
     }
@@ -77,6 +84,7 @@ struct NotesView: View {
             .stroke(Color.white, lineWidth: 3)
         }
       }
+      .id(index)
       .aspectRatio(1, contentMode: .fit)
       .padding(8)
       .hoverEffect { effect, isActive, geometry in
@@ -106,14 +114,6 @@ struct NotesView: View {
           }
         }
       }
-//      .contextMenu {
-//          Button {
-//            appModel.deleteDrawing(index)
-//          } label: {
-//              Label("Delete", systemImage: "trash")
-//              .foregroundStyle(.red)
-//          }
-//      }
     }
   }
 
