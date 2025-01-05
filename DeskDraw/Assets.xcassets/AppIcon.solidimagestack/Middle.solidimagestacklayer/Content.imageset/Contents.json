@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "TouchDesk-MD.png",
       "idiom" : "vision",
       "scale" : "2x"
     }

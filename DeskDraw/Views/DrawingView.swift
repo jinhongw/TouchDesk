@@ -12,14 +12,37 @@ struct DrawingView: View {
   @Environment(\.openWindow) var openWindow
   @Environment(\.dismissWindow) var dismissWindow
   @State var canvas = PKCanvasView()
+  @State var boradHeight: Float = 0
+  
   @State var toolStatus: CanvasToolStatus = .ink
   @State var pencilType: PKInkingTool.InkType = .pen
-  @State var boradHeight: Float = 0
+  @State var eraserType: EraserType = .bitmap
+  
+  @State var penWidth: CGFloat = 0.88
+  @State var monolineWidth: CGFloat = 0.5
+  @State var pencilWidth: CGFloat = 2.41
+  @State var crayonWidth: CGFloat = 30
+  @State var fountainPenWidth: CGFloat = 4.625
+  @State var eraserWidth: CGFloat = 16.4
+  
+  @State var isSettingPen = false
+  @State var isSettingMonoline = false
+  @State var isSettingPencil = false
+  @State var isSettingCrayon = false
+  @State var isSettingFountainPen = false
+  @State var isSettingEraser = false
+  
+  let zOffset: CGFloat = 72
   
   enum CanvasToolStatus {
     case ink
     case eraser
     case lasso
+  }
+  
+  enum EraserType: Hashable {
+    case bitmap
+    case vector
   }
 
   var body: some View {
@@ -72,14 +95,14 @@ struct DrawingView: View {
       Attachment(id: "drawingView") {
         drawingView(proxy: proxy)
           .cornerRadius(20)
-          .frame(width: proxy.size.width, height: proxy.size.depth - 36)
+          .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
           .colorScheme(.light)
       }
     }
     .frame(width: proxy.size.width)
-    .frame(depth: proxy.size.depth - 36)
+    .frame(depth: proxy.size.depth - zOffset)
     .offset(y: proxy.size.height / 2)
-    .offset(z: -proxy.size.depth + 36)
+    .offset(z: -proxy.size.depth + zOffset)
   }
 
   @MainActor
@@ -99,13 +122,13 @@ struct DrawingView: View {
       Attachment(id: "notesView") {
         NotesView()
           .environment(appModel)
-          .frame(width: proxy.size.width, height: proxy.size.depth - 36)
+          .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
       }
     }
     .frame(width: proxy.size.width)
-    .frame(depth: proxy.size.depth - 36)
+    .frame(depth: proxy.size.depth - zOffset)
     .offset(y: proxy.size.height / 2)
-    .offset(z: -proxy.size.depth + 36)
+    .offset(z: -proxy.size.depth + zOffset)
   }
 
   @MainActor
@@ -117,8 +140,8 @@ struct DrawingView: View {
         content.add(pen)
       }
     }
-    .offset(x: -proxy.size.width / 2 + 36, y: proxy.size.height / 2)
-    .offset(z: -proxy.size.depth / 2 + 36)
+    .offset(x: -proxy.size.width / 2 + zOffset / 2, y: proxy.size.height / 2)
+    .offset(z: -proxy.size.depth / 2 + zOffset)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
         print(#function, "onTapGesture")
@@ -147,8 +170,8 @@ struct DrawingView: View {
       }
     }
     .frame(width: proxy.size.width)
-    .offset(y: proxy.size.height / 2 - 36)
-    .offset(z: -proxy.size.depth + 36)
+    .offset(y: proxy.size.height / 2 - zOffset)
+    .offset(z: -proxy.size.depth + zOffset)
   }
 
   @MainActor
@@ -168,6 +191,13 @@ struct DrawingView: View {
         ),
         toolStatus: $toolStatus,
         pencilType: $pencilType,
+        eraserType: $eraserType,
+        penWidth: $penWidth,
+        monolineWidth: $monolineWidth,
+        pencilWidth: $pencilWidth,
+        crayonWidth: $crayonWidth,
+        fountainPenWidth: $fountainPenWidth,
+        eraserWidth: $eraserWidth,
         color: $appModel.color,
         isLocked: $appModel.isLocked,
         canvasWidth: proxy.size.width,
@@ -182,4 +212,5 @@ struct DrawingView: View {
 
 #Preview {
   DrawingView()
+    .environment(AppModel())
 }

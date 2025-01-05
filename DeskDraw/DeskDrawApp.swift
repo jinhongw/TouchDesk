@@ -20,7 +20,7 @@ struct DeskDrawApp: App {
     }
     .windowStyle(.volumetric)
     .volumeWorldAlignment(.gravityAligned)
-    .defaultSize(width: 0.6, height: 0, depth: 0.25, in: .meters)
+    .defaultSize(width: 0.6, height: 0, depth: 0.3, in: .meters)
     .windowResizability(.contentSize)
     
     WindowGroup(id: "colorPicker") {

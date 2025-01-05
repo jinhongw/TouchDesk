@@ -14,6 +14,13 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   @Binding var drawing: PKDrawing
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
+  @Binding var eraserType: DrawingView.EraserType
+  @Binding var penWidth: CGFloat
+  @Binding var monolineWidth: CGFloat
+  @Binding var pencilWidth: CGFloat
+  @Binding var crayonWidth: CGFloat
+  @Binding var fountainPenWidth: CGFloat
+  @Binding var eraserWidth: CGFloat
   @Binding var color: Color
   @Binding var isLocked: Bool
   var canvasWidth: CGFloat
@@ -21,10 +28,37 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   var saveDrawing: () -> Void
 
   var ink: PKInkingTool {
-    PKInkingTool(pencilType, color: UIColor(color))
+    var tool = PKInkingTool(pencilType, color: UIColor(color))
+    print(#function, "\(tool.inkType) \(tool.inkType.defaultWidth) \(tool.inkType.validWidthRange)")
+    switch pencilType {
+    case .pen:
+      tool.width = penWidth
+    case .pencil:
+      tool.width = pencilWidth
+    case .monoline:
+      tool.width = monolineWidth
+    case .fountainPen:
+      tool.width = fountainPenWidth
+    case .crayon:
+      tool.width = crayonWidth
+    default: break
+    }
+    return tool
   }
 
-  let eraser = PKEraserTool(.bitmap)
+  var eraser: PKEraserTool {
+    switch eraserType {
+    case .bitmap:
+      var eraserTool = PKEraserTool(.fixedWidthBitmap)
+      print(#function, "\(eraserWidth)")
+      print(#function, "validWidthRange \(eraserTool.eraserType.validWidthRange)")
+      print(#function, "defaultWidth \(eraserTool.eraserType.defaultWidth)")
+      eraserTool.width = eraserWidth
+      return eraserTool
+    case .vector:
+      return PKEraserTool(.vector)
+    }
+  }
   let lasso = PKLassoTool()
 
   func makeUIView(context: Context) -> PKCanvasView {
