@@ -9,18 +9,18 @@ import PencilKit
 import SwiftUI
 
 struct DrawingUIViewRepresentable: UIViewRepresentable {
-  let canvasOverscrollDistance: CGFloat = 1000
+  private let canvasOverscrollDistance: CGFloat = 1000
   @Binding var canvas: PKCanvasView
   @Binding var drawing: PKDrawing
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
-  @Binding var penWidth: CGFloat
-  @Binding var monolineWidth: CGFloat
-  @Binding var pencilWidth: CGFloat
-  @Binding var crayonWidth: CGFloat
-  @Binding var fountainPenWidth: CGFloat
-  @Binding var eraserWidth: CGFloat
+  @Binding var penWidth: Double
+  @Binding var monolineWidth: Double
+  @Binding var pencilWidth: Double
+  @Binding var crayonWidth: Double
+  @Binding var fountainPenWidth: Double
+  @Binding var eraserWidth: Double
   @Binding var color: Color
   @Binding var isLocked: Bool
   var canvasWidth: CGFloat
@@ -75,7 +75,6 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     }
     canvas.isRulerActive = true
     canvas.backgroundColor = .clear
-
     canvas.alwaysBounceVertical = true
     canvas.alwaysBounceHorizontal = true
     canvas.contentSize = CGSize(width: canvasWidth, height: canvasHeight)

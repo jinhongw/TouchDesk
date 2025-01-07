@@ -9,10 +9,10 @@ import PencilKit
 import SwiftUI
 
 struct NotesView: View {
-  @Environment(AppModel.self) var appModel
+  @Environment(AppModel.self) private var appModel
   @State private var isEditing = false
 
-  let columns = [
+  private let columns = [
     GridItem(.adaptive(minimum: 180, maximum: 220)),
   ]
 

@@ -8,38 +8,28 @@ import RealityKitContent
 import SwiftUI
 
 struct DrawingView: View {
-  @Environment(AppModel.self) var appModel
-  @Environment(\.openWindow) var openWindow
-  @Environment(\.dismissWindow) var dismissWindow
-  @State var canvas = PKCanvasView()
-  @State var boradHeight: Float = 0
+  @Environment(AppModel.self) private var appModel
   
-  @State var toolStatus: CanvasToolStatus = .ink
-  @State var pencilType: PKInkingTool.InkType = .pen
-  @State var eraserType: EraserType = .bitmap
+  @AppStorage("penWidth") private var penWidth: Double = 0.88
+  @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
+  @AppStorage("pencilWidth") private var pencilWidth: Double = 2.41
+  @AppStorage("crayonWidth") private var crayonWidth: Double = 30
+  @AppStorage("fountainPenWidth") private var fountainPenWidth: Double = 4.625
+  @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
   
-  @State var penWidth: CGFloat = 0.88
-  @State var monolineWidth: CGFloat = 0.5
-  @State var pencilWidth: CGFloat = 2.41
-  @State var crayonWidth: CGFloat = 30
-  @State var fountainPenWidth: CGFloat = 4.625
-  @State var eraserWidth: CGFloat = 16.4
-  
-  @State var isSettingPen = false
-  @State var isSettingMonoline = false
-  @State var isSettingPencil = false
-  @State var isSettingCrayon = false
-  @State var isSettingFountainPen = false
-  @State var isSettingEraser = false
-  
+  @State private var canvas = PKCanvasView()
+  @State private var toolStatus: CanvasToolStatus = .ink
+  @State private var pencilType: PKInkingTool.InkType = .pen
+  @State private var eraserType: EraserType = .bitmap
+
   let zOffset: CGFloat = 72
-  
+
   enum CanvasToolStatus {
     case ink
     case eraser
     case lasso
   }
-  
+
   enum EraserType: Hashable {
     case bitmap
     case vector
@@ -87,10 +77,6 @@ struct DrawingView: View {
         print(#function, "board \(board)")
         content.add(board)
       }
-    } update: { content, attachments in
-      content.entities.forEach { entity in
-        entity.position = .init(x: 0, y: (entity.name == "drawingView" ? 0.001 : 0) + boradHeight, z: 0)
-      }
     } attachments: {
       Attachment(id: "drawingView") {
         drawingView(proxy: proxy)
@@ -113,10 +99,6 @@ struct DrawingView: View {
         notesView.position = .init(x: 0, y: 0, z: 0)
         notesView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
         content.add(notesView)
-      }
-    } update: { content, attachments in
-      content.entities.forEach { entity in
-        entity.position = .init(x: 0, y: boradHeight, z: 0)
       }
     } attachments: {
       Attachment(id: "notesView") {
@@ -159,14 +141,16 @@ struct DrawingView: View {
         toolbarView.orientation = .init(angle: -45, axis: .init(x: 1, y: 0, z: 0))
         content.add(toolbarView)
       }
-    } update: { content, attachments in
-      content.entities.forEach { entity in
-        entity.position = .init(x: 0, y: boradHeight, z: 0)
-      }
     } attachments: {
       Attachment(id: "toolbarView") {
-        tools
-          .frame(width: proxy.size.width)
+        DrawingToolsView(
+          canvas: $canvas,
+          toolStatus: $toolStatus,
+          pencilType: $pencilType,
+          eraserType: $eraserType
+        )
+        .environment(appModel)
+        .frame(width: proxy.size.width)
       }
     }
     .frame(width: proxy.size.width)
