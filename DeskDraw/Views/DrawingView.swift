@@ -16,11 +16,11 @@ struct DrawingView: View {
   @AppStorage("crayonWidth") private var crayonWidth: Double = 30
   @AppStorage("fountainPenWidth") private var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
+  @AppStorage("eraserType") private var eraserType: EraserType = .bitmap
   
   @State private var canvas = PKCanvasView()
   @State private var toolStatus: CanvasToolStatus = .ink
   @State private var pencilType: PKInkingTool.InkType = .pen
-  @State private var eraserType: EraserType = .bitmap
 
   let zOffset: CGFloat = 72
 
@@ -30,9 +30,9 @@ struct DrawingView: View {
     case lasso
   }
 
-  enum EraserType: Hashable {
-    case bitmap
-    case vector
+  enum EraserType: Int, Hashable {
+    case bitmap = 0
+    case vector = 1
   }
 
   var body: some View {

@@ -119,6 +119,10 @@ struct DrawingToolsView: View {
 
   // MARK: RightTools
 
+  /// ink pen 2.679940805277356 0.8781664588318914...25.659259612471967
+  /// ink monoline 0.5 0.5...4.0
+  /// ink pencil 2.4000000953674316 2.4000000953674316...16.0
+  /// ink fountainPen 4.0 1.5...14.0
   @MainActor
   @ViewBuilder
   var rightTools: some View {
@@ -240,7 +244,7 @@ struct DrawingToolsView: View {
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(toolStatus == .eraser ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .background(toolStatus == .eraser ? .white.opacity(settingType == .eraser ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .overlay {
       VStack {
@@ -266,6 +270,10 @@ struct DrawingToolsView: View {
               })
             }
           }
+        } else {
+          Image(systemName: "xmark.app.fill")
+            .font(.system(size: 20, weight: .medium))
+            .padding(4)
         }
       }
       .padding(8)
@@ -280,6 +288,31 @@ struct DrawingToolsView: View {
       .offset(z: 40)
       .animation(.spring.speed(2), value: toolStatus)
       .animation(.spring.speed(2), value: settingType)
+    }
+    .overlay {
+      ZStack {
+        HStack(spacing: 2) {
+          ForEach(0 ... 4, id: \.self) { value in
+            let value = CGFloat(value)
+            Image(systemName: eraserWidth == 16.4 + value * 16.0 ? "circle.fill" : "circle")
+              .font(.system(size: 2 + value * 1, weight: .medium))
+          }
+        }
+        .frame(width: 44, height: 60)
+        .padding(12)
+        .scaleEffect(toolStatus == .eraser && eraserType == .bitmap && settingType != .eraser ? 1 : 0, anchor: .top)
+        .opacity(toolStatus == .eraser && eraserType == .bitmap && settingType != .eraser ? 1 : 0)
+        Image(systemName: "xmark.app.fill")
+          .frame(width: 44, height: 60)
+          .padding(12)
+          .font(.system(size: 6, weight: .medium))
+          .scaleEffect(toolStatus == .eraser && settingType != .eraser && eraserType == .vector ? 1 : 0, anchor: .top)
+          .opacity(toolStatus == .eraser && settingType != .eraser && eraserType == .vector ? 1 : 0)
+      }
+      .animation(.spring.speed(2), value: eraserType)
+      .animation(.spring.speed(2), value: toolStatus)
+      .animation(.spring.speed(2), value: settingType)
+      .offset(y: 32)
     }
     .disabled(appModel.isLocked)
   }
@@ -335,15 +368,19 @@ struct InkToolView: View {
         Image(systemName: iconName)
           .frame(width: 8)
       })
+      .help("\(inkType)")
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(pencilType == inkType && toolStatus == .ink ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .background(pencilType == inkType && toolStatus == .ink ? .white.opacity(settingType == setType ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(appModel.isLocked)
     .overlay {
       widthSettingPicker
+    }
+    .overlay {
+      widthPreview
     }
   }
 
@@ -374,6 +411,26 @@ struct InkToolView: View {
     .animation(.spring.speed(2), value: pencilType)
     .animation(.spring.speed(2), value: toolStatus)
     .animation(.spring.speed(2), value: settingType)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var widthPreview: some View {
+    HStack(spacing: 2) {
+      ForEach(0 ... 4, id: \.self) { value in
+        let value = CGFloat(value)
+        Image(systemName: penWidth == calculateWidth(value) ? "circle.fill" : "circle")
+          .font(.system(size: 2 + value * 1, weight: .medium))
+      }
+    }
+    .frame(width: 44, height: 60)
+    .padding(12)
+    .scaleEffect(pencilType == inkType && toolStatus == .ink && settingType != setType ? 1 : 0, anchor: .top)
+    .opacity(pencilType == inkType && toolStatus == .ink && settingType != setType ? 1 : 0)
+    .animation(.spring.speed(2), value: pencilType)
+    .animation(.spring.speed(2), value: toolStatus)
+    .animation(.spring.speed(2), value: settingType)
+    .offset(y: 32)
   }
 }
 
