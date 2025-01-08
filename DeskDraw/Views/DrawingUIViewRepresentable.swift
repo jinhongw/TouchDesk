@@ -106,24 +106,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   func makeCoordinator() -> Coordinator {
     Coordinator(self)
   }
-
-  class Coordinator: NSObject, PKCanvasViewDelegate {
-    var parent: DrawingUIViewRepresentable
-
-    init(_ parent: DrawingUIViewRepresentable) {
-      self.parent = parent
-    }
-
-    func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-      if parent.drawing != canvasView.drawing {
-        print(#function, "drawing change")
-        parent.drawing = canvasView.drawing
-        parent.saveDrawing()
-      }
-      parent.updateContentSizeForDrawing()
-    }
-  }
-
+  
   /// Helper method to set a suitable content size for the canvas view.
   func updateContentSizeForDrawing() {
     // Update the content size to match the drawing.
@@ -140,5 +123,22 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       contentWidth = canvas.bounds.width
     }
     canvas.contentSize = CGSize(width: contentWidth, height: contentHeight)
+  }
+  
+  class Coordinator: NSObject, PKCanvasViewDelegate {
+    var parent: DrawingUIViewRepresentable
+
+    init(_ parent: DrawingUIViewRepresentable) {
+      self.parent = parent
+    }
+
+    func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+      if parent.drawing != canvasView.drawing {
+        print(#function, "drawing change")
+        parent.drawing = canvasView.drawing
+        parent.saveDrawing()
+      }
+      parent.updateContentSizeForDrawing()
+    }
   }
 }

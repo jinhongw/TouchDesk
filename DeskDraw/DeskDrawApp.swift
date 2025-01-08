@@ -33,13 +33,3 @@ struct DeskDrawApp: App {
     }
   }
 }
-
-struct ColorPickerView: View {
-  @Environment(AppModel.self) var appModel
-  var body: some View {
-    @Bindable var appModel = appModel
-    ColorPicker("Pick color", selection: $appModel.color)
-      .labelsHidden()
-      .controlSize(.extraLarge)
-  }
-}

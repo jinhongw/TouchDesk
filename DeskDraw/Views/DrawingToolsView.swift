@@ -6,6 +6,7 @@
 //
 
 import PencilKit
+import RealityKit
 import SwiftUI
 
 struct DrawingToolsView: View {
@@ -19,14 +20,15 @@ struct DrawingToolsView: View {
   @AppStorage("crayonWidth") private var crayonWidth: Double = 30
   @AppStorage("fountainPenWidth") var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
-  
+
   @State private var settingType: SettingType? = nil
+  @State private var showColorPicker = false
 
   @Binding var canvas: PKCanvasView
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
-  
+
   enum SettingType {
     case pen
     case pencil
@@ -290,10 +292,10 @@ struct DrawingToolsView: View {
       ColorPicker("Color", selection: $appModel.color)
         .disabled(true)
         .labelsHidden()
+        .frame(width: 20, height: 20)
     }
-    .padding(8)
+    .padding(12)
     .buttonStyle(.borderless)
-    .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .onTapGesture {
       dismissWindow(id: "colorPicker")
@@ -382,13 +384,23 @@ struct InkToolView: View {
   @Previewable @State var pencilType: PKInkingTool.InkType = .pen
   @Previewable @State var eraserType: DrawingView.EraserType = .bitmap
 
-  DrawingToolsView(
-    canvas: $canvas,
-    toolStatus: $toolStatus,
-    pencilType: $pencilType,
-    eraserType: $eraserType
-  )
-  .environment(AppModel())
+  RealityView { content, attachments in
+    if let toolbarView = attachments.entity(for: "toolbarView") {
+      toolbarView.position = .init(x: 0, y: 0, z: 0)
+      toolbarView.orientation = .init(angle: -45, axis: .init(x: 1, y: 0, z: 0))
+      content.add(toolbarView)
+    }
+  } attachments: {
+    Attachment(id: "toolbarView") {
+      DrawingToolsView(
+        canvas: $canvas,
+        toolStatus: $toolStatus,
+        pencilType: $pencilType,
+        eraserType: $eraserType
+      )
+      .environment(AppModel())
+      .frame(width: 1024, height: 44)
+    }
+  }
   .frame(width: 1024)
-  .rotation3DEffect(.degrees(45), axis: (1, 0, 0), anchor: .center)
 })

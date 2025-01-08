@@ -150,7 +150,7 @@ struct DrawingView: View {
           eraserType: $eraserType
         )
         .environment(appModel)
-        .frame(width: proxy.size.width)
+        .frame(width: proxy.size.width, height: 44)
       }
     }
     .frame(width: proxy.size.width)
