@@ -1,0 +1,343 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "Reality Composer Pro Version 2.0 (448.0.16.0.3)"
+    }
+    defaultPrim = "Root"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Root"
+{
+    def Xform "logo" (
+        active = true
+        customData = {
+            float3 rotationEulerHint = (0, 0, 0)
+        }
+    )
+    {
+        reorder nameChildren = ["PointLight", "logo_body"]
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Xform "logo_body" (
+            active = true
+            customData = {
+                float3 rotationEulerHint = (0, -0.2617994, 0)
+            }
+        )
+        {
+            reorder nameChildren = ["BG", "MD", "FG"]
+            quatf xformOp:orient = (0.9914449, 0, -0.13052619, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            float3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            def Cylinder "MD" (
+                active = true
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                customData = {
+                    float3 rotationEulerHint = (0, 0.52359885, -2.5639502e-16)
+                }
+            )
+            {
+                uniform token axis = "Y"
+                double height = 0
+                rel material:binding = </Root/logo/logo_body/MD/DefaultMaterial>
+                double radius = 0.04
+                float2 ui:nodegraph:node:pos = (20, 20)
+                int ui:nodegraph:node:stackingOrder = 1
+                quatf xformOp:orient = (0.9659258, 3.317996e-17, 0.25881907, -1.2382928e-16)
+                float3 xformOp:scale = (1, 1, 1)
+                float3 xformOp:translate = (0.004512777, 0.003, -0.0060019675)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "DefaultMaterial"
+                {
+                    token inputs:frame:stPrimvarName = "st" (
+                        customData = {
+                            dictionary realitykit = {
+                                bool hide = 1
+                            }
+                        }
+                    )
+                    token outputs:mtlx:surface.connect = </Root/logo/logo_body/MD/DefaultMaterial/PreviewSurface.outputs:out>
+                    token outputs:realitykit:vertex
+                    token outputs:surface.connect = </Root/logo/logo_body/MD/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+                    float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (0, 110.5)
+
+                    def Shader "DefaultSurfaceShader" (
+                        active = false
+                    )
+                    {
+                        uniform token info:id = "UsdPreviewSurface"
+                        color3f inputs:diffuseColor = (1, 1, 1)
+                        color3f inputs:diffuseColor.connect = </Root/Cylinder_1/DefaultMaterial/diffuseColor.outputs:rgb>
+                        float inputs:opacityThreshold = 0
+                        float inputs:opacityThreshold.connect = </Root/Cylinder_1/DefaultMaterial/opacityThreshold.outputs:r>
+                        float inputs:roughness = 0.75
+                        token outputs:surface
+                    }
+
+                    def Shader "diffuseColor"
+                    {
+                        uniform token info:id = "UsdUVTexture"
+                        asset inputs:file = @TouchDesk-MD.png@
+                        float2 inputs:st.connect = </Root/logo/logo_body/MD/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
+                        color3f outputs:rgb
+
+                        def Shader "TexCoordReader"
+                        {
+                            uniform token info:id = "UsdPrimvarReader_float2"
+                            token inputs:varname.connect = </Root/logo/logo_body/MD/DefaultMaterial.inputs:frame:stPrimvarName>
+                            float2 outputs:result
+                        }
+                    }
+
+                    def Shader "PreviewSurface" (
+                        active = true
+                    )
+                    {
+                        uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                        color3f inputs:diffuseColor.connect = </Root/logo/logo_body/MD/DefaultMaterial/Image_1.outputs:out>
+                        float inputs:metallic
+                        float3 inputs:normal
+                        float inputs:opacity.connect = </Root/logo/logo_body/MD/DefaultMaterial/Image.outputs:out>
+                        float inputs:roughness = 1
+                        token outputs:out
+                        float2 ui:nodegraph:node:pos = (-255, 105)
+                        int ui:nodegraph:node:stackingOrder = 17
+                    }
+
+                    def Shader "opacityThreshold"
+                    {
+                        uniform token info:id = "UsdUVTexture"
+                        asset inputs:file = @TouchDesk-MD-OP 1.png@
+                        float2 inputs:st.connect = </Root/logo/logo_body/MD/DefaultMaterial/opacityThreshold/TexCoordReader.outputs:result>
+                        float outputs:r
+
+                        def Shader "TexCoordReader"
+                        {
+                            uniform token info:id = "UsdPrimvarReader_float2"
+                            token inputs:varname.connect = </Root/logo/logo_body/MD/DefaultMaterial.inputs:frame:stPrimvarName>
+                            float2 outputs:result
+                        }
+                    }
+
+                    def Shader "Image"
+                    {
+                        uniform token info:id = "ND_image_float"
+                        asset inputs:file = @TouchDesk-MD-OP.png@
+                        string inputs:filtertype
+                        string inputs:vaddressmode
+                        float outputs:out
+                        float2 ui:nodegraph:node:pos = (-835.71094, 295.5586)
+                        int ui:nodegraph:node:stackingOrder = 18
+                    }
+
+                    def Shader "Image_1"
+                    {
+                        uniform token info:id = "ND_image_color3"
+                        asset inputs:file = @TouchDesk-MD.png@
+                        string inputs:filtertype
+                        color3f outputs:out
+                        float2 ui:nodegraph:node:pos = (-819.9375, -126.15625)
+                        int ui:nodegraph:node:stackingOrder = 15
+                    }
+                }
+
+                def RealityKitComponent "Collider"
+                {
+                    uint group = 1
+                    uniform token info:id = "RealityKit.Collider"
+                    uint mask = 4294967295
+                    token type = "Trigger"
+
+                    def RealityKitStruct "Shape"
+                    {
+                        float3 extent = (0.08, 0, 0.08)
+                        float radius = 0.04
+                        token shapeType = "Sphere"
+
+                        def RealityKitStruct "pose"
+                        {
+                        }
+                    }
+                }
+
+                def RealityKitComponent "InputTarget"
+                {
+                    uniform token info:id = "RealityKit.InputTarget"
+                }
+            }
+
+            def Cylinder "FG" (
+                active = true
+                prepend apiSchemas = ["MaterialBindingAPI"]
+                customData = {
+                    float3 rotationEulerHint = (1.5707965, 0.8307991, 0.52359885)
+                }
+            )
+            {
+                uniform token axis = "Y"
+                double height = 0
+                rel material:binding = </Root/logo/logo_body/FG/DefaultMaterial>
+                double radius = 0.036000000000000004
+                float2 ui:nodegraph:node:pos = (20, 20)
+                int ui:nodegraph:node:stackingOrder = 1
+                quatf xformOp:orient = (0.6987818, 0.5510703, 0.443082, -0.10818514)
+                float3 xformOp:scale = (1, 1, 1)
+                float3 xformOp:translate = (-0.0019829748, 0.022522401, -0.000107264554)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+                def Material "DefaultMaterial"
+                {
+                    token cullMode = "unspecified" (
+                        allowedTokens = ["unspecified", "none", "front", "back"]
+                    )
+                    token inputs:frame:stPrimvarName = "st" (
+                        customData = {
+                            dictionary realitykit = {
+                                bool hide = 1
+                            }
+                        }
+                    )
+                    token outputs:mtlx:surface.connect = </Root/logo/logo_body/FG/DefaultMaterial/PreviewSurface.outputs:out>
+                    token outputs:realitykit:vertex
+                    token outputs:surface.connect = </Root/logo/logo_body/FG/DefaultMaterial/DefaultSurfaceShader.outputs:surface>
+                    string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["outputs:realitykit:vertex"]
+                    float2 ui:nodegraph:realitykit:subgraphOutputs:pos = (14.480469, 80.73047)
+                    int ui:nodegraph:realitykit:subgraphOutputs:stackingOrder = 142
+
+                    def Shader "DefaultSurfaceShader" (
+                        active = false
+                    )
+                    {
+                        uniform token info:id = "UsdPreviewSurface"
+                        color3f inputs:diffuseColor = (1, 1, 1)
+                        color3f inputs:diffuseColor.connect = </Root/Cylinder_2/DefaultMaterial/diffuseColor.outputs:rgb>
+                        float inputs:opacityThreshold = 0
+                        float inputs:opacityThreshold.connect = </Root/Cylinder_2/DefaultMaterial/opacityThreshold.outputs:r>
+                        float inputs:roughness = 0.75
+                        token outputs:surface
+                    }
+
+                    def Shader "diffuseColor"
+                    {
+                        uniform token info:id = "UsdUVTexture"
+                        asset inputs:file = @TouchDesk-FG.png@
+                        float2 inputs:st.connect = </Root/logo/logo_body/FG/DefaultMaterial/diffuseColor/TexCoordReader.outputs:result>
+                        color3f outputs:rgb
+
+                        def Shader "TexCoordReader"
+                        {
+                            uniform token info:id = "UsdPrimvarReader_float2"
+                            token inputs:varname.connect = </Root/logo/logo_body/FG/DefaultMaterial.inputs:frame:stPrimvarName>
+                            float2 outputs:result
+                        }
+                    }
+
+                    def Shader "opacityThreshold"
+                    {
+                        uniform token info:id = "UsdUVTexture"
+                        asset inputs:file = @TouchDesk-FG.png@
+                        float2 inputs:st.connect = </Root/logo/logo_body/FG/DefaultMaterial/opacityThreshold/TexCoordReader.outputs:result>
+                        float outputs:r
+
+                        def Shader "TexCoordReader"
+                        {
+                            uniform token info:id = "UsdPrimvarReader_float2"
+                            token inputs:varname.connect = </Root/logo/logo_body/FG/DefaultMaterial.inputs:frame:stPrimvarName>
+                            float2 outputs:result
+                        }
+                    }
+
+                    def Shader "PreviewSurface" (
+                        active = true
+                    )
+                    {
+                        uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                        float inputs:clearcoat
+                        float inputs:clearcoatRoughness
+                        color3f inputs:diffuseColor.connect = </Root/logo/logo_body/FG/DefaultMaterial/Image_1.outputs:out>
+                        float inputs:metallic = 0
+                        float3 inputs:normal = (0, 0, 1)
+                        float inputs:opacity.connect = </Root/logo/logo_body/FG/DefaultMaterial/Image.outputs:out>
+                        float inputs:roughness = 1
+                        token outputs:out
+                        float2 ui:nodegraph:node:pos = (-284.46484, 141.89453)
+                        int ui:nodegraph:node:stackingOrder = 228
+                        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
+                    }
+
+                    def Shader "Image"
+                    {
+                        uniform token info:id = "ND_image_float"
+                        float inputs:default = 0
+                        asset inputs:file = @TouchDesk-FG-OP.png@
+                        string inputs:filtertype
+                        string inputs:uaddressmode
+                        string inputs:vaddressmode = "periodic"
+                        float outputs:out
+                        float2 ui:nodegraph:node:pos = (-556.0625, 477.46094)
+                        int ui:nodegraph:node:stackingOrder = 216
+                    }
+
+                    def Shader "Image_1"
+                    {
+                        uniform token info:id = "ND_image_color3"
+                        asset inputs:file = @TouchDesk-FG.png@
+                        string inputs:filtertype
+                        float2 inputs:texcoord
+                        string inputs:uaddressmode
+                        string inputs:vaddressmode
+                        color3f outputs:out
+                        float2 ui:nodegraph:node:pos = (-527.1914, 42.460938)
+                        int ui:nodegraph:node:stackingOrder = 198
+                    }
+                }
+
+                def RealityKitComponent "Collider"
+                {
+                    uint group = 1
+                    uniform token info:id = "RealityKit.Collider"
+                    uint mask = 4294967295
+                    token type = "Trigger"
+
+                    def RealityKitStruct "Shape"
+                    {
+                        float3 extent = (0.08, 0, 0.08)
+                        float radius = 0.036
+                        token shapeType = "Sphere"
+
+                        def RealityKitStruct "pose"
+                        {
+                        }
+                    }
+                }
+
+                def RealityKitComponent "InputTarget"
+                {
+                    uniform token info:id = "RealityKit.InputTarget"
+                }
+            }
+        }
+
+        def Xform "PointLight"
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            float3 xformOp:translate = (0.2177626, 0.56446886, -0.1623823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            def RealityKitComponent "PointLight"
+            {
+                token info:id = "RealityKit.PointLight"
+                float intensity = 2696.76
+            }
+        }
+    }
+}
+

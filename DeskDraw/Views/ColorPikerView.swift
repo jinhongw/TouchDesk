@@ -30,6 +30,7 @@ class ColorPickerDelegate: NSObject, UIColorPickerViewControllerDelegate {
     _selectedColor = selectedColor
   }
 
+  @MainActor
   func colorPickerViewController(_ viewController: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
     if selectedColor != Color(uiColor: viewController.selectedColor) {
       print(#function, "\(viewController.selectedColor) \(continuously) \(update)")
@@ -65,6 +66,7 @@ struct ColorPickerUIView: UIViewControllerRepresentable {
     return colorPickerController
   }
 
+  @MainActor
   func updateUIViewController(_ uiViewController: UIColorPickerViewController, context: Context) {
     if uiViewController.selectedColor != UIColor(selectedColor) {
       uiViewController.selectedColor = UIColor(selectedColor)

@@ -22,6 +22,7 @@ struct DeskDrawApp: App {
     .volumeWorldAlignment(.gravityAligned)
     .defaultSize(width: 0.6, height: 0, depth: 0.3, in: .meters)
     .windowResizability(.contentSize)
+    .persistentSystemOverlays(appModel.hideInMini ? .hidden : .visible)
     
     WindowGroup(id: "colorPicker") {
       ColorPickerView()

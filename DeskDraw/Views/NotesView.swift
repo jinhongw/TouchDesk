@@ -5,6 +5,7 @@
 //  Created by jinhong on 2024/12/27.
 //
 
+import AVFoundation
 import PencilKit
 import SwiftUI
 
@@ -94,6 +95,7 @@ struct NotesView: View {
       }
       .onTapGesture {
         print(#function, "drawingIndex \(index)")
+        AudioServicesPlaySystemSound(1104)
         appModel.updateDrawing(appModel.drawingIndex)
         appModel.selectDrawingIndex(index)
         appModel.showNotes = false
@@ -133,6 +135,7 @@ struct NotesView: View {
       }
     }
     .onTapGesture {
+      AudioServicesPlaySystemSound(1104)
       appModel.updateDrawing(appModel.drawingIndex)
       appModel.addNewDrawing()
       appModel.showNotes = false

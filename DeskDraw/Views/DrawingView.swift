@@ -2,6 +2,7 @@
 //  ContentView.swift
 //  PKDraw
 
+import AVFoundation
 import PencilKit
 import RealityKit
 import RealityKitContent
@@ -9,7 +10,7 @@ import SwiftUI
 
 struct DrawingView: View {
   @Environment(AppModel.self) private var appModel
-  
+
   @AppStorage("penWidth") private var penWidth: Double = 0.88
   @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
   @AppStorage("pencilWidth") private var pencilWidth: Double = 2.41
@@ -17,7 +18,7 @@ struct DrawingView: View {
   @AppStorage("fountainPenWidth") private var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
   @AppStorage("eraserType") private var eraserType: EraserType = .bitmap
-  
+
   @State private var canvas = PKCanvasView()
   @State private var toolStatus: CanvasToolStatus = .ink
   @State private var pencilType: PKInkingTool.InkType = .pen
@@ -57,6 +58,12 @@ struct DrawingView: View {
             .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
             .disabled(!appModel.showNotes || appModel.hideInMini)
         }
+        .overlay {
+          changeRatioView(proxy: proxy)
+            .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+            .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+        }
         .animation(.spring, value: appModel.showDrawing)
         .animation(.spring, value: appModel.showNotes)
         .animation(.spring, value: appModel.hideInMini)
@@ -73,16 +80,20 @@ struct DrawingView: View {
         drawingView.position = .init(x: 0, y: 0.001, z: 0)
         content.add(drawingView)
       }
-      if let scene = try? await Entity(named: "Scene", in: realityKitContentBundle), let board = scene.findEntity(named: "Board") {
-        print(#function, "board \(board)")
-        content.add(board)
-      }
     } attachments: {
       Attachment(id: "drawingView") {
         drawingView(proxy: proxy)
           .cornerRadius(20)
           .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
           .colorScheme(.light)
+      }
+      Attachment(id: "board") {
+        RoundedRectangle(cornerSize: CGSize(width: 20, height: 20), style: .continuous)
+          .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
+          .foregroundStyle(.thinMaterial)
+          .rotation3DEffect(.degrees(-90), axis: (1, 0, 0), anchor: .center)
+          .opacity(0.5)
+          .disabled(true)
       }
     }
     .frame(width: proxy.size.width)
@@ -117,16 +128,21 @@ struct DrawingView: View {
   @ViewBuilder
   private func miniView(proxy: GeometryProxy3D) -> some View {
     RealityView { content in
-      if let scene = try? await Entity(named: "Scene", in: realityKitContentBundle), let pen = scene.findEntity(named: "fountain_pen") {
-        print(#function, "fountain_pen \(pen)")
-        content.add(pen)
+      if let scene = try? await Entity(named: "logoScene", in: realityKitContentBundle), let logo = scene.findEntity(named: "logo") {
+        content.add(logo)
+      }
+    }
+    .hoverEffect { effect, isActive, geometry in
+      effect.animation(.spring) {
+        $0.scaleEffect(isActive ? 1.2 : 1.0)
       }
     }
     .offset(x: -proxy.size.width / 2 + zOffset / 2, y: proxy.size.height / 2)
-    .offset(z: -proxy.size.depth / 2 + zOffset)
+    .offset(z: -proxy.size.depth / 2 + zOffset / 2.7)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
         print(#function, "onTapGesture")
+        AudioServicesPlaySystemSound(1104)
         appModel.hideInMini.toggle()
       }
     )
@@ -155,7 +171,7 @@ struct DrawingView: View {
     }
     .frame(width: proxy.size.width)
     .offset(y: proxy.size.height / 2 - zOffset)
-    .offset(z: -proxy.size.depth + zOffset)
+    .offset(z: -proxy.size.depth + zOffset / 1.5)
   }
 
   @MainActor
@@ -190,6 +206,116 @@ struct DrawingView: View {
           appModel.updateDrawing(appModel.drawingIndex)
         }
       )
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func changeRatioView(proxy: GeometryProxy3D) -> some View {
+    let shapeWidth: CGFloat = 24
+    VStack {
+      HStack {
+        LShape()
+          .fill(.clear)
+          .glassBackgroundEffect(in: LShape())
+          .frame(width: shapeWidth, height: shapeWidth)
+          .rotationEffect(.degrees(-90))
+        Spacer()
+        LShape()
+          .fill(.clear)
+          .glassBackgroundEffect(in: LShape())
+          .frame(width: shapeWidth, height: shapeWidth)
+      }
+      .padding(.top, zOffset)
+      Spacer()
+      HStack {
+        LShape()
+          .fill(.clear)
+          .glassBackgroundEffect(in: LShape())
+          .frame(width: shapeWidth, height: shapeWidth)
+          .rotationEffect(.degrees(-180))
+        Spacer()
+        LShape()
+          .fill(.clear)
+          .glassBackgroundEffect(in: LShape())
+          .frame(width: shapeWidth, height: shapeWidth)
+          .rotationEffect(.degrees(90))
+      }
+    }
+    .frame(width: proxy.size.width, height: proxy.size.depth)
+    .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
+    .offset(y: proxy.size.height / 2 - 2)
+    .offset(z: -proxy.size.depth / 2)
+  }
+
+  struct LShape: InsettableShape {
+    var insetAmount: CGFloat = 0
+    var cornerRadius: CGFloat = 2
+
+    func path(in rect: CGRect) -> Path {
+      let insetRect = rect.insetBy(dx: insetAmount, dy: insetAmount)
+      let radius = min(cornerRadius, insetRect.width / 6, insetRect.height / 6)
+      print(#function, radius)
+      var path = Path()
+
+      path.move(to: CGPoint(x: insetRect.minX + radius, y: insetRect.minY))
+      path.addLine(to: CGPoint(x: insetRect.maxX - radius * 1.5, y: insetRect.minY))
+      path.addArc(
+        center: CGPoint(x: insetRect.maxX - radius * 1.5, y: insetRect.minY + radius * 1.5),
+        radius: radius * 1.5,
+        startAngle: Angle(degrees: -90),
+        endAngle: Angle(degrees: 0),
+        clockwise: false
+      )
+      path.addLine(to: CGPoint(x: insetRect.maxX, y: insetRect.maxY - radius))
+      path.addArc(
+        center: CGPoint(x: insetRect.maxX - radius, y: insetRect.maxY - radius),
+        radius: radius,
+        startAngle: Angle(degrees: 0),
+        endAngle: Angle(degrees: 90),
+        clockwise: false
+      )
+      path.addLine(to: CGPoint(x: insetRect.maxX * 5 / 6 + radius, y: insetRect.maxY))
+      path.addArc(
+        center: CGPoint(x: insetRect.maxX * 5 / 6 + radius, y: insetRect.maxY - radius),
+        radius: radius,
+        startAngle: Angle(degrees: 90),
+        endAngle: Angle(degrees: 180),
+        clockwise: false
+      )
+      path.addLine(to: CGPoint(x: insetRect.maxX * 5 / 6, y: insetRect.maxY / 6 + radius))
+      path.addArc(
+        center: CGPoint(x: insetRect.maxX * 5 / 6 - radius, y: insetRect.maxY / 6 + radius),
+        radius: radius,
+        startAngle: Angle(degrees: 0),
+        endAngle: Angle(degrees: -90),
+        clockwise: true
+      )
+      path.addLine(to: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / 6))
+      path.addArc(
+        center: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / 6 - radius),
+        radius: radius,
+        startAngle: Angle(degrees: 90),
+        endAngle: Angle(degrees: 180),
+        clockwise: false
+      )
+      path.addLine(to: CGPoint(x: insetRect.minX, y: insetRect.minY + radius))
+      path.addArc(
+        center: CGPoint(x: insetRect.minX + radius, y: insetRect.minY + radius),
+        radius: radius,
+        startAngle: Angle(degrees: 180),
+        endAngle: Angle(degrees: 270),
+        clockwise: false
+      )
+
+      path.closeSubpath()
+      return path
+    }
+
+    func inset(by amount: CGFloat) -> some InsettableShape {
+      var shape = self
+      shape.insetAmount += amount
+      return shape
     }
   }
 }

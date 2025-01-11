@@ -5,6 +5,7 @@
 //  Created by jinhong on 2025/1/2.
 //
 
+import AVFoundation
 import PencilKit
 import RealityKit
 import SwiftUI
@@ -235,6 +236,7 @@ struct DrawingToolsView: View {
           }
         } else {
           toolStatus = .eraser
+          settingType = nil
         }
       }, label: {
         Image(systemName: "eraser")
@@ -330,7 +332,10 @@ struct DrawingToolsView: View {
     .padding(12)
     .buttonStyle(.borderless)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .contentShape(Circle())
+    .hoverEffect(.highlight)
     .onTapGesture {
+      AudioServicesPlaySystemSound(1104)
       dismissWindow(id: "colorPicker")
       openWindow(id: "colorPicker")
     }
@@ -363,6 +368,7 @@ struct InkToolView: View {
         } else {
           toolStatus = .ink
           pencilType = inkType
+          settingType = nil
         }
       }, label: {
         Image(systemName: iconName)
