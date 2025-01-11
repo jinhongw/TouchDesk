@@ -32,5 +32,14 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel)
     }
+    
+    WindowGroup(id: "about") {
+      AboutView()
+        .environment(appModel)
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 680))
+    }
   }
 }

@@ -11,6 +11,8 @@ import SwiftUI
 
 struct NotesView: View {
   @Environment(AppModel.self) private var appModel
+  @Environment(\.openWindow) private var openWindow
+  @Environment(\.dismissWindow) private var dismissWindow
   @State private var isEditing = false
 
   private let columns = [
@@ -31,31 +33,13 @@ struct NotesView: View {
         }
         .navigationTitle("Notes")
         .toolbar {
-          ToolbarItem(placement: .topBarLeading) {
-            Button(action: {
-              appModel.showNotes = false
-              appModel.showDrawing = true
-            }, label: {
-              Text("Back")
-            })
-          }
+          ToolbarItem(placement: .topBarLeading) { returnButton }
           if isEditing {
-            ToolbarItem(placement: .topBarTrailing) {
-              Button(action: {
-                appModel.recoverNote()
-              }, label: {
-                Image(systemName: "arrow.uturn.left")
-              })
-              .disabled(appModel.deletedDrawings.isEmpty)
-            }
+            ToolbarItem(placement: .topBarTrailing) { undoButton }
+          } else {
+            ToolbarItem(placement: .topBarTrailing) { aboutButton }
           }
-          ToolbarItem(placement: .topBarTrailing) {
-            Button(action: {
-              isEditing.toggle()
-            }, label: {
-              Text(isEditing ? "Done" : "Edit")
-            })
-          }
+          ToolbarItem(placement: .topBarTrailing) { editButton }
         }
         .onChange(of: appModel.showNotes) { _, newValue in
           guard newValue else { return }
@@ -141,6 +125,49 @@ struct NotesView: View {
       appModel.showNotes = false
       appModel.showDrawing = true
     }
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var editButton: some View {
+    Button(action: {
+      isEditing.toggle()
+    }, label: {
+      Text(isEditing ? "Done" : "Edit")
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var returnButton: some View {
+    Button(action: {
+      appModel.showNotes = false
+      appModel.showDrawing = true
+    }, label: {
+      Text("Back")
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var undoButton: some View {
+    Button(action: {
+      appModel.recoverNote()
+    }, label: {
+      Image(systemName: "arrow.uturn.left")
+    })
+    .disabled(appModel.deletedDrawings.isEmpty)
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var aboutButton: some View {
+    Button(action: {
+      dismissWindow(id: "about")
+      openWindow(id: "about")
+    }, label: {
+      Text("About")
+    })
   }
 }
 

@@ -212,21 +212,8 @@ struct DrawingView: View {
   @MainActor
   @ViewBuilder
   private func changeRatioView(proxy: GeometryProxy3D) -> some View {
-    let shapeWidth: CGFloat = 24
+    let shapeWidth: CGFloat = 16
     VStack {
-      HStack {
-        LShape()
-          .fill(.clear)
-          .glassBackgroundEffect(in: LShape())
-          .frame(width: shapeWidth, height: shapeWidth)
-          .rotationEffect(.degrees(-90))
-        Spacer()
-        LShape()
-          .fill(.clear)
-          .glassBackgroundEffect(in: LShape())
-          .frame(width: shapeWidth, height: shapeWidth)
-      }
-      .padding(.top, zOffset)
       Spacer()
       HStack {
         LShape()
@@ -234,12 +221,26 @@ struct DrawingView: View {
           .glassBackgroundEffect(in: LShape())
           .frame(width: shapeWidth, height: shapeWidth)
           .rotationEffect(.degrees(-180))
+          .offset(x: -36, y: 36)
+          .padding(36)
+          .hoverEffect { effect, isActive, geometry in
+            effect.animation(.default) {
+              $0.opacity(isActive ? 1 : 0.3)
+            }
+          }
         Spacer()
         LShape()
           .fill(.clear)
           .glassBackgroundEffect(in: LShape())
           .frame(width: shapeWidth, height: shapeWidth)
           .rotationEffect(.degrees(90))
+          .offset(x: 36, y: 36)
+          .padding(36)
+          .hoverEffect { effect, isActive, geometry in
+            effect.animation(.default) {
+              $0.opacity(isActive ? 1 : 0.3)
+            }
+          }
       }
     }
     .frame(width: proxy.size.width, height: proxy.size.depth)
@@ -250,7 +251,8 @@ struct DrawingView: View {
 
   struct LShape: InsettableShape {
     var insetAmount: CGFloat = 0
-    var cornerRadius: CGFloat = 2
+    let cornerRadius: CGFloat = 4
+    let widthRatio: CGFloat = 3
 
     func path(in rect: CGRect) -> Path {
       let insetRect = rect.insetBy(dx: insetAmount, dy: insetAmount)
@@ -275,25 +277,25 @@ struct DrawingView: View {
         endAngle: Angle(degrees: 90),
         clockwise: false
       )
-      path.addLine(to: CGPoint(x: insetRect.maxX * 5 / 6 + radius, y: insetRect.maxY))
+      path.addLine(to: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio + radius, y: insetRect.maxY))
       path.addArc(
-        center: CGPoint(x: insetRect.maxX * 5 / 6 + radius, y: insetRect.maxY - radius),
+        center: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio + radius, y: insetRect.maxY - radius),
         radius: radius,
         startAngle: Angle(degrees: 90),
         endAngle: Angle(degrees: 180),
         clockwise: false
       )
-      path.addLine(to: CGPoint(x: insetRect.maxX * 5 / 6, y: insetRect.maxY / 6 + radius))
+      path.addLine(to: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio, y: insetRect.maxY / widthRatio + radius))
       path.addArc(
-        center: CGPoint(x: insetRect.maxX * 5 / 6 - radius, y: insetRect.maxY / 6 + radius),
+        center: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio - radius, y: insetRect.maxY / widthRatio + radius),
         radius: radius,
         startAngle: Angle(degrees: 0),
         endAngle: Angle(degrees: -90),
         clockwise: true
       )
-      path.addLine(to: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / 6))
+      path.addLine(to: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / widthRatio))
       path.addArc(
-        center: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / 6 - radius),
+        center: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / widthRatio - radius),
         radius: radius,
         startAngle: Angle(degrees: 90),
         endAngle: Angle(degrees: 180),
