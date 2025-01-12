@@ -70,8 +70,6 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.tool = ink
     case .eraser:
       canvas.tool = eraser
-    case .lasso:
-      canvas.tool = lasso
     }
     canvas.isRulerActive = true
     canvas.backgroundColor = .clear
@@ -97,8 +95,6 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       uiView.tool = ink
     case .eraser:
       uiView.tool = eraser
-    case .lasso:
-      uiView.tool = lasso
     }
     uiView.isDrawingEnabled = !isLocked
   }

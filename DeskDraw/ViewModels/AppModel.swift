@@ -21,12 +21,6 @@ struct DataModel: Codable {
   var drawings: [PKDrawing] = []
 }
 
-/// `DataModelControllerObserver` is the behavior of an observer of data model changes.
-protocol DataModelControllerObserver {
-  /// Invoked when the data model changes.
-  func dataModelChanged()
-}
-
 struct DeletedDrawing {
   let drawing: PKDrawing
   let thumbnail: UIImage
@@ -51,8 +45,6 @@ class AppModel {
   /// Dispatch queues for the background operations done by this controller.
   private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
   private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .background)
-  /// Observers add themselves to this array to start being informed of data model changes.
-  var observers = [DataModelControllerObserver]()
 
   var thumbnailTraitCollection = UITraitCollection() {
     didSet {
@@ -70,9 +62,8 @@ class AppModel {
 
   /// The URL of the file in which the current data model is saved.
   private var saveURL: URL {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    let documentsDirectory = paths.first!
-    return documentsDirectory.appendingPathComponent("DeskDraw.data")
+    let documentsDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents")
+    return documentsDirectory!.appendingPathComponent("DeskDraw.data")
   }
 
   init() {
@@ -82,29 +73,57 @@ class AppModel {
 
   private func loadDataModel() {
     let url = saveURL
-    serializationQueue.async {
-      // Load the data model, or the initial test data.
-      let dataModel: DataModel
+    // Load the data model, or the initial test data.
+    var dataModel = DataModel()
 
-      if FileManager.default.fileExists(atPath: url.path) {
-        do {
-          let decoder = PropertyListDecoder()
-          let data = try Data(contentsOf: url)
-          dataModel = try decoder.decode(DataModel.self, from: data)
-          print(#function, "Load data model: \(dataModel)")
-        } catch {
-          print(#function, "Could not load data model: \(error.localizedDescription)")
-          dataModel = self.loadDefaultDrawings()
+    var isMigrated = false
+    // migrate flie before V0.2.1
+    let v0_2_1url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent("DeskDraw.data")
+    if FileManager.default.fileExists(atPath: v0_2_1url.path) {
+      do {
+        let decoder = PropertyListDecoder()
+        let data = try Data(contentsOf: v0_2_1url)
+        let savedDataModel = try decoder.decode(DataModel.self, from: data)
+        print(#function, "Load v0_2_1url data model: \(savedDataModel)")
+        dataModel.drawings.append(contentsOf: savedDataModel.drawings)
+        if !savedDataModel.drawings.isEmpty {
+          isMigrated = true
         }
-      } else {
-        print(#function, "file not Exists")
-        dataModel = self.loadDefaultDrawings()
+        do {
+          try FileManager.default.removeItem(atPath: v0_2_1url.path)
+          print(#function, "Deleted v0_2_1url file")
+        } catch {
+          print(#function, "Cant delete v0_2_1url file")
+        }
+      } catch {
+        print(#function, "Could not load v0_2_1url data model: \(error.localizedDescription)")
       }
+    } else {
+      print(#function, "v0_2_1url file not Exists")
+    }
 
-      DispatchQueue.main.async {
-        self.setLoadedDataModel(dataModel)
+    if FileManager.default.fileExists(atPath: url.path) {
+      do {
+        let decoder = PropertyListDecoder()
+        let data = try Data(contentsOf: url)
+        let savedDataModel = try decoder.decode(DataModel.self, from: data)
+        dataModel.drawings.append(contentsOf: savedDataModel.drawings)
+        print(#function, "Load data model: \(savedDataModel)")
+      } catch {
+        print(#function, "Could not load data model: \(error.localizedDescription)")
+        if !isMigrated {
+          dataModel.drawings.append(contentsOf: loadDefaultDrawings().drawings)
+        }
+      }
+    } else {
+      print(#function, "file not Exists")
+      if !isMigrated {
+        dataModel.drawings.append(contentsOf: loadDefaultDrawings().drawings)
       }
     }
+
+    setLoadedDataModel(dataModel)
+    saveDataModel()
   }
 
   private func loadUserDefaults() {
@@ -131,7 +150,7 @@ class AppModel {
   }
 
   /// Construct an initial data model when no data model already exists.
-  nonisolated private func loadDefaultDrawings() -> DataModel {
+  private nonisolated func loadDefaultDrawings() -> DataModel {
     var testDataModel = DataModel()
     for sampleDataName in DataModel.defaultDrawingNames {
       guard let data = NSDataAsset(name: sampleDataName)?.data else { continue }
@@ -144,6 +163,7 @@ class AppModel {
 
   /// Helper method to set the current data model to a data model created on a background queue.
   private func setLoadedDataModel(_ dataModel: DataModel) {
+    print(#function, "setLoadedDataModel \(dataModel)")
     self.dataModel = dataModel
     thumbnails = Array(repeating: UIImage(), count: dataModel.drawings.count)
     print(#function, "thumbnails \(thumbnails)")
@@ -161,6 +181,7 @@ class AppModel {
   /// Helper method to cause regeneration of a specific thumbnail, using the current user interface style
   /// of the thumbnail view controller.
   private func generateThumbnail(_ index: Int) {
+    guard drawings.count - 1 >= index else { return }
     let drawing = drawings[index]
     let aspectRatio = AppModel.thumbnailSize.width / AppModel.thumbnailSize.height
     let maxBound = max(drawing.bounds.maxX - drawing.bounds.minX, drawing.bounds.maxY - drawing.bounds.minY)
@@ -205,6 +226,7 @@ extension AppModel {
 
   func deleteDrawing(_ index: Int) {
     print(#function, "deleteDrawing \(index)")
+    guard dataModel.drawings.count - 1 >= index else { return }
     deletedDrawings.append(DeletedDrawing(drawing: dataModel.drawings[index], thumbnail: thumbnails[index]))
     dataModel.drawings.remove(at: index)
     thumbnails.remove(at: index)

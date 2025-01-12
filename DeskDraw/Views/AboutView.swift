@@ -26,7 +26,6 @@ struct AboutView: View {
           header
           Divider()
           content
-          appleWeather
         }
         .padding(48)
       }
@@ -221,17 +220,6 @@ struct AboutView: View {
         }
       }
     })
-  }
-  
-  @MainActor
-  @ViewBuilder
-  private var appleWeather: some View {
-    VStack(spacing: 0) {
-      Text("日落日出时间由  Weather 提供")
-        .foregroundStyle(.secondary)
-      Link("Learn More", destination: URL(string: "https://weatherkit.apple.com/legal-attribution.html")!)
-    }
-    .font(.caption)
   }
   
   @MainActor

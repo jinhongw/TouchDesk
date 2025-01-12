@@ -1,5 +1,5 @@
 {
-  "advancedEditorSelectedIdentifier" : "BehaviorsPluginID",
+  "advancedEditorSelectedIdentifier" : "ProjectBrowser",
   "openSceneRelativePaths" : [
     "Scene.usda",
     "logo.usda"
@@ -1209,6 +1209,28 @@
     ],
     "F2F7B101-EAEC-4CD6-BB27-1903FC907C7E" : [
       {
+        "date" : 758200219.566732,
+        "title" : "Untitled",
+        "transform" : [
+          0.89453506,
+          1.9639295e-07,
+          0.44699785,
+          0,
+          0.028543167,
+          0.9979591,
+          -0.057121273,
+          0,
+          -0.4460855,
+          0.063855685,
+          0.8927094,
+          0,
+          -0.009552752,
+          0.029044313,
+          0.09527785,
+          1
+        ]
+      },
+      {
         "date" : 758200213.18014,
         "title" : "Untitled",
         "transform" : [
@@ -1405,33 +1427,11 @@
           0.08102197,
           1
         ]
-      },
-      {
-        "date" : 758187756.818837,
-        "title" : "Untitled",
-        "transform" : [
-          0.99968475,
-          1.8408568e-07,
-          0.025109341,
-          0,
-          0.013963887,
-          0.8310958,
-          -0.5559539,
-          0,
-          -0.02086837,
-          0.5561293,
-          0.8308338,
-          0,
-          -0.0001500696,
-          0.10077222,
-          0.1214824,
-          1
-        ]
       }
     ]
   },
   "sceneViewportBackgroundColors" : {
 
   },
-  "selectedSceneRelativePath" : "logo.usda"
+  "selectedSceneRelativePath" : "Scene.usda"
 }

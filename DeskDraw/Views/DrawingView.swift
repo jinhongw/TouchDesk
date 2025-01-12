@@ -18,17 +18,17 @@ struct DrawingView: View {
   @AppStorage("fountainPenWidth") private var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
   @AppStorage("eraserType") private var eraserType: EraserType = .bitmap
-
+  @AppStorage("toolStatus") private var toolStatus: CanvasToolStatus = .ink
+  @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
+  
   @State private var canvas = PKCanvasView()
-  @State private var toolStatus: CanvasToolStatus = .ink
-  @State private var pencilType: PKInkingTool.InkType = .pen
+
 
   let zOffset: CGFloat = 72
 
-  enum CanvasToolStatus {
-    case ink
-    case eraser
-    case lasso
+  enum CanvasToolStatus: Int, Hashable {
+    case ink = 0
+    case eraser = 1
   }
 
   enum EraserType: Int, Hashable {
@@ -178,7 +178,7 @@ struct DrawingView: View {
   @ViewBuilder
   private func drawingView(proxy: GeometryProxy3D) -> some View {
     @Bindable var appModel = appModel
-    if appModel.dataModel.drawings.isEmpty {
+    if appModel.dataModel.drawings.isEmpty || appModel.dataModel.drawings.count - 1 < appModel.drawingIndex {
       ProgressView()
     } else {
       DrawingUIViewRepresentable(
