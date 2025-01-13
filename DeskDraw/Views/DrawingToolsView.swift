@@ -222,6 +222,8 @@ struct DrawingToolsView: View {
       toolStatus: $toolStatus
     )
   }
+  
+  @State var lastUpdateDragValue: CGFloat = 0
 
   @MainActor
   @ViewBuilder
@@ -316,6 +318,53 @@ struct DrawingToolsView: View {
       .animation(.spring.speed(2), value: settingType)
       .offset(y: 32)
     }
+    .simultaneousGesture(
+      DragGesture()
+        .onChanged { value in
+          guard toolStatus == .eraser else { return }
+          if value.translation.width - lastUpdateDragValue >= 32 {
+            guard eraserType != .vector else { return }
+            for i in 0...4 {
+              let i = CGFloat(i)
+              if eraserWidth == 16.4 + i * 16.0 {
+                if i == 4 {
+                  lastUpdateDragValue = value.translation.width
+                  eraserType = .vector
+                  AudioServicesPlaySystemSound(1104)
+                  print(#function, "+++ eraser vector")
+                } else {
+                  lastUpdateDragValue = value.translation.width
+                  AudioServicesPlaySystemSound(1104)
+                  eraserWidth = 16.4 + (i + 1) * 16.0
+                  print(#function, "+++ eraserWidth \(eraserWidth) \(lastUpdateDragValue)")
+                  break
+                }
+              }
+            }
+          } else if value.translation.width - lastUpdateDragValue <= -32 {
+            if eraserType == .vector {
+              eraserType = .bitmap
+              AudioServicesPlaySystemSound(1104)
+              print(#function, "--- eraser bitmap")
+            } else {
+              for i in 1...4 {
+                let i = CGFloat(i)
+                if eraserWidth == 16.4 + i * 16.0 {
+                  lastUpdateDragValue = value.translation.width
+                  AudioServicesPlaySystemSound(1104)
+                  eraserWidth = 16.4 + (i - 1) * 16.0
+                  print(#function, "--- eraserWidth \(eraserWidth) \(lastUpdateDragValue)")
+                  break
+                }
+              }
+            }
+          }
+        }
+        .onEnded { value in
+          guard toolStatus == .eraser else { return }
+          lastUpdateDragValue = 0
+        }
+    )
     .disabled(appModel.isLocked)
   }
 
@@ -355,6 +404,8 @@ struct InkToolView: View {
   @Binding var settingType: DrawingToolsView.SettingType?
   @Binding var penWidth: Double
   @Binding var toolStatus: DrawingView.CanvasToolStatus
+  
+  @State var lastUpdateDragValue: CGFloat = 0
 
   var body: some View {
     HStack {
@@ -381,13 +432,46 @@ struct InkToolView: View {
     .controlSize(.small)
     .background(pencilType == inkType && toolStatus == .ink ? .white.opacity(settingType == setType ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
     .overlay {
       widthSettingPicker
     }
     .overlay {
       widthPreview
     }
+    .simultaneousGesture(
+      DragGesture()
+        .onChanged { value in
+          guard pencilType == inkType && toolStatus == .ink else { return }
+          if value.translation.width - lastUpdateDragValue >= 32 {
+            for i in 0...3 {
+              let i = CGFloat(i)
+              if penWidth == calculateWidth(i) {
+                lastUpdateDragValue = value.translation.width
+                AudioServicesPlaySystemSound(1104)
+                penWidth = calculateWidth(i + 1)
+                print(#function, "+++ penWidth \(penWidth) \(lastUpdateDragValue)")
+                break
+              }
+            }
+          } else if value.translation.width - lastUpdateDragValue <= -32 {
+            for i in 1...4 {
+              let i = CGFloat(i)
+              if penWidth == calculateWidth(i) {
+                lastUpdateDragValue = value.translation.width
+                AudioServicesPlaySystemSound(1104)
+                penWidth = calculateWidth(i - 1)
+                print(#function, "--- penWidth \(penWidth) \(lastUpdateDragValue)")
+                break
+              }
+            }
+          }
+        }
+        .onEnded { value in
+          guard pencilType == inkType && toolStatus == .ink else { return }
+          lastUpdateDragValue = 0
+        }
+    )
+    .disabled(appModel.isLocked)
   }
 
   @MainActor
