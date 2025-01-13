@@ -9,7 +9,6 @@ import MessageUI
 import StoreKit
 import SwiftUI
 import UIKit
-import TipKit
 
 struct AboutView: View {
   @Environment(AppModel.self) private var appModel
@@ -18,6 +17,10 @@ struct AboutView: View {
   @State private var isShowingMailView = false
   @State private var mailResult: Result<MFMailComposeResult, Error>? = nil
   let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+  
+  var isSimplifiedChinese: Bool {
+    Locale.current.language.languageCode?.identifier == "zh" && Locale.current.language.script!.identifier == "Hans"
+  }
 
   var body: some View {
     NavigationStack {
@@ -58,11 +61,14 @@ struct AboutView: View {
       }
       Section {
         appStore
+        if isSimplifiedChinese {
+          followMeOnREDnote
+        }
         followMe
         feedback
       }
     }
-    .frame(width: 480, height: 300)
+    .frame(width: 480, height: 480)
     .scrollDisabled(true)
     .padding(.vertical, 20)
     .sheet(isPresented: $isShowingMailView) {
@@ -129,38 +135,38 @@ struct AboutView: View {
     }
   }
   
-  @MainActor
-  @ViewBuilder
-  private var resetTips: some View {
-    HStack {
-      Image(systemName: "quote.bubble.fill")
-        .resizable()
-        .padding(.top, 8)
-        .padding(.horizontal, 7)
-        .padding(.bottom, 6)
-        .frame(width: 36, height: 36)
-        .cornerRadius(18)
-        .background(LinearGradient(
-          gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
-          startPoint: .top,
-          endPoint: .bottom
-        ), in: Circle())
-      Button(action: {
-        do {
-          try Tips.resetDatastore()
-          try Tips.configure()
-        } catch {
-          print("Error initializing TipKit \(error.localizedDescription)")
-        }
-      }, label: {
-        VStack(alignment: .leading) {
-          Text("查看提示")
-          Text("重新显示所有提示")
-            .font(.caption)
-        }
-      })
-    }
-  }
+//  @MainActor
+//  @ViewBuilder
+//  private var resetTips: some View {
+//    HStack {
+//      Image(systemName: "quote.bubble.fill")
+//        .resizable()
+//        .padding(.top, 8)
+//        .padding(.horizontal, 7)
+//        .padding(.bottom, 6)
+//        .frame(width: 36, height: 36)
+//        .cornerRadius(18)
+//        .background(LinearGradient(
+//          gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
+//          startPoint: .top,
+//          endPoint: .bottom
+//        ), in: Circle())
+//      Button(action: {
+//        do {
+//          try Tips.resetDatastore()
+//          try Tips.configure()
+//        } catch {
+//          print("Error initializing TipKit \(error.localizedDescription)")
+//        }
+//      }, label: {
+//        VStack(alignment: .leading) {
+//          Text("查看提示")
+//          Text("重新显示所有提示")
+//            .font(.caption)
+//        }
+//      })
+//    }
+//  }
 
   @MainActor
   @ViewBuilder
@@ -196,6 +202,26 @@ struct AboutView: View {
         VStack(alignment: .leading) {
           Text("Follow me")
           Text("Follow me @easybreezy982 on Twitter/X")
+            .font(.caption)
+        }
+      }
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var followMeOnREDnote: some View {
+    Button(action: {
+      openURL(URL(string: "https://www.xiaohongshu.com/user/profile/5b45feb211be104b64fba5f0")!)
+    }, label: {
+      HStack {
+        Image("REDnote")
+          .resizable()
+          .frame(width: 36, height: 36)
+          .cornerRadius(18)
+        VStack(alignment: .leading) {
+          Text("Follow me")
+          Text("Follow me @easybreezy on 小红书")
             .font(.caption)
         }
       }
