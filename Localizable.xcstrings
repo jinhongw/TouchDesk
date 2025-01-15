@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "???" : {
+
+    },
     "%@" : {
       "localizations" : {
         "de" : {
@@ -40,6 +43,9 @@
           }
         }
       }
+    },
+    "%@ plan" : {
+
     },
     "About" : {
       "localizations" : {
@@ -178,6 +184,9 @@
           }
         }
       }
+    },
+    "Coming features" : {
+
     },
     "Credits" : {
       "localizations" : {
@@ -547,6 +556,9 @@
         }
       }
     },
+    "Get full access for just %@" : {
+
+    },
     "Hand Drawn Shapes by @Sajjad" : {
       "localizations" : {
         "de" : {
@@ -731,6 +743,15 @@
         }
       }
     },
+    "Manage" : {
+
+    },
+    "Manage Subscription" : {
+
+    },
+    "Need Cancel Subscription First" : {
+
+    },
     "Notes" : {
       "localizations" : {
         "de" : {
@@ -776,6 +797,15 @@
           }
         }
       }
+    },
+    "OK" : {
+
+    },
+    "Pro" : {
+
+    },
+    "Purchase" : {
+
     },
     "Rate the App" : {
       "localizations" : {
@@ -823,6 +853,12 @@
         }
       }
     },
+    "Restore Purchases" : {
+
+    },
+    "Save in iCloud" : {
+
+    },
     "Send email to jinhongw982@gmail.com" : {
       "localizations" : {
         "de" : {
@@ -868,6 +904,9 @@
           }
         }
       }
+    },
+    "Subscription" : {
+
     },
     "System Sounds" : {
       "localizations" : {
@@ -961,6 +1000,21 @@
         }
       }
     },
+    "TouchDesk Pro" : {
+
+    },
+    "Unlimited drawings" : {
+
+    },
+    "Unlock Pro Access" : {
+
+    },
+    "Until %@" : {
+
+    },
+    "Upgrade to Pro" : {
+
+    },
     "Vector hands by @Sarah Laroche" : {
       "localizations" : {
         "de" : {
@@ -1052,6 +1106,9 @@
           }
         }
       }
+    },
+    "You've Unlocked Pro Access" : {
+
     },
     "像素橡皮擦" : {
       "localizations" : {
@@ -1190,6 +1247,9 @@
           }
         }
       }
+    },
+    "解锁无限图画、iCloud 储存" : {
+
     }
   },
   "version" : "1.0"

@@ -17,6 +17,9 @@ struct DeskDrawApp: App {
       DrawingView()
         .volumeBaseplateVisibility(.hidden)
         .environment(appModel)
+        .task {
+          await appModel.subscriptionViewModel.updatePurchasedProducts()
+        }
     }
     .windowStyle(.volumetric)
     .volumeWorldAlignment(.gravityAligned)
@@ -39,7 +42,16 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 680))
+      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 740))
+    }
+    
+    WindowGroup(id: "subscription") {
+      SubscriptionView()
+        .environment(appModel.subscriptionViewModel)
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 740))
     }
   }
 }

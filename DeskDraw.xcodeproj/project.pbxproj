@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		C4BB6F902D1D0C2900791CD8 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = C4BB6F8F2D1D0C2900791CD8 /* RealityKitContent */; };
 		C4C700092D33ADB9008FD0CC /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4C700082D33ADB9008FD0CC /* Localizable.xcstrings */; };
+		C4C700232D34E2B2008FD0CC /* TouchDesk - Draw Doodle Dream.storekit in Resources */ = {isa = PBXBuildFile; fileRef = C4C700222D34E2B2008FD0CC /* TouchDesk - Draw Doodle Dream.storekit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +27,7 @@
 		C4BB6F8E2D1D0C2900791CD8 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
 		C4BB6FA52D1D0C2C00791CD8 /* DeskDrawTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DeskDrawTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4C700082D33ADB9008FD0CC /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		C4C700222D34E2B2008FD0CC /* TouchDesk - Draw Doodle Dream.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = "TouchDesk - Draw Doodle Dream.storekit"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -76,6 +78,7 @@
 		C4BB6F812D1D0C2900791CD8 = {
 			isa = PBXGroup;
 			children = (
+				C4C700222D34E2B2008FD0CC /* TouchDesk - Draw Doodle Dream.storekit */,
 				C4C700082D33ADB9008FD0CC /* Localizable.xcstrings */,
 				C4BB6F8C2D1D0C2900791CD8 /* DeskDraw */,
 				C4BB6F8D2D1D0C2900791CD8 /* Packages */,
@@ -200,6 +203,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4C700232D34E2B2008FD0CC /* TouchDesk - Draw Doodle Dream.storekit in Resources */,
 				C4C700092D33ADB9008FD0CC /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

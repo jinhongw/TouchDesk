@@ -29,6 +29,7 @@ struct DeletedDrawing {
 @MainActor
 @Observable
 class AppModel {
+  var subscriptionViewModel = SubscriptionViewModel()
   var dataModel = DataModel()
   var thumbnails = [UIImage]()
   var deletedDrawings = [DeletedDrawing]()
@@ -63,7 +64,15 @@ class AppModel {
   /// The URL of the file in which the current data model is saved.
   private var saveURL: URL {
     let documentsDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents")
-    return documentsDirectory!.appendingPathComponent("DeskDraw.data")
+    if let iCloudURL = documentsDirectory?.appendingPathComponent("DeskDraw.data") {
+      print(#function, "Have iCloudURL")
+      return iCloudURL
+    } else {
+      print(#function, "Dont have iCloudURL")
+      let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+      let documentsDirectory = paths.first!
+      return documentsDirectory.appendingPathComponent("DeskDraw.data")
+    }
   }
 
   init() {

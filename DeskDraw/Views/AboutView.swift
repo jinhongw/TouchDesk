@@ -17,7 +17,7 @@ struct AboutView: View {
   @State private var isShowingMailView = false
   @State private var mailResult: Result<MFMailComposeResult, Error>? = nil
   let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-  
+
   var isSimplifiedChinese: Bool {
     Locale.current.language.languageCode?.identifier == "zh" && Locale.current.language.script!.identifier == "Hans"
   }
@@ -44,11 +44,45 @@ struct AboutView: View {
         .frame(width: 120, height: 120)
       VStack(spacing: 2) {
         Text("TouchDesk")
-          .font(.title)
+          .font(.system(size: 32.0, weight: .bold))
+          .fontDesign(.rounded)
+          .overlay(proLogo)
         Text("Version: \(appVersion ?? "1.0")")
           .font(.caption)
           .tint(.secondary)
       }
+    }
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var proLogo: some View {
+    VStack {
+      HStack {
+        Spacer(minLength: 0)
+        Text("Pro")
+          .font(.system(size: 20, weight: .bold, design: .rounded))
+          .padding(.horizontal, 4)
+          .padding(.vertical, 2)
+          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.white.opacity(0.8)))
+          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
+            gradient: Gradient(colors: [Color.white, Color.purple, Color.orange]),
+            startPoint: .leading,
+            endPoint: .trailing
+          )))
+
+          .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
+          .rotationEffect(.degrees(16))
+          .offset(z: 16)
+          .offset(x: 36, y: -20)
+          .foregroundStyle(LinearGradient(
+            gradient: Gradient(colors: [Color.orange, Color.purple]),
+            startPoint: .leading,
+            endPoint: .trailing
+          ))
+          .opacity(appModel.subscriptionViewModel.hasPro ? 1 : 0)
+      }
+      Spacer(minLength: 0)
     }
   }
 
@@ -56,6 +90,9 @@ struct AboutView: View {
   @ViewBuilder
   private var content: some View {
     List {
+      Section {
+        upgrade
+      }
       Section {
         credits
       }
@@ -77,7 +114,7 @@ struct AboutView: View {
       }
     }
   }
-  
+
 //  @MainActor
 //  @ViewBuilder
 //  private var settings: some View {
@@ -106,7 +143,40 @@ struct AboutView: View {
 //      }
 //    }
 //  }
-  
+
+  @MainActor
+  @ViewBuilder
+  private var upgrade: some View {
+    NavigationLink {
+      SubscriptionView()
+        .environment(appModel.subscriptionViewModel)
+    } label: {
+      HStack {
+        Image(systemName: "crown.fill")
+          .resizable()
+          .padding(6)
+          .frame(width: 36, height: 36)
+          .offset(x: 0.5)
+          .cornerRadius(18)
+          .background(LinearGradient(
+            gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
+            startPoint: .top,
+            endPoint: .bottom
+          ), in: Circle())
+        VStack(alignment: .leading) {
+          Text(appModel.subscriptionViewModel.hasPro ? "TouchDesk Pro" : "Upgrade to Pro")
+          if let expirationDate = appModel.subscriptionViewModel.purchasedTransactions.first?.expirationDate {
+            Text("Until \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
+              .font(.caption)
+          } else {
+            Text(appModel.subscriptionViewModel.hasPro ? "???" : "解锁无限图画、iCloud 储存")
+              .font(.caption)
+          }
+        }
+      }
+    }
+  }
+
   @MainActor
   @ViewBuilder
   private var credits: some View {
@@ -134,7 +204,7 @@ struct AboutView: View {
       }
     }
   }
-  
+
 //  @MainActor
 //  @ViewBuilder
 //  private var resetTips: some View {
@@ -207,7 +277,7 @@ struct AboutView: View {
       }
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var followMeOnREDnote: some View {
@@ -247,7 +317,7 @@ struct AboutView: View {
       }
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var mailView: some View {

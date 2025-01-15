@@ -38,6 +38,7 @@ struct NotesView: View {
             ToolbarItem(placement: .topBarTrailing) { undoButton }
           } else {
             ToolbarItem(placement: .topBarTrailing) { aboutButton }
+//            ToolbarItem(placement: .topBarTrailing) { subscriptionView }
           }
           ToolbarItem(placement: .topBarTrailing) { editButton }
         }
@@ -167,6 +168,17 @@ struct NotesView: View {
       openWindow(id: "about")
     }, label: {
       Text("About")
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var subscriptionView: some View {
+    Button(action: {
+      dismissWindow(id: "subscription")
+      openWindow(id: "subscription")
+    }, label: {
+      Text("Subscription")
     })
   }
 }

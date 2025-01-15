@@ -20,9 +20,8 @@ struct DrawingView: View {
   @AppStorage("eraserType") private var eraserType: EraserType = .bitmap
   @AppStorage("toolStatus") private var toolStatus: CanvasToolStatus = .ink
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
-  
-  @State private var canvas = PKCanvasView()
 
+  @State private var canvas = PKCanvasView()
 
   let zOffset: CGFloat = 72
 
