@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "???" : {
-
-    },
     "%@" : {
       "localizations" : {
         "de" : {
@@ -138,6 +135,9 @@
           }
         }
       }
+    },
+    "Celebrate" : {
+
     },
     "Color" : {
       "localizations" : {
@@ -372,6 +372,9 @@
         }
       }
     },
+    "Expires %@" : {
+
+    },
     "Feedback" : {
       "localizations" : {
         "de" : {
@@ -559,6 +562,9 @@
     "Get full access for just %@" : {
 
     },
+    "Get Pro" : {
+
+    },
     "Hand Drawn Shapes by @Sajjad" : {
       "localizations" : {
         "de" : {
@@ -651,6 +657,9 @@
         }
       }
     },
+    "Left %lld drawings" : {
+
+    },
     "Licensed under CC BY 4.0" : {
       "localizations" : {
         "de" : {
@@ -696,6 +705,9 @@
           }
         }
       }
+    },
+    "Lifetime" : {
+
     },
     "Like the app support me" : {
       "localizations" : {
@@ -904,9 +916,6 @@
           }
         }
       }
-    },
-    "Subscription" : {
-
     },
     "System Sounds" : {
       "localizations" : {

@@ -42,16 +42,17 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 740))
+      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 760))
     }
     
     WindowGroup(id: "subscription") {
       SubscriptionView()
+        .padding(.top, 48)
         .environment(appModel.subscriptionViewModel)
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 740))
+      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 760))
     }
   }
 }

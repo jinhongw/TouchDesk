@@ -37,8 +37,10 @@ struct NotesView: View {
           if isEditing {
             ToolbarItem(placement: .topBarTrailing) { undoButton }
           } else {
+            if !appModel.subscriptionViewModel.hasPro {
+              ToolbarItem(placement: .topBarTrailing) { subscriptionButton }
+            }
             ToolbarItem(placement: .topBarTrailing) { aboutButton }
-//            ToolbarItem(placement: .topBarTrailing) { subscriptionView }
           }
           ToolbarItem(placement: .topBarTrailing) { editButton }
         }
@@ -107,27 +109,61 @@ struct NotesView: View {
   @MainActor
   @ViewBuilder
   private var addButton: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: 20).foregroundStyle(.white.opacity(0.15))
-      Image(systemName: "plus")
-        .font(.extraLargeTitle2)
-    }
-    .aspectRatio(1, contentMode: .fit)
-    .padding(8)
-    .hoverEffect { effect, isActive, geometry in
-      effect.animation(.default) {
-        $0.scaleEffect(isActive ? 1.1 : 1.0)
+    if appModel.subscriptionViewModel.hasPro {
+      ZStack {
+        RoundedRectangle(cornerRadius: 20).foregroundStyle(.white.opacity(0.15))
+        VStack(spacing: 8) {
+          Image(systemName: "plus")
+            .font(.extraLargeTitle2)
+        }
+      }
+      .aspectRatio(1, contentMode: .fit)
+      .padding(8)
+      .hoverEffect { effect, isActive, geometry in
+        effect.animation(.default) {
+          $0.scaleEffect(isActive ? 1.1 : 1.0)
+        }
+      }
+      .onTapGesture {
+        AudioServicesPlaySystemSound(1104)
+        appModel.updateDrawing(appModel.drawingIndex)
+        appModel.addNewDrawing()
+        appModel.showNotes = false
+        appModel.showDrawing = true
+      }
+    } else {
+      ZStack {
+        RoundedRectangle(cornerRadius: 20).foregroundStyle(.white.opacity(0.15))
+        VStack(spacing: 8) {
+          Image(systemName: "plus")
+            .font(.extraLargeTitle2)
+          Text("Left \(max(0, 3 - appModel.drawings.count)) drawings")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+      }
+      .aspectRatio(1, contentMode: .fit)
+      .padding(8)
+      .hoverEffect { effect, isActive, geometry in
+        effect.animation(.default) {
+          $0.scaleEffect(isActive ? 1.1 : 1.0)
+        }
+      }
+      .onTapGesture {
+        AudioServicesPlaySystemSound(1104)
+        if appModel.drawings.count <= 2 {
+          appModel.updateDrawing(appModel.drawingIndex)
+          appModel.addNewDrawing()
+          appModel.showNotes = false
+          appModel.showDrawing = true
+        } else {
+          dismissWindow(id: "subscription")
+          openWindow(id: "subscription")
+        }
       }
     }
-    .onTapGesture {
-      AudioServicesPlaySystemSound(1104)
-      appModel.updateDrawing(appModel.drawingIndex)
-      appModel.addNewDrawing()
-      appModel.showNotes = false
-      appModel.showDrawing = true
-    }
   }
-  
+
   @MainActor
   @ViewBuilder
   private var editButton: some View {
@@ -137,7 +173,7 @@ struct NotesView: View {
       Text(isEditing ? "Done" : "Edit")
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var returnButton: some View {
@@ -148,7 +184,7 @@ struct NotesView: View {
       Text("Back")
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var undoButton: some View {
@@ -159,7 +195,7 @@ struct NotesView: View {
     })
     .disabled(appModel.deletedDrawings.isEmpty)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var aboutButton: some View {
@@ -170,16 +206,17 @@ struct NotesView: View {
       Text("About")
     })
   }
-  
+
   @MainActor
   @ViewBuilder
-  private var subscriptionView: some View {
+  private var subscriptionButton: some View {
     Button(action: {
       dismissWindow(id: "subscription")
       openWindow(id: "subscription")
     }, label: {
-      Text("Subscription")
+      Text("Get Pro")
     })
+    .buttonStyle(.borderless)
   }
 }
 

@@ -62,7 +62,7 @@ struct AboutView: View {
         Spacer(minLength: 0)
         Text("Pro")
           .font(.system(size: 20, weight: .bold, design: .rounded))
-          .padding(.horizontal, 4)
+          .padding(.horizontal, 5)
           .padding(.vertical, 2)
           .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.white.opacity(0.8)))
           .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
@@ -168,8 +168,11 @@ struct AboutView: View {
           if let expirationDate = appModel.subscriptionViewModel.purchasedTransactions.first?.expirationDate {
             Text("Until \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
               .font(.caption)
+          } else if appModel.subscriptionViewModel.hasPro {
+            Text("Lifetime")
+              .font(.caption)
           } else {
-            Text(appModel.subscriptionViewModel.hasPro ? "???" : "解锁无限图画、iCloud 储存")
+            Text("解锁无限图画、iCloud 储存")
               .font(.caption)
           }
         }

@@ -14,6 +14,15 @@ struct SubscriptionView: View {
 
   @Environment(SubscriptionViewModel.self) private var subscriptionViewModel
   @State private var selectedProduct: Product? = nil
+  @State private var showConfetti = false
+
+  var isLifetime: Bool {
+    subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.lifetime" })
+  }
+
+  var isYearlyPlan: Bool {
+    subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.yearly.subscription" })
+  }
 
   func manageSubscription() {
     print(#function, "DEBUG", UIApplication.shared.connectedScenes)
@@ -76,6 +85,12 @@ struct SubscriptionView: View {
       }
     }
     .overlay(purchaseLoding)
+    .displayConfetti(isActive: $showConfetti)
+    .onChange(of: subscriptionViewModel.hasPro) { oldValue, newValue in
+      if oldValue == false, newValue == true {
+        showConfetti = true
+      }
+    }
   }
 
   @MainActor
@@ -123,7 +138,7 @@ struct SubscriptionView: View {
         Image("TouchDesk App Icon")
           .resizable()
           .frame(width: 120, height: 120)
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
           Text(subscriptionViewModel.hasPro ? "TouchDesk" : "Unlock Pro Access")
             .font(.system(size: 32.0, weight: .bold))
             .fontDesign(.rounded)
@@ -132,6 +147,24 @@ struct SubscriptionView: View {
           if subscriptionViewModel.hasPro, let transaction = subscriptionViewModel.purchasedTransactions.first {
             Text("\(planName(transaction.productID)) plan")
               .font(.system(size: 17.0, weight: .semibold, design: .rounded))
+              .foregroundStyle(
+                isLifetime ? LinearGradient(
+                  gradient: Gradient(colors: [Color.orange, Color.purple]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                ) : isYearlyPlan ? LinearGradient(
+                  gradient: Gradient(colors: [Color.blue, Color.white]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                ) : LinearGradient(
+                  gradient: Gradient(colors: [Color.secondary, Color.white]),
+                  startPoint: .leading,
+                  endPoint: .trailing
+                ))
+            if let expirationDate = transaction.expirationDate {
+              Text("Expires \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
+                .font(.caption)
+            }
           }
         }
       }
@@ -168,7 +201,7 @@ struct SubscriptionView: View {
           Image(systemName: "hands.and.sparkles")
             .font(.system(size: 17.0, weight: .bold))
             .foregroundStyle(LinearGradient(
-              gradient: Gradient(colors: [Color.black, Color.white]),
+              gradient: Gradient(colors: [Color.secondary, Color.white]),
               startPoint: .leading,
               endPoint: .trailing
             ))
@@ -177,7 +210,8 @@ struct SubscriptionView: View {
             .multilineTextAlignment(.leading)
         }
       }
-      if subscriptionViewModel.hasPro {
+
+      if subscriptionViewModel.hasPro && subscriptionViewModel.purchasedTransactions.first?.productID != "com.easybreezy.touchdesk.lifetime" {
         Divider()
         Button(action: {
           manageSubscription()
@@ -188,31 +222,6 @@ struct SubscriptionView: View {
             .frame(maxWidth: .infinity)
         })
       }
-      
-//      if subscriptionViewModel.hasPro {
-//        Divider()
-//        VStack(spacing: 4) {
-//          if let transaction = subscriptionViewModel.purchasedTransactions.first {
-//            HStack(spacing: 8) {
-//              Text("\(planName(transaction.productID)) plan, \(transaction.currency?.identifier ?? "???") \(transaction.price?.formatted() ?? "???")")
-//                .font(.system(size: 17.0, weight: .semibold, design: .rounded))
-//            }
-//            if let expirationDate = transaction.expirationDate {
-//              Text("Next billing on \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
-//                .font(.subheadline)
-//            }
-//          }
-//        }
-//
-//        Button(action: {
-//          manageSubscription()
-//        }, label: {
-//          Text("Manage Subscription")
-//            .foregroundStyle(.white)
-//            .font(.system(size: 17, weight: .semibold, design: .rounded))
-//            .frame(maxWidth: .infinity)
-//        })
-//      }
     }
   }
 
@@ -224,7 +233,7 @@ struct SubscriptionView: View {
         Spacer(minLength: 0)
         Text("Pro")
           .font(.system(size: 20, weight: .bold, design: .rounded))
-          .padding(.horizontal, 4)
+          .padding(.horizontal, 5)
           .padding(.vertical, 2)
           .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.white.opacity(0.8)))
           .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
