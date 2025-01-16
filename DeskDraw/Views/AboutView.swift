@@ -70,8 +70,9 @@ struct AboutView: View {
             startPoint: .leading,
             endPoint: .trailing
           )))
-
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
+          .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
+          .overlay(sparklesOverlay())
           .rotationEffect(.degrees(16))
           .offset(z: 16)
           .offset(x: 36, y: -20)

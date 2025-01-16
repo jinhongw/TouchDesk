@@ -22,6 +22,7 @@ struct DrawingView: View {
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
 
   @State private var canvas = PKCanvasView()
+  @State private var initialMiniFGTransform: Transform?
 
   let zOffset: CGFloat = 72
 
@@ -127,8 +128,32 @@ struct DrawingView: View {
   @ViewBuilder
   private func miniView(proxy: GeometryProxy3D) -> some View {
     RealityView { content in
-      if let scene = try? await Entity(named: "logoScene", in: realityKitContentBundle), let logo = scene.findEntity(named: "logo") {
+      if let scene = try? await Entity(named: "logoScene", in: realityKitContentBundle), let logo = scene.findEntity(named: "logo"), let FG = logo.findEntity(named: "FG") {
+        initialMiniFGTransform = FG.transform
         content.add(logo)
+      }
+    } update: { content in
+      if let logo = content.entities.first(where: { $0.name == "logo" }),
+         let FG = logo.findEntity(named: "FG")
+      {
+        // 确保初始状态已保存
+        guard let initialMiniFGTransform else { return }
+
+        // 根据 hideInMini 设置目标状态
+        let targetTransform: Transform
+        if appModel.hideInMini {
+          // 基于初始状态的增量变换
+          let additionalRotation = simd_quatf(angle: -12 * (.pi / 180), axis: SIMD3<Float>(0.5, 0, 1))
+          let additionalTranslation = SIMD3<Float>(0.005, 0.01, 0)
+
+          let newRotation = additionalRotation * initialMiniFGTransform.rotation
+          let newTranslation = initialMiniFGTransform.translation + additionalTranslation
+          targetTransform = Transform(rotation: newRotation, translation: newTranslation)
+        } else {
+          // 恢复到初始状态
+          targetTransform = initialMiniFGTransform
+        }
+        FG.move(to: targetTransform, relativeTo: FG.parent, duration: 0.5)
       }
     }
     .hoverEffect { effect, isActive, geometry in

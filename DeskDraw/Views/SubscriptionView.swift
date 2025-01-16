@@ -15,6 +15,7 @@ struct SubscriptionView: View {
   @Environment(SubscriptionViewModel.self) private var subscriptionViewModel
   @State private var selectedProduct: Product? = nil
   @State private var showConfetti = false
+  @State private var showWelcome = false
 
   var isLifetime: Bool {
     subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.lifetime" })
@@ -89,6 +90,7 @@ struct SubscriptionView: View {
     .onChange(of: subscriptionViewModel.hasPro) { oldValue, newValue in
       if oldValue == false, newValue == true {
         showConfetti = true
+        showWelcome = true
       }
     }
   }
@@ -139,7 +141,7 @@ struct SubscriptionView: View {
           .resizable()
           .frame(width: 120, height: 120)
         VStack(spacing: 4) {
-          Text(subscriptionViewModel.hasPro ? "TouchDesk" : "Unlock Pro Access")
+          Text(subscriptionViewModel.hasPro ? showWelcome ? "Welcome to TouchDesk" : "TouchDesk" : "Unlock Pro Access")
             .font(.system(size: 32.0, weight: .bold))
             .fontDesign(.rounded)
             .multilineTextAlignment(.center)
@@ -241,8 +243,9 @@ struct SubscriptionView: View {
             startPoint: .leading,
             endPoint: .trailing
           )))
-
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
+          .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
+          .overlay(sparklesOverlay())
           .rotationEffect(.degrees(16))
           .offset(z: 16)
           .offset(x: 36, y: -20)
@@ -251,7 +254,7 @@ struct SubscriptionView: View {
             startPoint: .leading,
             endPoint: .trailing
           ))
-          .opacity(subscriptionViewModel.hasPro ? 1 : 0)
+//          .opacity(subscriptionViewModel.hasPro ? 1 : 0)
       }
       Spacer(minLength: 0)
     }

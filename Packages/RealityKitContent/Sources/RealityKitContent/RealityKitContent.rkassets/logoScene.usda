@@ -177,19 +177,19 @@ def Xform "Root"
                 active = true
                 prepend apiSchemas = ["MaterialBindingAPI"]
                 customData = {
-                    float3 rotationEulerHint = (1.5707965, 0.8307991, 0.52359885)
+                    float3 rotationEulerHint = (1.4680514, 0.8259474, 0.38426122)
                 }
             )
             {
                 uniform token axis = "Y"
                 double height = 0
                 rel material:binding = </Root/logo/logo_body/FG/DefaultMaterial>
-                double radius = 0.036000000000000004
+                double radius = 0.025
                 float2 ui:nodegraph:node:pos = (20, 20)
                 int ui:nodegraph:node:stackingOrder = 1
-                quatf xformOp:orient = (0.6987818, 0.5510703, 0.443082, -0.10818514)
+                quatf xformOp:orient = (0.7188859, 0.5453596, 0.4096593, -0.13403428)
                 float3 xformOp:scale = (1, 1, 1)
-                float3 xformOp:translate = (-0.0019829748, 0.022522401, -0.000107264554)
+                float3 xformOp:translate = (-0.0033283567, 0.015654542, 0.0049296045)
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
                 def Material "DefaultMaterial"
@@ -309,7 +309,7 @@ def Xform "Root"
                     def RealityKitStruct "Shape"
                     {
                         float3 extent = (0.08, 0, 0.08)
-                        float radius = 0.036
+                        float radius = 0.025
                         token shapeType = "Sphere"
 
                         def RealityKitStruct "pose"
@@ -335,7 +335,7 @@ def Xform "Root"
             def RealityKitComponent "PointLight"
             {
                 token info:id = "RealityKit.PointLight"
-                float intensity = 2696.76
+                float intensity = 4696.76
             }
         }
     }
