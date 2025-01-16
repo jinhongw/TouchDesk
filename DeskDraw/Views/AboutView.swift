@@ -170,7 +170,7 @@ struct AboutView: View {
             Text("Until \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
               .font(.caption)
           } else if appModel.subscriptionViewModel.hasPro {
-            Text("Lifetime")
+            Text("Lifetime plan")
               .font(.caption)
           } else {
             Text("解锁无限图画、iCloud 储存")

@@ -119,21 +119,6 @@ struct SubscriptionView: View {
     .opacity(subscriptionViewModel.purchasing ? 1 : 0)
   }
 
-  private var hasSubscriptionView: some View {
-    VStack(spacing: 20) {
-      Image(systemName: "crown.fill")
-        .foregroundStyle(.yellow)
-        .font(Font.system(size: 100))
-
-      Text("You've Unlocked Pro Access")
-        .font(.system(size: 30.0, weight: .bold))
-        .fontDesign(.rounded)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal, 30)
-    }
-    .ignoresSafeArea(.all)
-  }
-
   private var proAccessView: some View {
     VStack(alignment: .center, spacing: 20) {
       VStack(spacing: 8) {
@@ -164,7 +149,7 @@ struct SubscriptionView: View {
                   endPoint: .trailing
                 ))
             if let expirationDate = transaction.expirationDate {
-              Text("Expires \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
+              Text("Until \(expirationDate.formatted(date: .abbreviated, time: .omitted))")
                 .font(.caption)
             }
           }
@@ -254,7 +239,7 @@ struct SubscriptionView: View {
             startPoint: .leading,
             endPoint: .trailing
           ))
-//          .opacity(subscriptionViewModel.hasPro ? 1 : 0)
+          .opacity(subscriptionViewModel.hasPro ? 1 : 0)
       }
       Spacer(minLength: 0)
     }
@@ -272,7 +257,6 @@ struct SubscriptionView: View {
   private var purchaseSection: some View {
     VStack(alignment: .center, spacing: 4) {
       PurchaseButtonView(selectedProduct: $selectedProduct, subscriptionViewModel: subscriptionViewModel)
-
       Button("Restore Purchases") {
         Task {
           await subscriptionViewModel.restorePurchases()
@@ -290,29 +274,96 @@ struct SubscriptionItemView: View {
   var purchasing: Bool
   @Binding var selectedProduct: Product?
 
+  func planDescribe(_ product: Product) -> String? {
+    switch product.id {
+    case "com.easybreezy.touchdesk.lifetime": return NSLocalizedString("One-time purchase, no subscription", comment: "")
+    case "com.easybreezy.touchdesk.yearly.subscription": return NSLocalizedString("Save 42% compared to monthly - cancel anytime", comment: "")
+    case "com.easybreezy.touchdesk.monthly.subscription": return NSLocalizedString("Cancel anytime", comment: "")
+    default: return nil
+    }
+  }
+
+  func planRenewCircle(_ product: Product) -> String? {
+    switch product.id {
+    case "com.easybreezy.touchdesk.lifetime": return nil
+    case "com.easybreezy.touchdesk.yearly.subscription": return NSLocalizedString("/yr", comment: "")
+    case "com.easybreezy.touchdesk.monthly.subscription": return NSLocalizedString("/mo", comment: "")
+    default: return nil
+    }
+  }
+
   var body: some View {
     HStack {
       VStack(alignment: .leading, spacing: 8) {
-        Text(product.displayName)
-          .font(.system(size: 16.0, weight: .semibold, design: .rounded))
-          .multilineTextAlignment(.leading)
-
-        Text("Get full access for just \(product.displayPrice)")
-          .font(.system(size: 14.0, weight: .regular, design: .rounded))
-          .multilineTextAlignment(.leading)
+        HStack(spacing: 8) {
+          Text("\(product.displayName)")
+            .font(.system(size: 16.0, weight: .semibold, design: .rounded))
+            .multilineTextAlignment(.leading)
+          if product.id == "com.easybreezy.touchdesk.lifetime" {
+            HStack(spacing: 4) {
+              Text("\(product.displayPrice)")
+                .font(.system(size: 16.0, weight: .semibold, design: .rounded))
+                .foregroundColor(.white)
+              Text("\(product.displayPrice.removePriceNumbers())\(String(format: "%.2f", Double(truncating: product.price as NSNumber) / 0.5))")
+                .font(.system(size: 12.0, weight: .regular, design: .rounded))
+                .strikethrough()
+            }
+          } else {
+            Text("\(product.displayPrice)\(planRenewCircle(product) ?? "")")
+              .font(.system(size: 16.0, weight: .semibold, design: .rounded))
+              .multilineTextAlignment(.leading)
+          }
+        }
+        if let describe = planDescribe(product) {
+          Text(describe)
+            .font(.system(size: 14.0, weight: .regular, design: .rounded))
+            .multilineTextAlignment(.leading)
+        }
       }
       Spacer()
       Image(systemName: selectedProduct == product ? "checkmark.circle.fill" : "circle")
         .foregroundColor(selectedProduct == product ? .white : .white)
     }
+
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
     .background(selectedProduct == product ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 24))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 24))
     .opacity(purchasing ? 0.6 : 1)
+    .contentShape(RoundedRectangle(cornerRadius: 24))
+    .hoverEffect(.highlight)
+    .overlay(offLogo)
     .onTapGesture {
       AudioServicesPlaySystemSound(1104)
       selectedProduct = product
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var offLogo: some View {
+    VStack {
+      HStack {
+        Spacer(minLength: 0)
+        Text("50% OFF")
+          .font(.system(size: 16, weight: .bold, design: .rounded))
+          .padding(.horizontal, 6)
+          .padding(.vertical, 3)
+          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.red.opacity(0.8)))
+          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
+            gradient: Gradient(colors: [Color.white, Color.purple, Color.orange]),
+            startPoint: .leading,
+            endPoint: .trailing
+          )))
+          .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
+          .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
+          .overlay(sparklesOverlay().offset(x: 20))
+          .rotationEffect(.degrees(8))
+          .offset(z: 16)
+          .offset(x: 12, y: -12)
+          .opacity(product.id == "com.easybreezy.touchdesk.lifetime" ? 1 : 0)
+      }
+      Spacer(minLength: 0)
     }
   }
 }
@@ -353,3 +404,10 @@ struct PurchaseButtonView: View {
   }
   .frame(width: 480, height: 740)
 })
+
+extension String {
+    func removePriceNumbers() -> String {
+        let pattern = "\\d+([.,]\\d+)?"
+        return self.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+    }
+}
