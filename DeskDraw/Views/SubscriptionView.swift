@@ -40,10 +40,10 @@ struct SubscriptionView: View {
 
   func planName(_ id: String) -> String {
     switch id {
-    case "com.easybreezy.touchdesk.lifetime": return "Lifetime"
-    case "com.easybreezy.touchdesk.yearly.subscription": return "Yearly"
-    case "com.easybreezy.touchdesk.monthly.subscription": return "Monthly"
-    default: return "???"
+    case "com.easybreezy.touchdesk.lifetime": return NSLocalizedString("Lifetime", comment: "")
+    case "com.easybreezy.touchdesk.yearly.subscription": return NSLocalizedString("Annual", comment: "")
+    case "com.easybreezy.touchdesk.monthly.subscription": return NSLocalizedString("Monthly", comment: "")
+    default: return ""
     }
   }
 
@@ -136,7 +136,7 @@ struct SubscriptionView: View {
               .font(.system(size: 17.0, weight: .semibold, design: .rounded))
               .foregroundStyle(
                 isLifetime ? LinearGradient(
-                  gradient: Gradient(colors: [Color.orange, Color.purple]),
+                  gradient: Gradient(colors: [Color.orange, Color.pink, Color.purple]),
                   startPoint: .leading,
                   endPoint: .trailing
                 ) : isYearlyPlan ? LinearGradient(
@@ -198,16 +198,33 @@ struct SubscriptionView: View {
         }
       }
 
-      if subscriptionViewModel.hasPro && subscriptionViewModel.purchasedTransactions.first?.productID != "com.easybreezy.touchdesk.lifetime" {
-        Divider()
-        Button(action: {
-          manageSubscription()
-        }, label: {
-          Text("Manage Subscription")
-            .foregroundStyle(.white)
-            .font(.system(size: 17, weight: .semibold, design: .rounded))
-            .frame(maxWidth: .infinity)
-        })
+      if subscriptionViewModel.hasPro {
+        if subscriptionViewModel.purchasedTransactions.first?.productID == "com.easybreezy.touchdesk.lifetime" {
+          Divider()
+          Button(action: {
+            showConfetti = true
+          }, label: {
+            Text("Confetti")
+              .foregroundStyle(LinearGradient(
+                gradient: Gradient(colors: [Color.orange, Color.pink, Color.purple]),
+                startPoint: .leading,
+                endPoint: .trailing
+              ))
+              .font(.system(size: 17, weight: .semibold, design: .rounded))
+              .frame(maxWidth: .infinity)
+          })
+          .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 32)))
+        } else {
+          Divider()
+          Button(action: {
+            manageSubscription()
+          }, label: {
+            Text("Manage Subscription")
+              .foregroundStyle(.white)
+              .font(.system(size: 17, weight: .semibold, design: .rounded))
+              .frame(maxWidth: .infinity)
+          })
+        }
       }
     }
   }
@@ -295,7 +312,7 @@ struct SubscriptionItemView: View {
   var body: some View {
     HStack {
       VStack(alignment: .leading, spacing: 8) {
-        HStack(spacing: 8) {
+        HStack(alignment: .bottom, spacing: 8) {
           Text("\(product.displayName)")
             .font(.system(size: 16.0, weight: .semibold, design: .rounded))
             .multilineTextAlignment(.leading)

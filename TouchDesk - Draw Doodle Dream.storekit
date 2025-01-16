@@ -27,11 +27,6 @@
           "locale" : "zh_CN"
         },
         {
-          "description" : "평생",
-          "displayName" : "평생",
-          "locale" : "ko"
-        },
-        {
           "description" : "Lebenslang",
           "displayName" : "Lebenslang",
           "locale" : "de"
@@ -45,6 +40,11 @@
           "description" : "Lifetime Subscription",
           "displayName" : "Lifetime",
           "locale" : "en_US"
+        },
+        {
+          "description" : "평생",
+          "displayName" : "평생",
+          "locale" : "ko"
         }
       ],
       "productID" : "com.easybreezy.touchdesk.lifetime",
@@ -59,8 +59,8 @@
     "_applicationInternalID" : "6740164313",
     "_developerTeamID" : "235WS33SGP",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 758711523.51693296,
-    "_locale" : "en_US",
+    "_lastSynchronizedDate" : 758724498.65835202,
+    "_locale" : "zh_CN",
     "_storefront" : "USA",
     "_storeKitErrors" : [
       {
@@ -153,8 +153,8 @@
               "locale" : "en_US"
             },
             {
-              "description" : "年間",
-              "displayName" : "年間",
+              "description" : "年額",
+              "displayName" : "年額",
               "locale" : "ja"
             },
             {
@@ -196,8 +196,8 @@
               "locale" : "fr"
             },
             {
-              "description" : "毎月",
-              "displayName" : "毎月",
+              "description" : "月額",
+              "displayName" : "月額",
               "locale" : "ja"
             },
             {
@@ -206,8 +206,8 @@
               "locale" : "ko"
             },
             {
-              "description" : "每月",
-              "displayName" : "每月",
+              "description" : "月度",
+              "displayName" : "月度",
               "locale" : "zh_CN"
             },
             {
@@ -221,8 +221,8 @@
               "locale" : "de"
             },
             {
-              "description" : "每月",
-              "displayName" : "每月",
+              "description" : "月度",
+              "displayName" : "月度",
               "locale" : "zh_CN"
             }
           ],
