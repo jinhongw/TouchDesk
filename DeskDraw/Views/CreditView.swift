@@ -19,6 +19,7 @@ struct CreditView: View {
             Text("Hand Drawn Shapes by @Sajjad")
             Text("Licensed under CC BY 4.0")
             Link("Learn More", destination: URL(string: "https://www.figma.com/community/file/1018477313212753754/hand-drawn-shapes")!)
+              .foregroundStyle(.tint)
           }
         }
         .font(.caption)
@@ -32,6 +33,7 @@ struct CreditView: View {
             Text("Vector hands by @Sarah Laroche")
             Text("Licensed under CC BY 4.0")
             Link("Learn More", destination: URL(string: "https://www.figma.com/community/file/1095715911047812866/vector-hands")!)
+              .foregroundStyle(.tint)
           }
         }
         .font(.caption)
@@ -44,5 +46,7 @@ struct CreditView: View {
 }
 
 #Preview {
-  CreditView()
+  NavigationStack {
+    CreditView()
+  }
 }

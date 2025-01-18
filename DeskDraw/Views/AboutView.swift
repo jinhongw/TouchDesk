@@ -95,9 +95,6 @@ struct AboutView: View {
         upgrade
       }
       Section {
-        credits
-      }
-      Section {
         appStore
         if isSimplifiedChinese {
           followMeOnREDnote
@@ -105,8 +102,14 @@ struct AboutView: View {
         followMe
         feedback
       }
+      
+      Section {
+        credits
+        privacyPolicy
+        termsOfService
+      }
     }
-    .frame(width: 480, height: 480)
+    .frame(width: 480, height: 620)
     .scrollDisabled(true)
     .padding(.vertical, 20)
     .sheet(isPresented: $isShowingMailView) {
@@ -188,9 +191,9 @@ struct AboutView: View {
       CreditView()
     } label: {
       HStack {
-        Image(systemName: "info.circle")
+        Image(systemName: "info.circle.fill")
           .resizable()
-          .padding(6)
+          .padding(7)
           .frame(width: 36, height: 36)
           .offset(x: 0.5)
           .cornerRadius(18)
@@ -202,8 +205,8 @@ struct AboutView: View {
 
         VStack(alignment: .leading) {
           Text("Credits")
-          Text("授权信息")
-            .font(.caption)
+//          Text("授权信息")
+//            .font(.caption)
         }
       }
     }
@@ -337,6 +340,56 @@ struct AboutView: View {
           .frame(width: 44, height: 44)
         }
       }
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var privacyPolicy: some View {
+    Button(action: {
+      openURL(URL(string: "https://www.privacypolicies.com/live/3c26c477-7f4a-4891-a76d-57bf99968465")!)
+    }, label: {
+      HStack {
+        Image(systemName: "lock.shield.fill")
+          .resizable()
+          .padding(.horizontal, 9)
+          .padding(.vertical, 7)
+          .frame(width: 36, height: 36)
+          .offset(y: 0.5)
+          .cornerRadius(18)
+          .background(LinearGradient(
+            gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
+            startPoint: .top,
+            endPoint: .bottom
+          ), in: Circle())
+        VStack(alignment: .leading) {
+          Text("Privacy Policy")
+        }
+      }
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var termsOfService: some View {
+    Button(action: {
+      openURL(URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+    }, label: {
+      HStack {
+        Image(systemName: "newspaper.fill")
+          .resizable()
+          .padding(9)
+          .frame(width: 36, height: 36)
+          .cornerRadius(18)
+          .background(LinearGradient(
+            gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
+            startPoint: .top,
+            endPoint: .bottom
+          ), in: Circle())
+        VStack(alignment: .leading) {
+          Text("Term of Service")
+        }
+      }
+    })
   }
 
   private func presentReview() {

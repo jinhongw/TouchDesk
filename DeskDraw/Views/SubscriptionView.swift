@@ -11,8 +11,8 @@ import SwiftUI
 
 struct SubscriptionView: View {
   // MARK: - Properties
-
   @Environment(SubscriptionViewModel.self) private var subscriptionViewModel
+  @Environment(\.openURL) private var openURL
   @State private var selectedProduct: Product? = nil
   @State private var showConfetti = false
   @State private var showWelcome = false
@@ -55,7 +55,7 @@ struct SubscriptionView: View {
       VStack(alignment: .center, spacing: 32) {
         proAccessView
         if !subscriptionViewModel.hasPro {
-          if !subscriptionViewModel.products.isEmpty {
+          if subscriptionViewModel.products.isEmpty {
             VStack(spacing: 20) {
               productsListView
               purchaseSection
@@ -272,17 +272,56 @@ struct SubscriptionView: View {
   }
 
   private var purchaseSection: some View {
-    VStack(alignment: .center, spacing: 4) {
+    VStack(alignment: .center, spacing: 12) {
       PurchaseButtonView(selectedProduct: $selectedProduct, subscriptionViewModel: subscriptionViewModel)
-      Button("Restore Purchases") {
-        Task {
-          await subscriptionViewModel.restorePurchases()
-        }
+      VStack(alignment: .center, spacing: 4) {
+        restoreButton
+        privacyPolicyButton
+        termsOfServiceButton
       }
-      .font(.caption)
-      .buttonStyle(.borderless)
     }
     .disabled(subscriptionViewModel.purchasing)
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var restoreButton: some View {
+    Button(action: {
+      Task {
+        await subscriptionViewModel.restorePurchases()
+      }
+    }, label: {
+      Label("Restore Purchases", systemImage: "arrow.clockwise")
+    })
+    .font(.caption)
+    .buttonStyle(.borderless)
+    .controlSize(.mini)
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var privacyPolicyButton: some View {
+    Button(action: {
+      openURL(URL(string: "https://www.privacypolicies.com/live/3c26c477-7f4a-4891-a76d-57bf99968465")!)
+    }, label: {
+      Label("Privacy Policy", systemImage: "lock.shield")
+    })
+    .font(.caption)
+    .buttonStyle(.borderless)
+    .controlSize(.mini)
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var termsOfServiceButton: some View {
+    Button(action: {
+      openURL(URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+    }, label: {
+      Label("Term of Service", systemImage: "newspaper")
+    })
+    .font(.caption)
+    .buttonStyle(.borderless)
+    .controlSize(.mini)
   }
 }
 

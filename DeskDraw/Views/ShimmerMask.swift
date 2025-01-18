@@ -56,6 +56,9 @@ struct sparklesOverlay: View {
           appeared = true
           startAnimationLoop()
         }
+        .onDisappear {
+          appeared = false
+        }
     }
   }
 
@@ -76,7 +79,9 @@ struct sparklesOverlay: View {
       ) {
         showStars = false
       }
-      startAnimationLoop()
+      if appeared {
+        startAnimationLoop()
+      }
     }
   }
 }
