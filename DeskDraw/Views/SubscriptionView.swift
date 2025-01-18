@@ -55,7 +55,7 @@ struct SubscriptionView: View {
       VStack(alignment: .center, spacing: 32) {
         proAccessView
         if !subscriptionViewModel.hasPro {
-          if subscriptionViewModel.products.isEmpty {
+          if !subscriptionViewModel.products.isEmpty {
             VStack(spacing: 20) {
               productsListView
               purchaseSection
