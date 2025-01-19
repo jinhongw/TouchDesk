@@ -16,6 +16,8 @@ struct SubscriptionView: View {
   @State private var selectedProduct: Product? = nil
   @State private var showConfetti = false
   @State private var showWelcome = false
+  
+  var topPadding: CGFloat = 0
 
   var isLifetime: Bool {
     subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.lifetime" })
@@ -26,11 +28,10 @@ struct SubscriptionView: View {
   }
 
   func manageSubscription() {
-    print(#function, "DEBUG", UIApplication.shared.connectedScenes)
-    if let window = UIApplication.shared.connectedScenes.first {
+    if let connectedScenes = UIApplication.shared.connectedScenes as? Set<UIWindowScene>, let window = connectedScenes.sorted(by: {$0.windows.count < $1.windows.count}).first {
       Task {
         do {
-          try await AppStore.showManageSubscriptions(in: window as! UIWindowScene)
+          try await AppStore.showManageSubscriptions(in: window)
         } catch {
           print(error)
         }
@@ -73,6 +74,7 @@ struct SubscriptionView: View {
       }
       .padding(.horizontal, 48)
       .padding(.bottom, 48)
+      .padding(.top, topPadding)
       .frame(width: 480)
       .task {
         await subscriptionViewModel.loadProducts()

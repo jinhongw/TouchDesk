@@ -128,7 +128,7 @@ struct DrawingView: View {
   @ViewBuilder
   private func miniView(proxy: GeometryProxy3D) -> some View {
     RealityView { content in
-      if let scene = try? await Entity(named: "logoScene", in: realityKitContentBundle), let logo = scene.findEntity(named: "logo"), let FG = logo.findEntity(named: "FG") {
+      if let scene = try? await Entity(named: "logoScene", in: realityKitContentBundle), let logo = scene.findEntity(named: "logo") {
 //        initialMiniFGTransform = FG.transform
         content.add(logo)
       }

@@ -11,7 +11,46 @@
   },
   "identifier" : "F1761B7E",
   "nonRenewingSubscriptions" : [
-
+    {
+      "displayPrice" : "9.99",
+      "familyShareable" : false,
+      "internalID" : "6740472372",
+      "localizations" : [
+        {
+          "description" : "À vie",
+          "displayName" : "À vie",
+          "locale" : "fr"
+        },
+        {
+          "description" : "終身",
+          "displayName" : "終身",
+          "locale" : "zh_CN"
+        },
+        {
+          "description" : "Lifetime Subscription",
+          "displayName" : "Lifetime",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "평생",
+          "displayName" : "평생",
+          "locale" : "ko"
+        },
+        {
+          "description" : "Lebenslang",
+          "displayName" : "Lebenslang",
+          "locale" : "de"
+        },
+        {
+          "description" : "生涯",
+          "displayName" : "生涯",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.easybreezy.touchdesk.lifetime",
+      "referenceName" : "Lifetime",
+      "type" : "NonRenewingSubscription"
+    }
   ],
   "products" : [
 
@@ -20,7 +59,7 @@
     "_applicationInternalID" : "6740164313",
     "_developerTeamID" : "235WS33SGP",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 758879752.222767,
+    "_lastSynchronizedDate" : 758949507.36910403,
     "_storeKitErrors" : [
       {
         "current" : null,
@@ -70,7 +109,131 @@
     ]
   },
   "subscriptionGroups" : [
+    {
+      "id" : "21620344",
+      "localizations" : [
 
+      ],
+      "name" : "Feature Subscriptions",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "6.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6740472236",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "연간",
+              "displayName" : "연간",
+              "locale" : "ko"
+            },
+            {
+              "description" : "年度",
+              "displayName" : "年度",
+              "locale" : "zh_CN"
+            },
+            {
+              "description" : "年度",
+              "displayName" : "年度",
+              "locale" : "zh_CN"
+            },
+            {
+              "description" : "Annuel",
+              "displayName" : "Annuel",
+              "locale" : "fr"
+            },
+            {
+              "description" : "Annual Subscription",
+              "displayName" : "Annual",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "年額",
+              "displayName" : "年額",
+              "locale" : "ja"
+            },
+            {
+              "description" : "Jährlich",
+              "displayName" : "Jährlich",
+              "locale" : "de"
+            }
+          ],
+          "productID" : "com.easybreezy.touchdesk.yearly.subscription",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Annual",
+          "subscriptionGroupID" : "21620344",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "0.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "6740472250",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Mensuel",
+              "displayName" : "Mensuel",
+              "locale" : "fr"
+            },
+            {
+              "description" : "月額",
+              "displayName" : "月額",
+              "locale" : "ja"
+            },
+            {
+              "description" : "Monatlich",
+              "displayName" : "Monatlich",
+              "locale" : "de"
+            },
+            {
+              "description" : "月度",
+              "displayName" : "月度",
+              "locale" : "zh_CN"
+            },
+            {
+              "description" : "매월",
+              "displayName" : "매월",
+              "locale" : "ko"
+            },
+            {
+              "description" : "月度",
+              "displayName" : "月度",
+              "locale" : "zh_CN"
+            },
+            {
+              "description" : "Monthly Subscription",
+              "displayName" : "Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.easybreezy.touchdesk.monthly.subscription",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly",
+          "subscriptionGroupID" : "21620344",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 4,
