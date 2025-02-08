@@ -71,7 +71,6 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     case .eraser:
       canvas.tool = eraser
     }
-    canvas.isRulerActive = true
     canvas.backgroundColor = .clear
     canvas.alwaysBounceVertical = true
     canvas.alwaysBounceHorizontal = true

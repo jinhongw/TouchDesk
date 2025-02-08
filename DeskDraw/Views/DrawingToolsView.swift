@@ -21,6 +21,7 @@ struct DrawingToolsView: View {
   @AppStorage("crayonWidth") private var crayonWidth: Double = 30
   @AppStorage("fountainPenWidth") var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
+  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
 
   @State private var settingType: SettingType? = nil
   @State private var showColorPicker = false
@@ -47,8 +48,10 @@ struct DrawingToolsView: View {
         rightTools
       }
     }
-    .padding(.leading, 68)
+    .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 3 / 4), axis: (x: 1, y: 0, z: 0))
+    .padding(.leading, isHorizontal ? 68 : 20)
     .padding(.trailing, 20)
+    .animation(.spring, value: isHorizontal)
   }
 
   // MARK: LeftTools
@@ -82,6 +85,19 @@ struct DrawingToolsView: View {
       .buttonStyle(.borderless)
       .controlSize(.small)
       .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+      
+      HStack {
+        Button(action: {
+          isHorizontal.toggle()
+        }, label: {
+          Image(systemName: "ellipsis")
+            .frame(width: 8)
+        })
+        .frame(width: 44, height: 44)
+      }
+      .buttonStyle(.borderless)
+      .controlSize(.small)
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
 
       if !appModel.isLocked {
@@ -534,7 +550,6 @@ struct InkToolView: View {
   RealityView { content, attachments in
     if let toolbarView = attachments.entity(for: "toolbarView") {
       toolbarView.position = .init(x: 0, y: 0, z: 0)
-      toolbarView.orientation = .init(angle: -45, axis: .init(x: 1, y: 0, z: 0))
       content.add(toolbarView)
     }
   } attachments: {

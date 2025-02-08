@@ -28,7 +28,7 @@ struct DeskDrawApp: App {
     }
     .windowStyle(.volumetric)
     .volumeWorldAlignment(.gravityAligned)
-    .defaultSize(width: 0.6, height: 0, depth: 0.3, in: .meters)
+    .defaultSize(width: 0.65, height: 0.35, depth: 0.35, in: .meters)
     .windowResizability(.contentSize)
     .persistentSystemOverlays(appModel.hideInMini ? .hidden : .visible)
     .onChange(of: scenePhase) { oldValue, newValue in

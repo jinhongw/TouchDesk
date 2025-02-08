@@ -63,7 +63,8 @@ struct NotesView: View {
         if index <= appModel.thumbnails.count - 1 {
           Image(uiImage: appModel.thumbnails[index])
             .resizable()
-            .cornerRadius(20)
+            .cornerRadius(16)
+            .padding(8)
         } else {
           Image(systemName: "questionmark.app.dashed")
         }
