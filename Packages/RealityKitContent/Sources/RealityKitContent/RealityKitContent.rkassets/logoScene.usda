@@ -101,14 +101,23 @@ def Xform "Root"
                     )
                     {
                         uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                        float inputs:clearcoat
+                        float inputs:clearcoatRoughness
                         color3f inputs:diffuseColor.connect = </Root/logo/logo_body/MD/DefaultMaterial/Image_1.outputs:out>
-                        float inputs:metallic
+                        color3f inputs:emissiveColor
+                        float inputs:ior
+                        float inputs:metallic.connect = None
                         float3 inputs:normal
+                        float inputs:occlusion
                         float inputs:opacity.connect = </Root/logo/logo_body/MD/DefaultMaterial/Image.outputs:out>
+                        float inputs:opacityThreshold = 0.5
+                        float inputs:opacityThreshold.connect = None
                         float inputs:roughness = 1
+                        float inputs:roughness.connect = None
                         token outputs:out
                         float2 ui:nodegraph:node:pos = (-255, 105)
-                        int ui:nodegraph:node:stackingOrder = 17
+                        int ui:nodegraph:node:stackingOrder = 61
+                        string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
                     }
 
                     def Shader "opacityThreshold"
@@ -134,7 +143,7 @@ def Xform "Root"
                         string inputs:vaddressmode
                         float outputs:out
                         float2 ui:nodegraph:node:pos = (-835.71094, 295.5586)
-                        int ui:nodegraph:node:stackingOrder = 18
+                        int ui:nodegraph:node:stackingOrder = 19
                     }
 
                     def Shader "Image_1"
@@ -262,13 +271,19 @@ def Xform "Root"
                         float inputs:clearcoat
                         float inputs:clearcoatRoughness
                         color3f inputs:diffuseColor.connect = </Root/logo/logo_body/FG/DefaultMaterial/Image_1.outputs:out>
+                        color3f inputs:emissiveColor
+                        float inputs:ior
                         float inputs:metallic = 0
                         float3 inputs:normal = (0, 0, 1)
+                        float3 inputs:normal.connect = None
+                        float inputs:occlusion
                         float inputs:opacity.connect = </Root/logo/logo_body/FG/DefaultMaterial/Image.outputs:out>
+                        float inputs:opacityThreshold = 0.5
                         float inputs:roughness = 1
+                        float inputs:roughness.connect = None
                         token outputs:out
-                        float2 ui:nodegraph:node:pos = (-284.46484, 141.89453)
-                        int ui:nodegraph:node:stackingOrder = 228
+                        float2 ui:nodegraph:node:pos = (-282.85547, 238.96484)
+                        int ui:nodegraph:node:stackingOrder = 245
                         string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
                     }
 
@@ -281,8 +296,8 @@ def Xform "Root"
                         string inputs:uaddressmode
                         string inputs:vaddressmode = "periodic"
                         float outputs:out
-                        float2 ui:nodegraph:node:pos = (-556.0625, 477.46094)
-                        int ui:nodegraph:node:stackingOrder = 216
+                        float2 ui:nodegraph:node:pos = (-593.01953, 486.98828)
+                        int ui:nodegraph:node:stackingOrder = 232
                     }
 
                     def Shader "Image_1"
@@ -294,8 +309,20 @@ def Xform "Root"
                         string inputs:uaddressmode
                         string inputs:vaddressmode
                         color3f outputs:out
-                        float2 ui:nodegraph:node:pos = (-527.1914, 42.460938)
-                        int ui:nodegraph:node:stackingOrder = 198
+                        float2 ui:nodegraph:node:pos = (-592.6406, 34.54297)
+                        int ui:nodegraph:node:stackingOrder = 230
+                    }
+
+                    def Shader "Image_2"
+                    {
+                        uniform token info:id = "ND_image_float"
+                        asset inputs:file = @TouchDesk-FG-OP.png@
+                        string inputs:filtertype
+                        string inputs:uaddressmode
+                        string inputs:vaddressmode = "periodic"
+                        float outputs:out
+                        float2 ui:nodegraph:node:pos = (-600.879, 925.0475)
+                        int ui:nodegraph:node:stackingOrder = 237
                     }
                 }
 
