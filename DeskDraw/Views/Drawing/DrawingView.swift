@@ -136,7 +136,7 @@ struct DrawingView: View {
     .offset(x: -proxy.size.width / 2 + zOffset / 2, y: proxy.size.height / 2)
     .offset(z: -proxy.size.depth / 2 + zOffset / 2.7)
     .opacity(isHorizontal ? 1 : 0)
-    .scaleEffect(isHorizontal ? 1 : 0)
+    .scaleEffect(isHorizontal ? 1 : 0, anchor: .bottomLeadingBack)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
         print(#function, "onTapGesture")
