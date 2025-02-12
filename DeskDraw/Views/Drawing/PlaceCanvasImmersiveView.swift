@@ -9,7 +9,7 @@ import SwiftUI
 import RealityKit
 import ARKit
 
-struct ImmersiveDrawingView: View {
+struct PlaceCanvasImmersiveView: View {
   let viewModel: ImmersiveDrawingViewModel
   var body: some View {
     RealityView { content in
@@ -17,7 +17,10 @@ struct ImmersiveDrawingView: View {
     }
     .task {
       do {
-        try await viewModel.session.run([viewModel.planeDetection])
+        print(#function, "viewModel.dataProvidersAreSupported \(viewModel.dataProvidersAreSupported)")
+        if viewModel.dataProvidersAreSupported {
+          try await viewModel.session.run([viewModel.planeDetection])
+        }
       } catch {
         print(#function, "Failed to start session: \(error)")
       }
