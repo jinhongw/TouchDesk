@@ -16,7 +16,7 @@ struct MovingCircle: View {
 
   init(width: CGFloat, style: PlaceAssistView.ColorStyle) {
     size = CGFloat.random(in: width / 2 ... width * 2)
-    blurRadius = CGFloat.random(in: width / 4 ... width / 2)
+    blurRadius = CGFloat.random(in: width / 3 ... width / 1.5)
     offsetDistance = width / 2
     switch style {
     case .green:
@@ -24,7 +24,7 @@ struct MovingCircle: View {
     case .blue:
       color = Color(hue: Double.random(in: 0.6 ... 0.75), saturation: Double.random(in: 0.6 ... 1.0), brightness: Double.random(in: 0.7 ... 1.0))
     case .any:
-      color = Color(hue: [Double.random(in: 0.0 ... 0.25), Double.random(in: 0.4 ... 0.6), Double.random(in: 0.8 ... 1)].randomElement()!, saturation: Double.random(in: 0 ... 1), brightness: Double.random(in: 0 ... 1))
+      color = Color(hue: [Double.random(in: 0.0 ... 0.2), Double.random(in: 0.4 ... 0.6), Double.random(in: 0.8 ... 1)].randomElement()!, saturation: Double.random(in: 0.0 ... 1.0), brightness: Double.random(in: 0.0 ... 1.0))
     }
   }
 
@@ -58,11 +58,12 @@ struct PlaceAssistView: View {
   var body: some View {
     let _ = print(#function, "PlaceAssistView Rerender \(width)")
     VStack {
-      ForEach(0 ..< 3, id: \.self) { _ in
+      ForEach(0 ..< 5, id: \.self) { _ in
         HStack {
-          ForEach(0 ..< 3, id: \.self) { _ in
-            MovingCircle(width: width / 3, style: style)
-              .frame(width: width / 3)
+          ForEach(0 ..< 5, id: \.self) { _ in
+            let circleWidth = CGFloat.random(in: width / 6 ... width / 3)
+            MovingCircle(width: circleWidth, style: style)
+              .frame(width: circleWidth)
           }
         }
       }

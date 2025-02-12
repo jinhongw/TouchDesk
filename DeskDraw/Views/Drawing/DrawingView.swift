@@ -223,7 +223,7 @@ struct DrawingView: View {
     ZStack {
       PlaceAssistView(width: proxy.size.width, style: appModel.isBeginingPlacement ? .any : .blue)
         .animation(.spring, value: appModel.isBeginingPlacement)
-      PlaceAssistView(width: proxy.size.width, style: appModel.isBeginingPlacement ? .any : .green)
+      PlaceAssistView(width: proxy.size.width, style: .green)
         .offset(z: placeZOffset * 2)
         .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
         .animation(.spring, value: appModel.isBeginingPlacement)

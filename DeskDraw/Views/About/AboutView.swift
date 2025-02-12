@@ -102,14 +102,20 @@ struct AboutView: View {
         followMe
         feedback
       }
-      
       Section {
         credits
         privacyPolicy
         termsOfService
       }
+      Section {
+        easyballLink
+        littleSunshineLink
+      } header: {
+        Text("Made by easybreezy")
+          .font(.subheadline)
+      }
     }
-    .frame(width: 480, height: 620)
+    .frame(width: 480, height: 820)
     .scrollDisabled(true)
     .padding(.vertical, 20)
     .sheet(isPresented: $isShowingMailView) {
@@ -205,45 +211,10 @@ struct AboutView: View {
 
         VStack(alignment: .leading) {
           Text("Credits")
-//          Text("授权信息")
-//            .font(.caption)
         }
       }
     }
   }
-
-//  @MainActor
-//  @ViewBuilder
-//  private var resetTips: some View {
-//    HStack {
-//      Image(systemName: "quote.bubble.fill")
-//        .resizable()
-//        .padding(.top, 8)
-//        .padding(.horizontal, 7)
-//        .padding(.bottom, 6)
-//        .frame(width: 36, height: 36)
-//        .cornerRadius(18)
-//        .background(LinearGradient(
-//          gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
-//          startPoint: .top,
-//          endPoint: .bottom
-//        ), in: Circle())
-//      Button(action: {
-//        do {
-//          try Tips.resetDatastore()
-//          try Tips.configure()
-//        } catch {
-//          print("Error initializing TipKit \(error.localizedDescription)")
-//        }
-//      }, label: {
-//        VStack(alignment: .leading) {
-//          Text("查看提示")
-//          Text("重新显示所有提示")
-//            .font(.caption)
-//        }
-//      })
-//    }
-//  }
 
   @MainActor
   @ViewBuilder
@@ -387,6 +358,46 @@ struct AboutView: View {
           ), in: Circle())
         VStack(alignment: .leading) {
           Text("Term of Service")
+        }
+      }
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var easyballLink: some View {
+    Button(action: {
+      openURL(URL(string: "https://apps.apple.com/us/app/easyball-airshot/id6642670140")!)
+    }, label: {
+      HStack {
+        Image("easyball_icon")
+          .resizable()
+          .frame(width: 36, height: 36)
+          .cornerRadius(18)
+        VStack(alignment: .leading) {
+          Text("EasyBall - AirShot")
+          Text("Shoot as if it’s real life")
+            .font(.caption)
+        }
+      }
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var littleSunshineLink: some View {
+    Button(action: {
+      openURL(URL(string: "https://apps.apple.com/us/app/little-sunshine-sunclock/id6739750403")!)
+    }, label: {
+      HStack {
+        Image("little_sunshine_icon")
+          .resizable()
+          .frame(width: 36, height: 36)
+          .cornerRadius(18)
+        VStack(alignment: .leading) {
+          Text("Little Sunshine - SunClock")
+          Text("Feel time through the Sun")
+            .font(.caption)
         }
       }
     })

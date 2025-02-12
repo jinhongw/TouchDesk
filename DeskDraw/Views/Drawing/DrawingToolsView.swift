@@ -140,8 +140,8 @@ struct DrawingToolsView: View {
     .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
     .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
     .opacity(showMoreFuncsMenu ? 1 : 0)
-    .offset(y: -44)
-    .offset(z: 36)
+    .offset(y: -64)
+    .offset(z: 24)
     .disabled(!showMoreFuncsMenu)
   }
 

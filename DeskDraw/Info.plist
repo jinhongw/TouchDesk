@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSWorldSensingUsageDescription</key>
-	<string>Scan your environment to allow accurate object placement.</string>
+	<string>Scan your environment to enable assisted board placement.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationPreferredDefaultSceneSessionRole</key>

@@ -811,6 +811,9 @@
         }
       }
     },
+    "EasyBall - AirShot" : {
+      "shouldTranslate" : false
+    },
     "Edit" : {
       "localizations" : {
         "de" : {
@@ -945,6 +948,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "意見反饋"
+          }
+        }
+      }
+    },
+    "Feel time through the Sun" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlebe Zeit mit der Sonne"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ressentez le temps avec le Soleil"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "太陽とともに時間を感じる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "태양과 함께 시간을 느껴보세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "随太阳感受时间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隨太陽感受時間"
           }
         }
       }
@@ -1451,6 +1494,49 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "喜歡這款應用嗎？請支持我！"
+          }
+        }
+      }
+    },
+    "Little Sunshine - SunClock" : {
+      "shouldTranslate" : false
+    },
+    "Made by easybreezy" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von easybreezy erstellt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Créé par easybreezy"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "easybreezy 制作"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "easybreezy 제작"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由 easybreezy 制作"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由 easybreezy 製作"
           }
         }
       }
@@ -2141,6 +2227,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "發送郵件至：jinhongw982@gmail.com"
+          }
+        }
+      }
+    },
+    "Shoot as if it’s real life" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werfe wie im echten Leben"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tirez comme dans la vraie vie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現実のようにシュートする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현실처럼 슛하세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "就像现实中一样尽情投篮"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "像現實中投籃一樣"
           }
         }
       }
