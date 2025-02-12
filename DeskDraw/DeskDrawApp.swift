@@ -13,6 +13,7 @@ struct DeskDrawApp: App {
   @Environment(\.openWindow) private var openWindow
   @State private var appModel = AppModel()
   @State private var drawingViewDisappeared = false
+  @State private var drawingImmersiveStyle: ImmersionStyle = .mixed
 
   var body: some Scene {
     WindowGroup(id: "drawingView") {
@@ -72,5 +73,10 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 760))
     }
+    
+    ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
+      PlaceCanvasImmersiveView(viewModel: appModel.immersiveDrawingViewModel)
+    }
+    .immersionStyle(selection: $drawingImmersiveStyle, in: .mixed)
   }
 }

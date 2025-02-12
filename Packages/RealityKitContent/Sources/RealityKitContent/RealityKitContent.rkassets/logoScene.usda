@@ -116,7 +116,7 @@ def Xform "Root"
                         float inputs:roughness.connect = None
                         token outputs:out
                         float2 ui:nodegraph:node:pos = (-255, 105)
-                        int ui:nodegraph:node:stackingOrder = 61
+                        int ui:nodegraph:node:stackingOrder = 84
                         string[] ui:nodegraph:realitykit:node:attributesShowingChildren = ["Advanced"]
                     }
 
@@ -143,7 +143,7 @@ def Xform "Root"
                         string inputs:vaddressmode
                         float outputs:out
                         float2 ui:nodegraph:node:pos = (-835.71094, 295.5586)
-                        int ui:nodegraph:node:stackingOrder = 19
+                        int ui:nodegraph:node:stackingOrder = 87
                     }
 
                     def Shader "Image_1"
@@ -153,7 +153,7 @@ def Xform "Root"
                         string inputs:filtertype
                         color3f outputs:out
                         float2 ui:nodegraph:node:pos = (-819.9375, -126.15625)
-                        int ui:nodegraph:node:stackingOrder = 15
+                        int ui:nodegraph:node:stackingOrder = 80
                     }
                 }
 

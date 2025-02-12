@@ -294,6 +294,9 @@
         }
       }
     },
+    "Aligned with surface" : {
+
+    },
     "Annual" : {
       "localizations" : {
         "de" : {
@@ -442,6 +445,9 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "Click the button to start placing board" : {
+
     },
     "Color" : {
       "localizations" : {
@@ -672,6 +678,9 @@
           }
         }
       }
+    },
+    "Drag the board to any surface, \n it turns green when aligned." : {
+
     },
     "Edit" : {
       "localizations" : {
@@ -2007,6 +2016,9 @@
         }
       }
     },
+    "Start align with surface" : {
+
+    },
     "System Sounds" : {
       "localizations" : {
         "de" : {
@@ -2554,6 +2566,12 @@
         }
       }
     },
+    "切换垂直画板" : {
+
+    },
+    "切换水平画板" : {
+
+    },
     "对象橡皮擦" : {
       "localizations" : {
         "de" : {
@@ -2645,6 +2663,9 @@
           }
         }
       }
+    },
+    "重新放置画板" : {
+
     }
   },
   "version" : "1.0"

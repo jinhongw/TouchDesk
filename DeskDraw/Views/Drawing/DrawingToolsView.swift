@@ -14,6 +14,7 @@ struct DrawingToolsView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
+  @Environment(\.openImmersiveSpace) private var openImmersiveSpace
 
   @AppStorage("penWidth") private var penWidth: Double = 0.88
   @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
@@ -25,6 +26,7 @@ struct DrawingToolsView: View {
 
   @State private var settingType: SettingType? = nil
   @State private var showColorPicker = false
+  @State private var showMoreFuncsMenu = false
 
   @Binding var canvas: PKCanvasView
   @Binding var toolStatus: DrawingView.CanvasToolStatus
@@ -60,78 +62,183 @@ struct DrawingToolsView: View {
   @ViewBuilder
   var leftTools: some View {
     HStack(spacing: 12) {
-      HStack {
-        Button(action: {
-          appModel.showNotes = true
-        }, label: {
-          Image(systemName: "square.grid.2x2")
-            .frame(width: 8)
-        })
-        .frame(width: 44, height: 44)
-      }
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-
-      HStack {
-        Button(action: {
-          appModel.isLocked.toggle()
-        }, label: {
-          Image(systemName: appModel.isLocked ? "lock" : "lock.open")
-            .frame(width: 8)
-        })
-        .frame(width: 44, height: 44)
-      }
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      
-      HStack {
-        Button(action: {
-          isHorizontal.toggle()
-        }, label: {
-          Image(systemName: "ellipsis")
-            .frame(width: 8)
-        })
-        .frame(width: 44, height: 44)
-      }
-      .buttonStyle(.borderless)
-      .controlSize(.small)
-      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-
+      showNotes
+      lockCanvas
+      moreFuncsButton
       if !appModel.isLocked {
-        HStack {
-          Button(action: {
-            canvas.undoManager?.undo()
-          }, label: {
-            Image(systemName: "arrow.uturn.backward")
-              .frame(width: 8)
-          })
-          .frame(width: 44, height: 44)
-        }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-        .disabled(!(canvas.undoManager?.canUndo ?? false))
-        .disabled(appModel.isLocked)
-
-        HStack {
-          Button(action: {
-            canvas.undoManager?.redo()
-          }, label: {
-            Image(systemName: "arrow.uturn.forward")
-              .frame(width: 8)
-          })
-          .frame(width: 44, height: 44)
-        }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-        .disabled(!(canvas.undoManager?.canRedo ?? false))
-        .disabled(appModel.isLocked)
+        undo
+        redo
       }
     }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var showNotes: some View {
+    HStack {
+      Button(action: {
+        appModel.showNotes = true
+      }, label: {
+        Image(systemName: "square.grid.2x2")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+      .disabled(appModel.isInPlaceCanvasImmersive)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var lockCanvas: some View {
+    HStack {
+      Button(action: {
+        appModel.isLocked.toggle()
+      }, label: {
+        Image(systemName: appModel.isLocked ? "lock" : "lock.open")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var moreFuncsButton: some View {
+    HStack {
+      Button(action: {
+        showMoreFuncsMenu.toggle()
+      }, label: {
+        Image(systemName: "ellipsis")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .background(showMoreFuncsMenu ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .overlay {
+      moreFuncsMenu
+    }
+    .animation(.spring.speed(2), value: showMoreFuncsMenu)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var moreFuncsMenu: some View {
+    VStack {
+      placeAssist
+//      toggleOrientation
+    }
+    .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
+    .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
+    .opacity(showMoreFuncsMenu ? 1 : 0)
+    .offset(y: -44)
+    .offset(z: 36)
+    .disabled(!showMoreFuncsMenu)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var placeAssist: some View {
+    HStack {
+      Button(action: {
+        Task {
+          appModel.isOpeningPlaceCanvasImmersive = true
+          switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
+          case .opened:
+            try await Task.sleep(for: .seconds(0.01))
+            appModel.isInPlaceCanvasImmersive = true
+            appModel.isBeginingPlacement = false
+            appModel.isOpeningPlaceCanvasImmersive = false
+            showMoreFuncsMenu = false
+          case .userCancelled, .error:
+            fallthrough
+          @unknown default: break
+          }
+        }
+      }, label: {
+        HStack {
+          Image(systemName: "circle.dotted.and.circle")
+            .frame(width: 8)
+          Text("重新放置画板")
+        }
+      })
+      .disabled(appModel.isClosingPlaceCanvasImmersive)
+      .padding(6)
+      .fixedSize()
+      .frame(height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var toggleOrientation: some View {
+    HStack {
+      Button(action: {
+        isHorizontal.toggle()
+      }, label: {
+        HStack {
+          Image(systemName: isHorizontal ? "square.3.layers.3d.down.left" : "square.3.layers.3d")
+            .frame(width: 8)
+          Text(isHorizontal ? "切换垂直画板" : "切换水平画板")
+        }
+      })
+      .padding(6)
+      .fixedSize()
+      .frame(height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var undo: some View {
+    HStack {
+      Button(action: {
+        canvas.undoManager?.undo()
+      }, label: {
+        Image(systemName: "arrow.uturn.backward")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .disabled(!(canvas.undoManager?.canUndo ?? false))
+    .disabled(appModel.isLocked)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var redo: some View {
+    HStack {
+      Button(action: {
+        canvas.undoManager?.redo()
+      }, label: {
+        Image(systemName: "arrow.uturn.forward")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .disabled(!(canvas.undoManager?.canRedo ?? false))
+    .disabled(appModel.isLocked)
   }
 
   // MARK: RightTools
@@ -238,7 +345,7 @@ struct DrawingToolsView: View {
       toolStatus: $toolStatus
     )
   }
-  
+
   @State var lastUpdateDragValue: CGFloat = 0
 
   @MainActor
@@ -340,7 +447,7 @@ struct DrawingToolsView: View {
           guard toolStatus == .eraser else { return }
           if value.translation.width - lastUpdateDragValue >= 32 {
             guard eraserType != .vector else { return }
-            for i in 0...4 {
+            for i in 0 ... 4 {
               let i = CGFloat(i)
               if eraserWidth == 16.4 + i * 16.0 {
                 if i == 4 {
@@ -363,7 +470,7 @@ struct DrawingToolsView: View {
               AudioServicesPlaySystemSound(1104)
               print(#function, "--- eraser bitmap")
             } else {
-              for i in 1...4 {
+              for i in 1 ... 4 {
                 let i = CGFloat(i)
                 if eraserWidth == 16.4 + i * 16.0 {
                   lastUpdateDragValue = value.translation.width
@@ -420,7 +527,7 @@ struct InkToolView: View {
   @Binding var settingType: DrawingToolsView.SettingType?
   @Binding var penWidth: Double
   @Binding var toolStatus: DrawingView.CanvasToolStatus
-  
+
   @State var lastUpdateDragValue: CGFloat = 0
 
   var body: some View {
@@ -457,9 +564,9 @@ struct InkToolView: View {
     .simultaneousGesture(
       DragGesture()
         .onChanged { value in
-          guard pencilType == inkType && toolStatus == .ink else { return }
+          guard pencilType == inkType, toolStatus == .ink else { return }
           if value.translation.width - lastUpdateDragValue >= 32 {
-            for i in 0...3 {
+            for i in 0 ... 3 {
               let i = CGFloat(i)
               if penWidth == calculateWidth(i) {
                 lastUpdateDragValue = value.translation.width
@@ -470,7 +577,7 @@ struct InkToolView: View {
               }
             }
           } else if value.translation.width - lastUpdateDragValue <= -32 {
-            for i in 1...4 {
+            for i in 1 ... 4 {
               let i = CGFloat(i)
               if penWidth == calculateWidth(i) {
                 lastUpdateDragValue = value.translation.width
@@ -483,7 +590,7 @@ struct InkToolView: View {
           }
         }
         .onEnded { value in
-          guard pencilType == inkType && toolStatus == .ink else { return }
+          guard pencilType == inkType, toolStatus == .ink else { return }
           lastUpdateDragValue = 0
         }
     )

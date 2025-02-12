@@ -1,5 +1,5 @@
 //
-//  ImmersiveDrawingView.swift
+//  PlaceCanvasImmersiveView.swift
 //  DeskDraw
 //
 //  Created by jinhong on 2025/2/9.
@@ -10,7 +10,7 @@ import RealityKit
 import ARKit
 
 struct PlaceCanvasImmersiveView: View {
-  let viewModel: ImmersiveDrawingViewModel
+  let viewModel: PlaceCanvasImmersiveViewModel
   var body: some View {
     RealityView { content in
       content.add(viewModel.setUpContentEntity())

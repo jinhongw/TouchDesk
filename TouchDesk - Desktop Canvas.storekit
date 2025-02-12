@@ -60,6 +60,8 @@
     "_developerTeamID" : "235WS33SGP",
     "_failTransactionsEnabled" : false,
     "_lastSynchronizedDate" : 758949507.36910403,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
     "_storeKitErrors" : [
       {
         "current" : null,

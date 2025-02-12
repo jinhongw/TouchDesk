@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSWorldSensingUsageDescription</key>
+	<string>Scan your environment to allow accurate object placement.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationPreferredDefaultSceneSessionRole</key>
@@ -19,17 +21,17 @@
 			</array>
 		</dict>
 	</dict>
-  <key>NSUbiquitousContainers</key>
-      <dict>
-          <key>iCloud.com.easybreezy.TouchDesk</key>
-          <dict>
-              <key>NSUbiquitousContainerIsDocumentScopePublic</key>
-              <true/>
-              <key>NSUbiquitousContainerName</key>
-              <string>TouchDesk</string>
-              <key>NSUbiquitousContainerSupportedFolderLevels</key>
-              <string>Any</string>
-          </dict>
-      </dict>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.com.easybreezy.TouchDesk</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>TouchDesk</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -29,6 +29,7 @@ struct DeletedDrawing {
 @MainActor
 @Observable
 class AppModel {
+  let immersiveDrawingViewModel = PlaceCanvasImmersiveViewModel()
   var subscriptionViewModel = SubscriptionViewModel()
   var dataModel = DataModel()
   var thumbnails = [UIImage]()
@@ -39,6 +40,10 @@ class AppModel {
   var showNotes = false
   var color: Color = .white
   var isLocked = false
+  var isInPlaceCanvasImmersive = false
+  var isClosingPlaceCanvasImmersive = false
+  var isOpeningPlaceCanvasImmersive = false
+  var isBeginingPlacement = true
 
   /// The size to use for thumbnail images.
   static let thumbnailSize = CGSize(width: 512, height: 512)
@@ -46,6 +51,11 @@ class AppModel {
   /// Dispatch queues for the background operations done by this controller.
   private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
   private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .background)
+  
+  enum ImmersiveSpaceID: String, CustomStringConvertible {
+    case drawingImmersiveSpace
+    var description: String { rawValue }
+  }
 
   var thumbnailTraitCollection = UITraitCollection() {
     didSet {

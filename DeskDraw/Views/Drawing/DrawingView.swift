@@ -10,7 +10,8 @@ import SwiftUI
 
 struct DrawingView: View {
   @Environment(AppModel.self) private var appModel
-
+  @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+  @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
   @AppStorage("penWidth") private var penWidth: Double = 0.88
   @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
   @AppStorage("pencilWidth") private var pencilWidth: Double = 2.41
@@ -21,10 +22,12 @@ struct DrawingView: View {
   @AppStorage("toolStatus") private var toolStatus: CanvasToolStatus = .ink
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
+  @AppStorage("defultShowOpenPlaceCanvasImmersive") private var defultShowOpenPlaceCanvasImmersive: Bool = true
 
   @State private var canvas = PKCanvasView()
 
   let zOffset: CGFloat = 72
+  let placeZOffset: CGFloat = 4
 
   enum CanvasToolStatus: Int, Hashable {
     case ink = 0
@@ -38,32 +41,39 @@ struct DrawingView: View {
 
   var body: some View {
     GeometryReader3D { proxy in
-      let _ = print(#function, "proxy \(proxy.size)")
+//      let _ = print(#function, "proxy rotation \(proxy.transform(in: .immersiveSpace)?.rotation) translation \(proxy.transform(in: .immersiveSpace)?.translation) scale \(proxy.transform(in: .immersiveSpace)?.scale)")
       VStack {
         miniView(proxy: proxy)
           .overlay {
             drawingRealityView(proxy: proxy)
               .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
           .overlay {
             topToolbarView(proxy: proxy)
               .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
           .overlay {
-            notesView(proxy: proxy)
-              .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showNotes || appModel.hideInMini)
+            if !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isOpeningPlaceCanvasImmersive {
+              notesView(proxy: proxy)
+                .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+                .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+                .disabled(!appModel.showNotes || appModel.hideInMini)
+            }
+          }
+          .overlay {
+            if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
+              placeAssistView(proxy: proxy)
+            }
           }
           .overlay {
             changeRatioView(proxy: proxy)
               .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
       }
       .rotation3DEffect(.init(radians: isHorizontal ? 0 : -.pi / 2), axis: (x: 1, y: 0, z: 0), anchor: .center)
@@ -94,7 +104,7 @@ struct DrawingView: View {
     }
     .frame(width: proxy.size.width)
     .frame(depth: proxy.size.depth - zOffset)
-    .offset(y: proxy.size.height / 2)
+    .offset(y: proxy.size.height / 2 - placeZOffset)
     .offset(z: isHorizontal ? -proxy.size.depth + zOffset : -proxy.size.depth)
   }
 
@@ -135,8 +145,7 @@ struct DrawingView: View {
     }
     .offset(x: -proxy.size.width / 2 + zOffset / 2, y: proxy.size.height / 2)
     .offset(z: -proxy.size.depth / 2 + zOffset / 2.7)
-    .opacity(isHorizontal ? 1 : 0)
-    .scaleEffect(isHorizontal ? 1 : 0, anchor: .bottomLeadingBack)
+    .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
         print(#function, "onTapGesture")
@@ -144,7 +153,7 @@ struct DrawingView: View {
         appModel.hideInMini.toggle()
       }
     )
-    .disabled(!isHorizontal)
+    .disabled(!isHorizontal || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
   }
 
   @MainActor
@@ -206,6 +215,93 @@ struct DrawingView: View {
         }
       )
     }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func placeAssistView(proxy: GeometryProxy3D) -> some View {
+    ZStack {
+      PlaceAssistView(width: proxy.size.width, style: appModel.isBeginingPlacement ? .any : .blue)
+        .animation(.spring, value: appModel.isBeginingPlacement)
+      PlaceAssistView(width: proxy.size.width, style: appModel.isBeginingPlacement ? .any : .green)
+        .offset(z: placeZOffset * 2)
+        .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
+        .animation(.spring, value: appModel.isBeginingPlacement)
+      VStack {
+        Spacer(minLength: 0)
+        HStack {
+          Spacer(minLength: 0)
+          Text(appModel.isBeginingPlacement ? "Click the button to start placing board" : "Drag the board to any surface, \n it turns green when aligned.")
+            .font(.largeTitle)
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
+          Spacer(minLength: 0)
+        }
+        Spacer(minLength: 0)
+      }
+      .offset(z: placeZOffset * 2)
+      .overlay {
+        if appModel.isBeginingPlacement {
+          HStack {
+            Button(action: {
+              Task {
+                appModel.isOpeningPlaceCanvasImmersive = true
+                switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
+                case .opened:
+                  try await Task.sleep(for: .seconds(0.01))
+                  appModel.isInPlaceCanvasImmersive = true
+                  appModel.isBeginingPlacement = false
+                  appModel.isOpeningPlaceCanvasImmersive = false
+                case .userCancelled, .error:
+                  fallthrough
+                @unknown default: break
+                }
+              }
+            }, label: {
+              Text("Start align with surface")
+            })
+            .padding(6)
+            .frame(height: 44)
+          }
+          .buttonStyle(.borderless)
+          .controlSize(.small)
+          .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+          .rotation3DEffect(.degrees(-60), axis: (1, 0, 0), anchor: .center)
+          .offset(z: 100)
+          .offset(y: -50)
+        } else {
+          HStack {
+            Button(action: {
+              Task {
+                appModel.isClosingPlaceCanvasImmersive = true
+                await dismissImmersiveSpace()
+                print(#function, "dismissImmersiveSpace")
+                try await Task.sleep(for: .seconds(0.01))
+                appModel.isInPlaceCanvasImmersive = false
+                appModel.isClosingPlaceCanvasImmersive = false
+                print(#function, "isInImmersive false")
+              }
+            }, label: {
+              Text("Aligned with surface")
+            })
+            .padding(6)
+            .frame(height: 44)
+          }
+          .buttonStyle(.borderless)
+          .controlSize(.small)
+          .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+          .rotation3DEffect(.degrees(-60), axis: (1, 0, 0), anchor: .center)
+          .offset(z: 100)
+          .offset(y: -50)
+        }
+      }
+    }
+    .padding(12)
+    .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
+    .clipped()
+    .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
+    .offset(y: proxy.size.height / 2)
+    .offset(z: isHorizontal ? -proxy.size.depth / 2 + zOffset / 2 : -proxy.size.depth / 2 - zOffset / 2)
   }
 
   @MainActor
@@ -273,7 +369,7 @@ struct DrawingView: View {
     }
     .frame(width: proxy.size.width, height: proxy.size.depth)
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
-    .offset(y: proxy.size.height / 2 - 2)
+    .offset(y: proxy.size.height / 2 - placeZOffset)
     .offset(z: isHorizontal ? -proxy.size.depth / 2 : -proxy.size.depth / 2 - zOffset)
   }
 
