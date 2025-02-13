@@ -233,6 +233,7 @@ struct DrawingView: View {
           Spacer(minLength: 0)
           Text(appModel.isBeginingPlacement ? "Click the button to start placing board" : "Drag the board to any surface, \n it turns green when aligned.")
             .font(.largeTitle)
+            .fontDesign(.rounded)
             .foregroundStyle(.white)
             .multilineTextAlignment(.center)
           Spacer(minLength: 0)

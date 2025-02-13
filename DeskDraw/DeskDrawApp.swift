@@ -46,16 +46,16 @@ struct DeskDrawApp: App {
       @unknown default: break
       }
     }
-    
+
     WindowGroup(id: "about") {
       AboutView()
         .environment(appModel)
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 760))
+      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
     }
-    
+
     WindowGroup(id: "colorPicker") {
       ColorPickerView()
         .environment(appModel)
@@ -64,16 +64,24 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel)
     }
-    
+
     WindowGroup(id: "subscription") {
       SubscriptionView(topPadding: 48)
         .environment(appModel.subscriptionViewModel)
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 480, height: 760))
+      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
     }
-    
+
+    WindowGroup(id: "shareView") {
+      ShareImageView(image: appModel.exportImage)
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 420 + 480 * appModel.drawings[appModel.drawingIndex].bounds.height / appModel.drawings[appModel.drawingIndex].bounds.width))
+    }
+
     ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
       PlaceCanvasImmersiveView(viewModel: appModel.immersiveDrawingViewModel)
     }

@@ -134,14 +134,14 @@ struct DrawingToolsView: View {
   @ViewBuilder
   private var moreFuncsMenu: some View {
     VStack {
+      exportImage
       placeAssist
-//      toggleOrientation
     }
     .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
     .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
     .opacity(showMoreFuncsMenu ? 1 : 0)
     .offset(y: -64)
-    .offset(z: 24)
+    .offset(z: 44)
     .disabled(!showMoreFuncsMenu)
   }
 
@@ -180,20 +180,24 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
-
+  
   @MainActor
   @ViewBuilder
-  private var toggleOrientation: some View {
+  private var exportImage: some View {
     HStack {
       Button(action: {
-        isHorizontal.toggle()
+        Task {
+          dismissWindow(id: "shareView")
+          openWindow(id: "shareView")
+        }
       }, label: {
         HStack {
-          Image(systemName: isHorizontal ? "square.3.layers.3d.down.left" : "square.3.layers.3d")
+          Image(systemName: "square.and.arrow.up")
             .frame(width: 8)
-          Text(isHorizontal ? "切换垂直画板" : "切换水平画板")
+          Text("Export Image")
         }
       })
+      .disabled(appModel.isClosingPlaceCanvasImmersive)
       .padding(6)
       .fixedSize()
       .frame(height: 44)
@@ -202,6 +206,28 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
+
+//  @MainActor
+//  @ViewBuilder
+//  private var toggleOrientation: some View {
+//    HStack {
+//      Button(action: {
+//        isHorizontal.toggle()
+//      }, label: {
+//        HStack {
+//          Image(systemName: isHorizontal ? "square.3.layers.3d.down.left" : "square.3.layers.3d")
+//            .frame(width: 8)
+//          Text(isHorizontal ? "切换垂直画板" : "切换水平画板")
+//        }
+//      })
+//      .padding(6)
+//      .fixedSize()
+//      .frame(height: 44)
+//    }
+//    .buttonStyle(.borderless)
+//    .controlSize(.small)
+//    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+//  }
 
   @MainActor
   @ViewBuilder

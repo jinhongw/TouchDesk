@@ -51,7 +51,7 @@ class AppModel {
   /// Dispatch queues for the background operations done by this controller.
   private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
   private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .background)
-  
+
   enum ImmersiveSpaceID: String, CustomStringConvertible {
     case drawingImmersiveSpace
     var description: String { rawValue }
@@ -226,6 +226,12 @@ class AppModel {
     } else {
       thumbnails.append(image)
     }
+  }
+  
+  var exportImage: UIImage {
+    let drawing = dataModel.drawings[drawingIndex]
+    let image = drawing.thumbnail(rect: drawing.bounds, scale: 1, traitCollection: UITraitCollection(userInterfaceStyle: .light))
+    return image
   }
 }
 
