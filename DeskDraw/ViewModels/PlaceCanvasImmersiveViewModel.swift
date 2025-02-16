@@ -12,7 +12,7 @@ import SwiftUI
 @MainActor
 class PlaceCanvasImmersiveViewModel {
   let session = ARKitSession()
-  let planeDetection = PlaneDetectionProvider(alignments: [.horizontal, .vertical])
+  let planeDetection = PlaneDetectionProvider(alignments: [.horizontal])
   private var rootEntity: Entity
   private var planeAnchorHandler: PlaneAnchorHandler
   

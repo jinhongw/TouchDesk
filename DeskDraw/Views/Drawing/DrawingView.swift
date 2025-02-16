@@ -41,24 +41,23 @@ struct DrawingView: View {
 
   var body: some View {
     GeometryReader3D { proxy in
-//      let _ = print(#function, "proxy rotation \(proxy.transform(in: .immersiveSpace)?.rotation) translation \(proxy.transform(in: .immersiveSpace)?.translation) scale \(proxy.transform(in: .immersiveSpace)?.scale)")
       VStack {
-        miniView(proxy: proxy)
+        miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
-            drawingRealityView(proxy: proxy)
+            drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
               .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
           .overlay {
-            topToolbarView(proxy: proxy)
+            topToolbarView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
               .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
           .overlay {
             if !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isOpeningPlaceCanvasImmersive {
-              notesView(proxy: proxy)
+              notesView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
                 .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
                 .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
                 .disabled(!appModel.showNotes || appModel.hideInMini)
@@ -66,11 +65,11 @@ struct DrawingView: View {
           }
           .overlay {
             if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
-              placeAssistView(proxy: proxy)
+              placeAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
             }
           }
           .overlay {
-            changeRatioView(proxy: proxy)
+            changeRatioView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
               .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
@@ -87,7 +86,7 @@ struct DrawingView: View {
 
   @MainActor
   @ViewBuilder
-  private func drawingRealityView(proxy: GeometryProxy3D) -> some View {
+  private func drawingRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     RealityView { content, attachments in
       if let drawingView = attachments.entity(for: "drawingView") {
         drawingView.name = "drawingView"
@@ -96,21 +95,21 @@ struct DrawingView: View {
       }
     } attachments: {
       Attachment(id: "drawingView") {
-        drawingView(proxy: proxy)
+        drawingView(width: width, height: height, depth: depth)
           .cornerRadius(20)
-          .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
+          .frame(width: width, height: depth - zOffset)
           .colorScheme(.light)
       }
     }
-    .frame(width: proxy.size.width)
-    .frame(depth: proxy.size.depth - zOffset)
-    .offset(y: proxy.size.height / 2 - placeZOffset)
-    .offset(z: isHorizontal ? -proxy.size.depth + zOffset : -proxy.size.depth)
+    .frame(width: width)
+    .frame(depth: depth - zOffset)
+    .offset(y: height / 2 - placeZOffset)
+    .offset(z: isHorizontal ? -depth + zOffset : -depth)
   }
 
   @MainActor
   @ViewBuilder
-  private func notesView(proxy: GeometryProxy3D) -> some View {
+  private func notesView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     RealityView { content, attachments in
       if let notesView = attachments.entity(for: "notesView") {
         notesView.position = .init(x: 0, y: 0, z: 0)
@@ -119,20 +118,20 @@ struct DrawingView: View {
       }
     } attachments: {
       Attachment(id: "notesView") {
-        NotesView()
+        NotesView(canvas: canvas)
           .environment(appModel)
-          .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
+          .frame(width: width, height: depth - zOffset)
       }
     }
-    .frame(width: proxy.size.width)
-    .frame(depth: proxy.size.depth - zOffset)
-    .offset(y: proxy.size.height / 2)
-    .offset(z: isHorizontal ? -proxy.size.depth + zOffset : -proxy.size.depth)
+    .frame(width: width)
+    .frame(depth: depth - zOffset)
+    .offset(y: height / 2)
+    .offset(z: isHorizontal ? -depth + zOffset : -depth)
   }
 
   @MainActor
   @ViewBuilder
-  private func miniView(proxy: GeometryProxy3D) -> some View {
+  private func miniView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     RealityView { content in
       if let scene = try? await Entity(named: "logoScene", in: realityKitContentBundle), let logo = scene.findEntity(named: "logo") {
         content.add(logo)
@@ -143,8 +142,8 @@ struct DrawingView: View {
         $0.scaleEffect(isActive ? 1.2 : 1.0)
       }
     }
-    .offset(x: -proxy.size.width / 2 + zOffset / 2, y: proxy.size.height / 2)
-    .offset(z: -proxy.size.depth / 2 + zOffset / 2.7)
+    .offset(x: -width / 2 + zOffset / 2, y: height / 2)
+    .offset(z: -depth / 2 + zOffset / 2.7)
     .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
@@ -158,7 +157,7 @@ struct DrawingView: View {
 
   @MainActor
   @ViewBuilder
-  private func topToolbarView(proxy: GeometryProxy3D) -> some View {
+  private func topToolbarView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     RealityView { content, attachments in
       if let toolbarView = attachments.entity(for: "toolbarView") {
         toolbarView.name = "toolbarView"
@@ -168,29 +167,29 @@ struct DrawingView: View {
     } attachments: {
       Attachment(id: "toolbarView") {
         DrawingToolsView(
-          canvas: $canvas,
+          canvas: canvas,
           toolStatus: $toolStatus,
           pencilType: $pencilType,
           eraserType: $eraserType
         )
         .environment(appModel)
-        .frame(width: proxy.size.width, height: 44)
+        .frame(width: width, height: 44)
       }
     }
-    .frame(width: proxy.size.width)
-    .offset(y: proxy.size.height / 2 - zOffset)
-    .offset(z: isHorizontal ? -proxy.size.depth + zOffset / 1.5 : -zOffset / 1.5)
+    .frame(width: width)
+    .offset(y: height / 2 - zOffset)
+    .offset(z: isHorizontal ? -depth + zOffset / 1.5 : -zOffset / 1.5)
   }
 
   @MainActor
   @ViewBuilder
-  private func drawingView(proxy: GeometryProxy3D) -> some View {
+  private func drawingView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     @Bindable var appModel = appModel
     if appModel.dataModel.drawings.isEmpty || appModel.dataModel.drawings.count - 1 < appModel.drawingIndex {
       ProgressView()
     } else {
       DrawingUIViewRepresentable(
-        canvas: $canvas,
+        canvas: canvas,
         drawing: Binding(
           get: { appModel.dataModel.drawings[appModel.drawingIndex] },
           set: { newValue in
@@ -208,8 +207,8 @@ struct DrawingView: View {
         eraserWidth: $eraserWidth,
         color: $appModel.color,
         isLocked: $appModel.isLocked,
-        canvasWidth: proxy.size.width,
-        canvasHeight: proxy.size.height,
+        canvasWidth: width,
+        canvasHeight: height,
         saveDrawing: {
           appModel.updateDrawing(appModel.drawingIndex)
         }
@@ -219,11 +218,11 @@ struct DrawingView: View {
 
   @MainActor
   @ViewBuilder
-  private func placeAssistView(proxy: GeometryProxy3D) -> some View {
+  private func placeAssistView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     ZStack {
-      PlaceAssistView(width: proxy.size.width, style: appModel.isBeginingPlacement ? .any : .blue)
+      PlaceAssistView(width: width, style: appModel.isBeginingPlacement ? .any : .blue)
         .animation(.spring, value: appModel.isBeginingPlacement)
-      PlaceAssistView(width: proxy.size.width, style: .green)
+      PlaceAssistView(width: width, style: .green)
         .offset(z: placeZOffset * 2)
         .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
         .animation(.spring, value: appModel.isBeginingPlacement)
@@ -298,16 +297,16 @@ struct DrawingView: View {
       }
     }
     .padding(12)
-    .frame(width: proxy.size.width, height: proxy.size.depth - zOffset)
+    .frame(width: width, height: depth - zOffset)
     .clipped()
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
-    .offset(y: proxy.size.height / 2)
-    .offset(z: isHorizontal ? -proxy.size.depth / 2 + zOffset / 2 : -proxy.size.depth / 2 - zOffset / 2)
+    .offset(y: height / 2)
+    .offset(z: isHorizontal ? -depth / 2 + zOffset / 2 : -depth / 2 - zOffset / 2)
   }
 
   @MainActor
   @ViewBuilder
-  private func changeRatioView(proxy: GeometryProxy3D) -> some View {
+  private func changeRatioView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     let shapeWidth: CGFloat = 16
     VStack {
       HStack {
@@ -368,10 +367,10 @@ struct DrawingView: View {
           }
       }
     }
-    .frame(width: proxy.size.width, height: proxy.size.depth)
+    .frame(width: width, height: depth)
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
-    .offset(y: proxy.size.height / 2 - placeZOffset)
-    .offset(z: isHorizontal ? -proxy.size.depth / 2 : -proxy.size.depth / 2 - zOffset)
+    .offset(y: height / 2 - placeZOffset)
+    .offset(z: isHorizontal ? -depth / 2 : -depth / 2 - zOffset)
   }
 
   struct LShape: InsettableShape {

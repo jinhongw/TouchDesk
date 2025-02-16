@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PencilKit
+@preconcurrency import PencilKit
 import SwiftUI
 
 /// `DataModel` contains the drawings that make up the data model, including multiple image drawings and a signature drawing.
@@ -169,7 +169,8 @@ class AppModel {
   }
 
   /// Construct an initial data model when no data model already exists.
-  private nonisolated func loadDefaultDrawings() -> DataModel {
+  @MainActor
+  private func loadDefaultDrawings() -> DataModel {
     var testDataModel = DataModel()
     for sampleDataName in DataModel.defaultDrawingNames {
       guard let data = NSDataAsset(name: sampleDataName)?.data else { continue }
@@ -227,19 +228,37 @@ class AppModel {
       thumbnails.append(image)
     }
   }
-  
+
   var exportImage: UIImage {
     let drawing = dataModel.drawings[drawingIndex]
-    let image = drawing.thumbnail(rect: drawing.bounds, scale: 1, traitCollection: UITraitCollection(userInterfaceStyle: .light))
+    guard !drawing.bounds.isNull && !drawing.strokes.isEmpty && !drawing.bounds.width.isNaN && !drawing.bounds.height.isNaN else {
+      return UIImage()
+    }
+    let minSize: CGFloat = 1024
+    let scale = max(2.0, minSize / max(drawing.bounds.width, drawing.bounds.height))
+    let image = drawing.thumbnail(rect: drawing.bounds, scale: scale, traitCollection: UITraitCollection(userInterfaceStyle: .light))
     return image
   }
 }
 
 extension AppModel {
   func addNewDrawing() {
-    dataModel.drawings.append(PKDrawing())
+    var newDrawing = PKDrawing()
+    let defaultStroke = createDefaultStroke()
+    newDrawing.strokes = [defaultStroke]
+    dataModel.drawings.append(newDrawing)
     thumbnails.append(UIImage())
     selectDrawingIndex(dataModel.drawings.count - 1)
+  }
+
+  private func createDefaultStroke() -> PKStroke {
+    // 必须有默认初始线条，要不然可能会导致第一下笔画错位
+    let path = PKStrokePath(controlPoints: [
+      PKStrokePoint(location: CGPoint(x: 0, y: 0), timeOffset: 0, size: CGSize(width: 5, height: 5), opacity: 1, force: 1, azimuth: 1, altitude: 1),
+    ], creationDate: Date())
+    let ink = PKInk(.pen, color: .clear)
+    let stroke = PKStroke(ink: ink, path: path)
+    return stroke
   }
 
   /// Update a drawing at `index` and generate a new thumbnail.

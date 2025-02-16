@@ -28,7 +28,7 @@ struct DrawingToolsView: View {
   @State private var showColorPicker = false
   @State private var showMoreFuncsMenu = false
 
-  @Binding var canvas: PKCanvasView
+  let canvas: PKCanvasView
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
@@ -674,11 +674,11 @@ struct InkToolView: View {
 }
 
 #Preview(body: {
-  @Previewable @State var canvas = PKCanvasView()
   @Previewable @State var boradHeight: Float = 0
   @Previewable @State var toolStatus: DrawingView.CanvasToolStatus = .ink
   @Previewable @State var pencilType: PKInkingTool.InkType = .pen
   @Previewable @State var eraserType: DrawingView.EraserType = .bitmap
+  let canvas = PKCanvasView()
 
   RealityView { content, attachments in
     if let toolbarView = attachments.entity(for: "toolbarView") {
@@ -688,7 +688,7 @@ struct InkToolView: View {
   } attachments: {
     Attachment(id: "toolbarView") {
       DrawingToolsView(
-        canvas: $canvas,
+        canvas: canvas,
         toolStatus: $toolStatus,
         pencilType: $pencilType,
         eraserType: $eraserType

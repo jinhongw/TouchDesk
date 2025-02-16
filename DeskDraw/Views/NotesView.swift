@@ -14,6 +14,7 @@ struct NotesView: View {
   @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
   @State private var isEditing = false
+  let canvas: PKCanvasView
 
   private let columns = [
     GridItem(.adaptive(minimum: 180, maximum: 220)),
@@ -88,6 +89,19 @@ struct NotesView: View {
         appModel.selectDrawingIndex(index)
         appModel.showNotes = false
         appModel.showDrawing = true
+        Task {
+          guard !appModel.drawings[index].strokes.isEmpty && !canvas.drawing.bounds.isNull && !canvas.frame.width.isNaN && !canvas.frame.height.isNaN else {
+            print(#function, "Not set position")
+            return
+          }
+          try await Task.sleep(for: .seconds(0.1))
+          let bounds = appModel.drawings[index].bounds
+          print(#function, "onTapGesture frame \(canvas.frame.width) \(canvas.frame.height) minX \(bounds.minX) midX \(bounds.midX)")
+          let x = max(bounds.width > canvas.frame.width ? bounds.minX : bounds.midX - canvas.visibleSize.width / 2, 0)
+          let y = max(bounds.height > canvas.frame.height ? bounds.minY : bounds.midY - canvas.visibleSize.height / 2, 0)
+          print(#function, "onTapGesture setContentOffset x \(x) bounds y \(y)")
+          canvas.setContentOffset(CGPoint(x: x, y: y), animated: false)
+        }
       }
       .overlay {
         if isEditing {
@@ -127,10 +141,7 @@ struct NotesView: View {
       }
       .onTapGesture {
         AudioServicesPlaySystemSound(1104)
-        appModel.updateDrawing(appModel.drawingIndex)
-        appModel.addNewDrawing()
-        appModel.showNotes = false
-        appModel.showDrawing = true
+        addNewDrawing()
       }
     } else {
       ZStack {
@@ -153,10 +164,7 @@ struct NotesView: View {
       .onTapGesture {
         AudioServicesPlaySystemSound(1104)
         if appModel.drawings.count <= 2 {
-          appModel.updateDrawing(appModel.drawingIndex)
-          appModel.addNewDrawing()
-          appModel.showNotes = false
-          appModel.showDrawing = true
+          addNewDrawing()
         } else {
           dismissWindow(id: "subscription")
           openWindow(id: "subscription")
@@ -219,9 +227,31 @@ struct NotesView: View {
     })
     .buttonStyle(.borderless)
   }
+  
+  @MainActor
+  private func addNewDrawing() {
+    appModel.updateDrawing(appModel.drawingIndex)
+    appModel.addNewDrawing()
+    appModel.showNotes = false
+    appModel.showDrawing = true
+    Task {
+      print(#function, "canvas \(canvas.debugDescription) \(canvas.frame)")
+      guard !appModel.drawings[appModel.dataModel.drawings.count - 1].strokes.isEmpty && !canvas.drawing.bounds.isNull && !canvas.frame.width.isNaN && !canvas.frame.height.isNaN else {
+        print(#function, "Not set position")
+        return
+      }
+      try await Task.sleep(for: .seconds(0.1))
+      let bounds = appModel.drawings[appModel.dataModel.drawings.count - 1].bounds
+      print(#function, "onTapGesture frame \(canvas.frame.width) \(canvas.frame.height) minX \(bounds.minX) midX \(bounds.midX)")
+      let x = max(bounds.width > canvas.frame.width ? bounds.minX : bounds.midX - canvas.frame.width / 2, 0)
+      let y = max(bounds.height > canvas.frame.height ? bounds.minY : bounds.midY - canvas.frame.height / 2, 0)
+      print(#function, "onTapGesture setContentOffset x \(x) y \(y)")
+      canvas.setContentOffset(CGPoint(x: x, y: y), animated: false)
+    }
+  }
 }
 
 #Preview {
-  NotesView()
+  NotesView(canvas: PKCanvasView())
     .environment(AppModel())
 }
