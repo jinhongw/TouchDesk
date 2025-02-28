@@ -12,7 +12,7 @@
   "identifier" : "F1761B7E",
   "nonRenewingSubscriptions" : [
     {
-      "displayPrice" : "9.99",
+      "displayPrice" : "19.99",
       "familyShareable" : false,
       "internalID" : "6740472372",
       "localizations" : [
@@ -25,11 +25,6 @@
           "description" : "終身",
           "displayName" : "終身",
           "locale" : "zh_CN"
-        },
-        {
-          "description" : "Lifetime Subscription",
-          "displayName" : "Lifetime",
-          "locale" : "en_US"
         },
         {
           "description" : "평생",
@@ -45,6 +40,11 @@
           "description" : "生涯",
           "displayName" : "生涯",
           "locale" : "ja"
+        },
+        {
+          "description" : "Lifetime Subscription",
+          "displayName" : "Lifetime",
+          "locale" : "en_US"
         }
       ],
       "productID" : "com.easybreezy.touchdesk.lifetime",
@@ -59,7 +59,7 @@
     "_applicationInternalID" : "6740164313",
     "_developerTeamID" : "235WS33SGP",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 758949507.36910403,
+    "_lastSynchronizedDate" : 762399585.04340506,
     "_locale" : "en_US",
     "_storefront" : "USA",
     "_storeKitErrors" : [
@@ -69,7 +69,10 @@
         "name" : "Load Products"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 1,
+          "type" : "purchase"
+        },
         "enabled" : false,
         "name" : "Purchase"
       },
@@ -79,12 +82,18 @@
         "name" : "Verification"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 3,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "App Store Sync"
       },
       {
-        "current" : null,
+        "current" : {
+          "index" : 3,
+          "type" : "generic"
+        },
         "enabled" : false,
         "name" : "Subscription Status"
       },
@@ -108,7 +117,8 @@
         "enabled" : false,
         "name" : "Offer Code Redeem Sheet"
       }
-    ]
+    ],
+    "_timeRate" : 0
   },
   "subscriptionGroups" : [
     {
@@ -142,11 +152,6 @@
               "locale" : "zh_CN"
             },
             {
-              "description" : "年度",
-              "displayName" : "年度",
-              "locale" : "zh_CN"
-            },
-            {
               "description" : "Annuel",
               "displayName" : "Annuel",
               "locale" : "fr"
@@ -165,6 +170,11 @@
               "description" : "Jährlich",
               "displayName" : "Jährlich",
               "locale" : "de"
+            },
+            {
+              "description" : "年度",
+              "displayName" : "年度",
+              "locale" : "zh_CN"
             }
           ],
           "productID" : "com.easybreezy.touchdesk.yearly.subscription",
@@ -200,16 +210,6 @@
               "locale" : "ja"
             },
             {
-              "description" : "Monatlich",
-              "displayName" : "Monatlich",
-              "locale" : "de"
-            },
-            {
-              "description" : "月度",
-              "displayName" : "月度",
-              "locale" : "zh_CN"
-            },
-            {
               "description" : "매월",
               "displayName" : "매월",
               "locale" : "ko"
@@ -223,6 +223,16 @@
               "description" : "Monthly Subscription",
               "displayName" : "Monthly",
               "locale" : "en_US"
+            },
+            {
+              "description" : "Monatlich",
+              "displayName" : "Monatlich",
+              "locale" : "de"
+            },
+            {
+              "description" : "月度",
+              "displayName" : "月度",
+              "locale" : "zh_CN"
             }
           ],
           "productID" : "com.easybreezy.touchdesk.monthly.subscription",

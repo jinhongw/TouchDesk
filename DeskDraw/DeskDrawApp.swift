@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import os
 
 @main
 struct DeskDrawApp: App {
@@ -88,3 +89,5 @@ struct DeskDrawApp: App {
     .immersionStyle(selection: $drawingImmersiveStyle, in: .mixed)
   }
 }
+
+let logger = Logger(subsystem: "jinhonn.com.DeskDraw", category: "general")

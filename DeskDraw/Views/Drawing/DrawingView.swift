@@ -142,6 +142,7 @@ struct DrawingView: View {
         $0.scaleEffect(isActive ? 1.2 : 1.0)
       }
     }
+    .scaleEffect(appModel.hideInMini ? 1.2 : 0.8)
     .offset(x: -width / 2 + zOffset / 2, y: height / 2)
     .offset(z: -depth / 2 + zOffset / 2.7)
     .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
@@ -267,7 +268,7 @@ struct DrawingView: View {
           .controlSize(.small)
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
           .rotation3DEffect(.degrees(-60), axis: (1, 0, 0), anchor: .center)
-          .offset(z: 100)
+          .offset(z: 200)
           .offset(y: -50)
         } else {
           HStack {
@@ -291,7 +292,7 @@ struct DrawingView: View {
           .controlSize(.small)
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
           .rotation3DEffect(.degrees(-60), axis: (1, 0, 0), anchor: .center)
-          .offset(z: 100)
+          .offset(z: 200)
           .offset(y: -50)
         }
       }
@@ -381,7 +382,7 @@ struct DrawingView: View {
     func path(in rect: CGRect) -> Path {
       let insetRect = rect.insetBy(dx: insetAmount, dy: insetAmount)
       let radius = min(cornerRadius, insetRect.width / 6, insetRect.height / 6)
-      print(#function, radius)
+//      print(#function, radius)
       var path = Path()
 
       path.move(to: CGPoint(x: insetRect.minX + radius, y: insetRect.minY))

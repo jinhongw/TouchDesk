@@ -64,7 +64,7 @@ struct sparklesOverlay: View {
 
   private func startAnimationLoop() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      print(#function, true)
+//      print(#function, true)
       withAnimation(
         Animation.spring(duration: 1)
       ) {
@@ -73,7 +73,7 @@ struct sparklesOverlay: View {
     }
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-      print(#function, false)
+//      print(#function, false)
       withAnimation(
         Animation.spring(duration: 1)
       ) {

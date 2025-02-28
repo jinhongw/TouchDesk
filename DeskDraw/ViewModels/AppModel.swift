@@ -75,10 +75,10 @@ class AppModel {
   private var saveURL: URL {
     let documentsDirectory = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents")
     if let iCloudURL = documentsDirectory?.appendingPathComponent("DeskDraw.data") {
-      print(#function, "Have iCloudURL")
+      logger.info("\(#function) Have iCloudURL")
       return iCloudURL
     } else {
-      print(#function, "Dont have iCloudURL")
+      logger.info("\(#function) Dont have iCloudURL")
       let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
       let documentsDirectory = paths.first!
       return documentsDirectory.appendingPathComponent("DeskDraw.data")
@@ -110,15 +110,15 @@ class AppModel {
         }
         do {
           try FileManager.default.removeItem(atPath: v0_2_1url.path)
-          print(#function, "Deleted v0_2_1url file")
+          logger.info("\(#function) Deleted v0_2_1url file")
         } catch {
-          print(#function, "Cant delete v0_2_1url file")
+          logger.info("\(#function) Cant delete v0_2_1url file")
         }
       } catch {
-        print(#function, "Could not load v0_2_1url data model: \(error.localizedDescription)")
+        logger.info("\(#function) Could not load v0_2_1url data model: \(error.localizedDescription)")
       }
     } else {
-      print(#function, "v0_2_1url file not Exists")
+      logger.info("\(#function) v0_2_1url file not Exists")
     }
 
     if FileManager.default.fileExists(atPath: url.path) {
@@ -129,13 +129,13 @@ class AppModel {
         dataModel.drawings.append(contentsOf: savedDataModel.drawings)
         print(#function, "Load data model: \(savedDataModel)")
       } catch {
-        print(#function, "Could not load data model: \(error.localizedDescription)")
+        logger.info("\(#function) Could not load data model: \(error.localizedDescription)")
         if !isMigrated {
           dataModel.drawings.append(contentsOf: loadDefaultDrawings().drawings)
         }
       }
     } else {
-      print(#function, "file not Exists")
+      logger.info("\(#function) file not Exists")
       if !isMigrated {
         dataModel.drawings.append(contentsOf: loadDefaultDrawings().drawings)
       }
@@ -163,7 +163,7 @@ class AppModel {
         let data = try encoder.encode(savingDataModel)
         try data.write(to: url)
       } catch {
-        print(#function, "Could not save data model: \(error.localizedDescription)")
+        logger.info("\(#function) Could not save data model: \(error.localizedDescription)")
       }
     }
   }
