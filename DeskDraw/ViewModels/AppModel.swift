@@ -151,6 +151,10 @@ class AppModel {
     } else {
       drawingIndex = 0
     }
+    
+    if let placementAssistance = UserDefaults.standard.value(forKey: "placementAssistance") as? Bool {
+      isBeginingPlacement = placementAssistance
+    }
   }
 
   /// Save the data model to persistent storage.

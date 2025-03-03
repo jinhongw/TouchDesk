@@ -539,8 +539,8 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tippen Sie auf die Schaltfläche, \num das Board zu platzieren"
+            "state" : "translated",
+            "value" : "Klicken Sie auf „Platzierung starten“, \num das Board zu platzieren."
           }
         },
         "en" : {
@@ -551,32 +551,32 @@
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Appuyez sur le bouton pour placer le tableau"
+            "state" : "translated",
+            "value" : "Appuyez sur « Démarrer le placement »\npour placer le tableau."
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "ボタンをタップしてボードを配置する"
+            "state" : "translated",
+            "value" : "「配置開始」ボタンを押して\nボードを配置します。"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "버튼을 눌러 보드를 배치하세요"
+            "state" : "translated",
+            "value" : "“배치 시작” 버튼을 눌러\n보드를 배치하세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "点击按钮放置画板"
+            "state" : "translated",
+            "value" : "点击“开始放置”按钮放置画板。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "點擊按鈕放置畫板"
+            "state" : "translated",
+            "value" : "點擊「開始放置」按鈕放置畫板。"
           }
         }
       }
@@ -855,43 +855,43 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Ziehen Sie das Board auf eine beliebige Fläche; \nes wird grün, wenn es ausgerichtet ist"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drag the board to any surface, \nit turns  green  when aligned"
+            "value" : "Drag the board to any surface, \nit turns green when aligned"
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Faites glisser le tableau sur n’importe quelle surface, \nil devient vert lorsqu’il est aligné"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "ボードを任意の面にドラッグし、\n位置が合うと緑色に変わります"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "보드를 임의의 평면으로 드래그하세요.\n정렬되면 녹색으로 변합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "拖动画板至任意平面，\n贴合时底色变绿"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "拖動畫板至任意平面，\n貼合時底色變綠"
           }
         }
@@ -2109,6 +2109,52 @@
         }
       }
     },
+    "Placement assistance" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assistenz beim Start aktivieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Assist Placement on App Launch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activer l’assistance au démarrage"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリ起動時にアシストオン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱 실행 시 보조 활성화"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开应用时开启辅助放置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打開應用時開啟輔助放置"
+          }
+        }
+      }
+    },
     "Privacy Policy" : {
       "localizations" : {
         "de" : {
@@ -2477,6 +2523,46 @@
         }
       }
     },
+    "Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paramètres"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        }
+      }
+    },
     "Shoot as if it’s real life" : {
       "localizations" : {
         "de" : {
@@ -2517,6 +2603,52 @@
         }
       }
     },
+    "Show base plate" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grundplatte anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Base Plate"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher la plaque de base"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ベースプレートを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "베이스 플레이트 표시"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示底板"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示底板"
+          }
+        }
+      }
+    },
     "Start align with surface" : {
       "localizations" : {
         "de" : {
@@ -2534,19 +2666,19 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commencer le placement"
+            "value" : "Démarrer le placement"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "配置を開始する"
+            "value" : "配置開始"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "배치를 시작하세요"
+            "value" : "배치 시작"
           }
         },
         "zh-Hans" : {
@@ -3064,8 +3196,51 @@
         }
       }
     },
-    "仔细观察太阳、地球和人物的位置，你一定能明白其中的奥秘。" : {
-
+    "偏好设置" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leinwand-Einstellungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canvas Preferences"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préférences du canevas"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンバス設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "캔버스 설정"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画布偏好设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "畫布偏好設定"
+          }
+        }
+      }
     },
     "像素橡皮擦" : {
       "localizations" : {
@@ -3159,9 +3334,6 @@
         }
       }
     },
-    "欢迎使用 Little Sunshine" : {
-
-    },
     "解锁无限图画、iCloud 储存" : {
       "localizations" : {
         "de" : {
@@ -3212,7 +3384,7 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Board neu platzieren"
           }
         },
@@ -3224,31 +3396,31 @@
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Replacer le tableau"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "ボードを再配置する"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "보드를 다시 배치하세요"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "重新放置畫板"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "重新放置畫板"
           }
         }

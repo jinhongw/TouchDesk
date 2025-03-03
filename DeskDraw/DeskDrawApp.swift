@@ -15,11 +15,13 @@ struct DeskDrawApp: App {
   @State private var appModel = AppModel()
   @State private var drawingViewDisappeared = false
   @State private var drawingImmersiveStyle: ImmersionStyle = .mixed
+  
+  @AppStorage("volumeBaseplateVisibility") private var volumeBaseplateVisibility = true
 
   var body: some Scene {
     WindowGroup(id: "drawingView") {
       DrawingView()
-        .volumeBaseplateVisibility(appModel.hideInMini || appModel.showNotes ? .hidden : .automatic)
+        .volumeBaseplateVisibility(volumeBaseplateVisibility ? (!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement ? .hidden : .automatic) : .hidden)
         .environment(appModel)
         .task {
           await appModel.subscriptionViewModel.updatePurchasedProducts()
@@ -30,6 +32,7 @@ struct DeskDrawApp: App {
     }
     .windowStyle(.volumetric)
     .volumeWorldAlignment(.gravityAligned)
+    .upperLimbVisibility(.visible)
     .defaultSize(width: 0.65, height: 0.35, depth: 0.35, in: .meters)
     .windowResizability(.contentSize)
     .persistentSystemOverlays(appModel.hideInMini ? .hidden : .visible)
@@ -56,7 +59,7 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
     }
-
+    
     WindowGroup(id: "colorPicker") {
       ColorPickerView()
         .environment(appModel)

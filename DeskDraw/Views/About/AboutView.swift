@@ -95,6 +95,9 @@ struct AboutView: View {
         upgrade
       }
       Section {
+        settings
+      }
+      Section {
         appStore
         if isSimplifiedChinese {
           followMeOnREDnote
@@ -108,14 +111,14 @@ struct AboutView: View {
         termsOfService
       }
       Section {
-        easyballLink
         littleSunshineLink
+        easyballLink
       } header: {
         Text("Made by easybreezy")
           .font(.subheadline)
       }
     }
-    .frame(width: 480, height: 820)
+    .frame(width: 480, height: 880)
     .scrollDisabled(true)
     .padding(.vertical, 20)
     .sheet(isPresented: $isShowingMailView) {
@@ -125,34 +128,34 @@ struct AboutView: View {
     }
   }
 
-//  @MainActor
-//  @ViewBuilder
-//  private var settings: some View {
-//    NavigationLink {
-//      SettingView()
-//        .environment(appModel)
-//    } label: {
-//      HStack {
-//        Image(systemName: "gearshape.fill")
-//          .resizable()
-//          .padding(6)
-//          .frame(width: 36, height: 36)
-//          .offset(x: 0.5)
-//          .cornerRadius(18)
-//          .background(LinearGradient(
-//            gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
-//            startPoint: .top,
-//            endPoint: .bottom
-//          ), in: Circle())
-//
-//        VStack(alignment: .leading) {
-//          Text("Settings")
-//          Text("偏好设置")
-//            .font(.caption)
-//        }
-//      }
-//    }
-//  }
+  @MainActor
+  @ViewBuilder
+  private var settings: some View {
+    NavigationLink {
+      SettingView()
+        .environment(appModel)
+    } label: {
+      HStack {
+        Image(systemName: "gearshape.fill")
+          .resizable()
+          .padding(6)
+          .frame(width: 36, height: 36)
+          .offset(x: 0.5)
+          .cornerRadius(18)
+          .background(LinearGradient(
+            gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
+            startPoint: .top,
+            endPoint: .bottom
+          ), in: Circle())
+
+        VStack(alignment: .leading) {
+          Text("Settings")
+          Text("偏好设置")
+            .font(.caption)
+        }
+      }
+    }
+  }
 
   @MainActor
   @ViewBuilder

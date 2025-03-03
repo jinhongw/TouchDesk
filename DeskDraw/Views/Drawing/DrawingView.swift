@@ -23,18 +23,12 @@ struct DrawingView: View {
   @AppStorage("toolStatus") private var toolStatus: CanvasToolStatus = .ink
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
-  @AppStorage("defultShowOpenPlaceCanvasImmersive") private var defultShowOpenPlaceCanvasImmersive: Bool = true
+  @AppStorage("placementAssistance") private var placementAssistance = true
 
   @State private var canvas = PKCanvasView()
 
   let zOffset: CGFloat = 72
   let placeZOffset: CGFloat = 4
-
-//  var tipGroup = TipGroup {
-//    WelcomeTip()
-//    BasicTip()
-//    ToolsTip()
-//  }
 
   enum CanvasToolStatus: Int, Hashable {
     case ink = 0
@@ -75,19 +69,6 @@ struct DrawingView: View {
               placeAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
             }
           }
-//          .overlay {
-//            CornerShapeView(isHorizontal: $isHorizontal, width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zOffset: zOffset)
-//              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-//              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
-//              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
-//          }
-//          .overlay {
-//            TipView(tipGroup.currentTip, arrowEdge: .bottom)
-//              .tipBackground(.ultraThickMaterial)
-//              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
-//              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
-//              .offset(z: -proxy.size.depth / 2)
-//          }
       }
       .frame(depth: proxy.size.depth)
       .rotation3DEffect(.init(radians: isHorizontal ? 0 : -.pi / 2), axis: (x: 1, y: 0, z: 0), anchor: .center)
@@ -96,10 +77,6 @@ struct DrawingView: View {
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
       .animation(.spring, value: isHorizontal)
-//      .animation(.spring, value: appModel.isBeginingPlacement)
-//      .task {
-//        configureTips()
-//      }
     }
   }
 
@@ -180,7 +157,7 @@ struct DrawingView: View {
         $0.scaleEffect(isActive ? 1.2 : 1.0)
       }
     }
-    .scaleEffect(appModel.hideInMini ? 1.2 : 0.8)
+    .scaleEffect(appModel.hideInMini ? 1.1 : 0.8)
     .offset(x: -width / 2 + zOffset / 2, y: height / 2)
     .offset(z: -depth / 2 + zOffset / 2.7)
     .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
@@ -260,7 +237,19 @@ struct DrawingView: View {
   private func placeAssistView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     var text: AttributedString {
       var string = AttributedString(appModel.isBeginingPlacement ? NSLocalizedString("Click the button to start placing board", comment: "") : NSLocalizedString("Drag the board to any surface, \n it turns green when aligned.", comment: ""))
-      if let range = string.range(of: "green") {
+      if let range = string.range(of: "turns green") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      } else if let range = string.range(of: "底色变绿") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      } else if let range = string.range(of: "底色變綠") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      } else if let range = string.range(of: "devient vert") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      } else if let range = string.range(of: "wird grün") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      } else if let range = string.range(of: "緑色に変わります") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      } else if let range = string.range(of: "녹색으로 변합니다") {
         string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
       }
       return string
@@ -349,18 +338,6 @@ struct DrawingView: View {
           .buttonStyle(.borderless)
           .controlSize(.small)
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-//            HStack {
-//              Button(action: {
-//                Task {}
-//              }, label: {
-//                Image(systemName: "questionmark")
-//              })
-//              .padding(6)
-//              .frame(width: 44, height: 44)
-//            }
-//            .buttonStyle(.borderless)
-//            .controlSize(.small)
-//            .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
         }
         .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
         .offset(z: 200)

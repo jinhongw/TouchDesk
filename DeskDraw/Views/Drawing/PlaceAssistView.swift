@@ -20,7 +20,7 @@ struct MovingCircle: View {
     offsetDistance = width / 2
     switch style {
     case .green:
-      color = Color(hue: Double.random(in: 0.25 ... 0.4), saturation: Double.random(in: 0.6 ... 1.0), brightness: Double.random(in: 0.7 ... 1.0))
+      color = Color(hue: Double.random(in: 0.25 ... 0.4), saturation: Double.random(in: 0.3 ... 1.0), brightness: Double.random(in: 0.4 ... 1.0))
     case .blue:
       color = Color(hue: Double.random(in: 0.6 ... 0.75), saturation: Double.random(in: 0.6 ... 1.0), brightness: Double.random(in: 0.7 ... 1.0))
     case .any:

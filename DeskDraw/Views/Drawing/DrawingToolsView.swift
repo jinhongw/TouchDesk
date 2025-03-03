@@ -136,11 +136,12 @@ struct DrawingToolsView: View {
     VStack {
       exportImage
       placeAssist
+      setting
     }
-    .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
+    .rotation3DEffect(.degrees(-35), axis: (1, 0, 0), anchor: .center)
     .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
     .opacity(showMoreFuncsMenu ? 1 : 0)
-    .offset(y: -64)
+    .offset(y: -84)
     .offset(z: 64)
     .disabled(!showMoreFuncsMenu)
   }
@@ -195,6 +196,32 @@ struct DrawingToolsView: View {
           Image(systemName: "square.and.arrow.up")
             .frame(width: 8)
           Text("Export Image")
+        }
+      })
+      .disabled(appModel.isClosingPlaceCanvasImmersive)
+      .padding(6)
+      .fixedSize()
+      .frame(height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var setting: some View {
+    HStack {
+      Button(action: {
+        Task {
+          dismissWindow(id: "about")
+          openWindow(id: "about")
+        }
+      }, label: {
+        HStack {
+          Image(systemName: "info.circle")
+            .frame(width: 8)
+          Text("About")
         }
       })
       .disabled(appModel.isClosingPlaceCanvasImmersive)
