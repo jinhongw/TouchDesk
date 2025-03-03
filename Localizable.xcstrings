@@ -539,43 +539,43 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Tippen Sie auf die Schaltfläche, \num das Board zu platzieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap the button to place the board"
+            "value" : "Click the “Start Placement” button \nto place the board."
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Appuyez sur le bouton pour placer le tableau"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "ボタンをタップしてボードを配置する"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "버튼을 눌러 보드를 배치하세요"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "点击按钮放置画板"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "點擊按鈕放置畫板"
           }
         }
@@ -855,43 +855,43 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Ziehen Sie das Board auf eine beliebige Fläche; \nes wird grün, wenn es ausgerichtet ist"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drag the board to any surface, \nit turns green when aligned"
+            "value" : "Drag the board to any surface, \nit turns  green  when aligned"
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Faites glisser le tableau sur n’importe quelle surface, \nil devient vert lorsqu’il est aligné"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "ボードを任意の面にドラッグし、\n位置が合うと緑色に変わります"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "보드를 임의의 평면으로 드래그하세요.\n정렬되면 녹색으로 변합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "拖动画板至任意平面，\n贴合时底色变绿"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "拖動畫板至任意平面，\n貼合時底色變綠"
           }
         }
@@ -3064,6 +3064,9 @@
         }
       }
     },
+    "仔细观察太阳、地球和人物的位置，你一定能明白其中的奥秘。" : {
+
+    },
     "像素橡皮擦" : {
       "localizations" : {
         "de" : {
@@ -3156,6 +3159,9 @@
         }
       }
     },
+    "欢迎使用 Little Sunshine" : {
+
+    },
     "解锁无限图画、iCloud 储存" : {
       "localizations" : {
         "de" : {
@@ -3206,43 +3212,43 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Board neu platzieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Replace the board"
+            "value" : "Replace board"
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "Replacer le tableau"
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "ボードを再配置する"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "보드를 다시 배치하세요"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "重新放置畫板"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "translated",
+            "state" : "needs_review",
             "value" : "重新放置畫板"
           }
         }

@@ -47,6 +47,7 @@ struct MovingCircle: View {
 
 struct PlaceAssistView: View {
   var width: CGFloat
+  var height: CGFloat
   var style: ColorStyle
 
   enum ColorStyle {
@@ -69,12 +70,14 @@ struct PlaceAssistView: View {
       }
     }
     .opacity(1)
+    .frame(width: width, height: height)
+    .clipped()
   }
 }
 
 #Preview {
   GeometryReader3D { proxy3D in
-    PlaceAssistView(width: proxy3D.size.width, style: .green)
+    PlaceAssistView(width: proxy3D.size.width, height: proxy3D.size.height, style: .green)
   }
   .frame(width: 1280, height: 640)
 }

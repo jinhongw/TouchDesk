@@ -19,7 +19,7 @@ struct DeskDrawApp: App {
   var body: some Scene {
     WindowGroup(id: "drawingView") {
       DrawingView()
-        .volumeBaseplateVisibility(.hidden)
+        .volumeBaseplateVisibility(appModel.hideInMini || appModel.showNotes ? .hidden : .automatic)
         .environment(appModel)
         .task {
           await appModel.subscriptionViewModel.updatePurchasedProducts()

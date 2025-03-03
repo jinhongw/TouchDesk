@@ -141,7 +141,7 @@ struct DrawingToolsView: View {
     .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
     .opacity(showMoreFuncsMenu ? 1 : 0)
     .offset(y: -64)
-    .offset(z: 44)
+    .offset(z: 64)
     .disabled(!showMoreFuncsMenu)
   }
 
@@ -574,13 +574,13 @@ struct InkToolView: View {
         Image(systemName: iconName)
           .frame(width: 8)
       })
-      .help("\(inkType)")
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
     .background(pencilType == inkType && toolStatus == .ink ? .white.opacity(settingType == setType ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .help("\(inkType)")
     .overlay {
       widthSettingPicker
     }

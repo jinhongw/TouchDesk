@@ -56,6 +56,8 @@ class PlaneAnchorHandler {
     if let meshResource {
       // Make this plane occlude virtual objects behind it.
       entity.components.set(ModelComponent(mesh: meshResource, materials: [OcclusionMaterial()]))
+//      entity.components.set(ModelComponent(mesh: meshResource, materials: [SimpleMaterial(color: .white, roughness: 1, isMetallic: false), OcclusionMaterial()]))
+//      entity.components.set(OpacityComponent(opacity: 0.3))
     }
 
     let existingEntity = planeEntities[anchor.id]
@@ -65,3 +67,4 @@ class PlaneAnchorHandler {
     existingEntity?.removeFromParent()
   }
 }
+

@@ -7,6 +7,7 @@ import PencilKit
 import RealityKit
 import RealityKitContent
 import SwiftUI
+import TipKit
 
 struct DrawingView: View {
   @Environment(AppModel.self) private var appModel
@@ -28,6 +29,12 @@ struct DrawingView: View {
 
   let zOffset: CGFloat = 72
   let placeZOffset: CGFloat = 4
+
+//  var tipGroup = TipGroup {
+//    WelcomeTip()
+//    BasicTip()
+//    ToolsTip()
+//  }
 
   enum CanvasToolStatus: Int, Hashable {
     case ink = 0
@@ -68,19 +75,40 @@ struct DrawingView: View {
               placeAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
             }
           }
-          .overlay {
-            changeRatioView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
-          }
+//          .overlay {
+//            CornerShapeView(isHorizontal: $isHorizontal, width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zOffset: zOffset)
+//              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+//              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+//              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+//          }
+//          .overlay {
+//            TipView(tipGroup.currentTip, arrowEdge: .bottom)
+//              .tipBackground(.ultraThickMaterial)
+//              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+//              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+//              .offset(z: -proxy.size.depth / 2)
+//          }
       }
+      .frame(depth: proxy.size.depth)
       .rotation3DEffect(.init(radians: isHorizontal ? 0 : -.pi / 2), axis: (x: 1, y: 0, z: 0), anchor: .center)
       .offset(z: isHorizontal ? 0 : proxy.size.depth - zOffset * 1.5)
       .animation(.spring, value: appModel.showDrawing)
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
       .animation(.spring, value: isHorizontal)
+//      .animation(.spring, value: appModel.isBeginingPlacement)
+//      .task {
+//        configureTips()
+//      }
+    }
+  }
+
+  @MainActor
+  func configureTips() {
+    do {
+      try Tips.configure()
+    } catch {
+      print("Error initializing TipKit \(error.localizedDescription)")
     }
   }
 
@@ -88,10 +116,15 @@ struct DrawingView: View {
   @ViewBuilder
   private func drawingRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     RealityView { content, attachments in
-      if let drawingView = attachments.entity(for: "drawingView") {
+      if let drawingView = attachments.entity(for: "drawingView")
+//         let tips = attachments.entity(for: "tips")
+      {
         drawingView.name = "drawingView"
         drawingView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
         content.add(drawingView)
+
+//        tips.position = .init(x: 0, y: 0.15, z: 0)
+//        content.add(tips)
       }
     } attachments: {
       Attachment(id: "drawingView") {
@@ -100,6 +133,11 @@ struct DrawingView: View {
           .frame(width: width, height: depth - zOffset)
           .colorScheme(.light)
       }
+
+//      Attachment(id: "tips") {
+//        TipView(tipGroup.currentTip, arrowEdge: .bottom)
+//          .tipBackground(.ultraThickMaterial)
+//      }
     }
     .frame(width: width)
     .frame(depth: depth - zOffset)
@@ -220,10 +258,18 @@ struct DrawingView: View {
   @MainActor
   @ViewBuilder
   private func placeAssistView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    var text: AttributedString {
+      var string = AttributedString(appModel.isBeginingPlacement ? NSLocalizedString("Click the button to start placing board", comment: "") : NSLocalizedString("Drag the board to any surface, \n it turns green when aligned.", comment: ""))
+      if let range = string.range(of: "green") {
+        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
+      }
+      return string
+    }
+
     ZStack {
-      PlaceAssistView(width: width, style: appModel.isBeginingPlacement ? .any : .blue)
+      PlaceAssistView(width: width, height: height, style: appModel.isBeginingPlacement ? .any : .blue)
         .animation(.spring, value: appModel.isBeginingPlacement)
-      PlaceAssistView(width: width, style: .green)
+      PlaceAssistView(width: width, height: height, style: .green)
         .offset(z: placeZOffset * 2)
         .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
         .animation(.spring, value: appModel.isBeginingPlacement)
@@ -231,7 +277,7 @@ struct DrawingView: View {
         Spacer(minLength: 0)
         HStack {
           Spacer(minLength: 0)
-          Text(appModel.isBeginingPlacement ? "Click the button to start placing board" : "Drag the board to any surface, \n it turns green when aligned.")
+          Text(text)
             .font(.largeTitle)
             .fontDesign(.rounded)
             .foregroundStyle(.white)
@@ -241,36 +287,48 @@ struct DrawingView: View {
         Spacer(minLength: 0)
       }
       .offset(z: placeZOffset * 2)
-      .overlay {
-        if appModel.isBeginingPlacement {
-          HStack {
-            Button(action: {
-              Task {
-                appModel.isOpeningPlaceCanvasImmersive = true
-                switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
-                case .opened:
-                  try await Task.sleep(for: .seconds(0.01))
-                  appModel.isInPlaceCanvasImmersive = true
-                  appModel.isBeginingPlacement = false
-                  appModel.isOpeningPlaceCanvasImmersive = false
-                case .userCancelled, .error:
-                  fallthrough
-                @unknown default: break
-                }
+      VStack {
+        Spacer(minLength: 0)
+        Image("Arrow_11")
+          .resizable()
+          .scaledToFit()
+          .frame(width: 80, height: 80)
+        Spacer(minLength: 0)
+      }
+      .scaleEffect(appModel.isBeginingPlacement ? 0 : 1)
+      .offset(y: (depth - zOffset) / 2 - 80)
+      .offset(z: placeZOffset * 2)
+      .animation(.spring, value: appModel.isBeginingPlacement)
+      if appModel.isBeginingPlacement {
+        HStack {
+          Button(action: {
+            Task {
+              appModel.isOpeningPlaceCanvasImmersive = true
+              switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
+              case .opened:
+                try await Task.sleep(for: .seconds(0.01))
+                appModel.isInPlaceCanvasImmersive = true
+                appModel.isBeginingPlacement = false
+                appModel.isOpeningPlaceCanvasImmersive = false
+              case .userCancelled, .error:
+                fallthrough
+              @unknown default: break
               }
-            }, label: {
-              Text("Start align with surface")
-            })
-            .padding(6)
-            .frame(height: 44)
-          }
-          .buttonStyle(.borderless)
-          .controlSize(.small)
-          .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-          .rotation3DEffect(.degrees(-60), axis: (1, 0, 0), anchor: .center)
-          .offset(z: 200)
-          .offset(y: -50)
-        } else {
+            }
+          }, label: {
+            Text("Start align with surface")
+          })
+          .padding(6)
+          .frame(height: 44)
+        }
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+        .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
+        .offset(z: 200)
+        .offset(y: -50)
+      } else {
+        HStack(spacing: 12) {
           HStack {
             Button(action: {
               Task {
@@ -291,159 +349,31 @@ struct DrawingView: View {
           .buttonStyle(.borderless)
           .controlSize(.small)
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-          .rotation3DEffect(.degrees(-60), axis: (1, 0, 0), anchor: .center)
-          .offset(z: 200)
-          .offset(y: -50)
+//            HStack {
+//              Button(action: {
+//                Task {}
+//              }, label: {
+//                Image(systemName: "questionmark")
+//              })
+//              .padding(6)
+//              .frame(width: 44, height: 44)
+//            }
+//            .buttonStyle(.borderless)
+//            .controlSize(.small)
+//            .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
         }
+        .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
+        .offset(z: 200)
+        .offset(y: -50)
       }
     }
+    .clipped()
     .padding(12)
     .frame(width: width, height: depth - zOffset)
     .clipped()
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
     .offset(y: height / 2)
     .offset(z: isHorizontal ? -depth / 2 + zOffset / 2 : -depth / 2 - zOffset / 2)
-  }
-
-  @MainActor
-  @ViewBuilder
-  private func changeRatioView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
-    let shapeWidth: CGFloat = 16
-    VStack {
-      HStack {
-        LShape()
-          .fill(.clear)
-          .glassBackgroundEffect(in: LShape())
-          .frame(width: shapeWidth, height: shapeWidth)
-          .rotationEffect(.degrees(-90))
-          .offset(x: -36, y: 36)
-          .padding(36)
-          .hoverEffect { effect, isActive, geometry in
-            effect.animation(.default) {
-              $0.opacity(isActive ? 1 : 0.6)
-            }
-          }
-        Spacer()
-        LShape()
-          .fill(.clear)
-          .glassBackgroundEffect(in: LShape())
-          .frame(width: shapeWidth, height: shapeWidth)
-          .rotationEffect(.degrees(0))
-          .offset(x: 36, y: 36)
-          .padding(36)
-          .hoverEffect { effect, isActive, geometry in
-            effect.animation(.default) {
-              $0.opacity(isActive ? 1 : 0.6)
-            }
-          }
-      }
-      .opacity(isHorizontal ? 0 : 1)
-      .scaleEffect(isHorizontal ? 0 : 1)
-      Spacer()
-      HStack {
-        LShape()
-          .fill(.clear)
-          .glassBackgroundEffect(in: LShape())
-          .frame(width: shapeWidth, height: shapeWidth)
-          .rotationEffect(.degrees(-180))
-          .offset(x: -36, y: 36)
-          .padding(36)
-          .hoverEffect { effect, isActive, geometry in
-            effect.animation(.default) {
-              $0.opacity(isActive ? 1 : 0.6)
-            }
-          }
-        Spacer()
-        LShape()
-          .fill(.clear)
-          .glassBackgroundEffect(in: LShape())
-          .frame(width: shapeWidth, height: shapeWidth)
-          .rotationEffect(.degrees(90))
-          .offset(x: 36, y: 36)
-          .padding(36)
-          .hoverEffect { effect, isActive, geometry in
-            effect.animation(.default) {
-              $0.opacity(isActive ? 1 : 0.6)
-            }
-          }
-      }
-    }
-    .frame(width: width, height: depth)
-    .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
-    .offset(y: height / 2 - placeZOffset)
-    .offset(z: isHorizontal ? -depth / 2 : -depth / 2 - zOffset)
-  }
-
-  struct LShape: InsettableShape {
-    var insetAmount: CGFloat = 0
-    let cornerRadius: CGFloat = 4
-    let widthRatio: CGFloat = 3
-
-    func path(in rect: CGRect) -> Path {
-      let insetRect = rect.insetBy(dx: insetAmount, dy: insetAmount)
-      let radius = min(cornerRadius, insetRect.width / 6, insetRect.height / 6)
-//      print(#function, radius)
-      var path = Path()
-
-      path.move(to: CGPoint(x: insetRect.minX + radius, y: insetRect.minY))
-      path.addLine(to: CGPoint(x: insetRect.maxX - radius * 1.5, y: insetRect.minY))
-      path.addArc(
-        center: CGPoint(x: insetRect.maxX - radius * 1.5, y: insetRect.minY + radius * 1.5),
-        radius: radius * 1.5,
-        startAngle: Angle(degrees: -90),
-        endAngle: Angle(degrees: 0),
-        clockwise: false
-      )
-      path.addLine(to: CGPoint(x: insetRect.maxX, y: insetRect.maxY - radius))
-      path.addArc(
-        center: CGPoint(x: insetRect.maxX - radius, y: insetRect.maxY - radius),
-        radius: radius,
-        startAngle: Angle(degrees: 0),
-        endAngle: Angle(degrees: 90),
-        clockwise: false
-      )
-      path.addLine(to: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio + radius, y: insetRect.maxY))
-      path.addArc(
-        center: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio + radius, y: insetRect.maxY - radius),
-        radius: radius,
-        startAngle: Angle(degrees: 90),
-        endAngle: Angle(degrees: 180),
-        clockwise: false
-      )
-      path.addLine(to: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio, y: insetRect.maxY / widthRatio + radius))
-      path.addArc(
-        center: CGPoint(x: insetRect.maxX * (widthRatio - 1) / widthRatio - radius, y: insetRect.maxY / widthRatio + radius),
-        radius: radius,
-        startAngle: Angle(degrees: 0),
-        endAngle: Angle(degrees: -90),
-        clockwise: true
-      )
-      path.addLine(to: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / widthRatio))
-      path.addArc(
-        center: CGPoint(x: insetRect.minX + radius, y: insetRect.maxY / widthRatio - radius),
-        radius: radius,
-        startAngle: Angle(degrees: 90),
-        endAngle: Angle(degrees: 180),
-        clockwise: false
-      )
-      path.addLine(to: CGPoint(x: insetRect.minX, y: insetRect.minY + radius))
-      path.addArc(
-        center: CGPoint(x: insetRect.minX + radius, y: insetRect.minY + radius),
-        radius: radius,
-        startAngle: Angle(degrees: 180),
-        endAngle: Angle(degrees: 270),
-        clockwise: false
-      )
-
-      path.closeSubpath()
-      return path
-    }
-
-    func inset(by amount: CGFloat) -> some InsettableShape {
-      var shape = self
-      shape.insetAmount += amount
-      return shape
-    }
   }
 }
 
