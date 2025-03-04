@@ -60,6 +60,16 @@ struct DeskDrawApp: App {
       WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
     }
     
+    WindowGroup(id: "gestureGuide") {
+      NavigationStack {
+        GestureGuideView()
+      }
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      return WindowPlacement(.above(context.windows.first!), size: CGSize.init(width: 620, height: 480))
+    }
+    
     WindowGroup(id: "colorPicker") {
       ColorPickerView()
         .environment(appModel)

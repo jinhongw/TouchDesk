@@ -96,6 +96,7 @@ struct AboutView: View {
       }
       Section {
         settings
+        gestureGuide
       }
       Section {
         appStore
@@ -151,6 +152,34 @@ struct AboutView: View {
         VStack(alignment: .leading) {
           Text("Settings")
           Text("偏好设置")
+            .font(.caption)
+        }
+      }
+    }
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var gestureGuide: some View {
+    NavigationLink {
+      GestureGuideView()
+    } label: {
+      HStack {
+        Image(systemName: "questionmark.circle.fill")
+          .resizable()
+          .padding(6)
+          .frame(width: 36, height: 36)
+          .offset(x: 0.5)
+          .cornerRadius(18)
+          .background(LinearGradient(
+            gradient: Gradient(colors: [Color(white: 0.6), Color(white: 0.5)]),
+            startPoint: .top,
+            endPoint: .bottom
+          ), in: Circle())
+
+        VStack(alignment: .leading) {
+          Text("How to Use")
+          Text("Drawing & Canvas Gestures")
             .font(.caption)
         }
       }

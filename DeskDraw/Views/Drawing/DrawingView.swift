@@ -13,6 +13,8 @@ struct DrawingView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.openImmersiveSpace) private var openImmersiveSpace
   @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
+  @Environment(\.openWindow) private var openWindow
+  @Environment(\.dismissWindow) private var dismissWindow
   @AppStorage("penWidth") private var penWidth: Double = 0.88
   @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
   @AppStorage("pencilWidth") private var pencilWidth: Double = 2.41
@@ -24,6 +26,7 @@ struct DrawingView: View {
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("placementAssistance") private var placementAssistance = true
+  @AppStorage("showGestureGuide") private var showGestureGuide = true
 
   @State private var canvas = PKCanvasView()
 
@@ -328,6 +331,11 @@ struct DrawingView: View {
                 appModel.isInPlaceCanvasImmersive = false
                 appModel.isClosingPlaceCanvasImmersive = false
                 print(#function, "isInImmersive false")
+                if showGestureGuide {
+                  dismissWindow(id: "gestureGuide")
+                  openWindow(id: "gestureGuide")
+                  showGestureGuide = false
+                }
               }
             }, label: {
               Text("Aligned with surface")
