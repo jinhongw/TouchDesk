@@ -57,7 +57,7 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
+      WindowPlacement(.above(context.windows.first!), size: CGSize(width: 480, height: 760))
     }
     
     WindowGroup(id: "gestureGuide") {
@@ -85,7 +85,7 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
+      WindowPlacement(.above(context.windows.first!), size: CGSize(width: 480, height: 760))
     }
 
     WindowGroup(id: "shareView") {
@@ -93,7 +93,7 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 420 + 480 * appModel.drawings[appModel.drawingIndex].bounds.height / appModel.drawings[appModel.drawingIndex].bounds.width))
+      WindowPlacement(.leading(context.windows.first!), size: CGSize(width: 480, height: 460 + 480 * appModel.drawings[appModel.drawingIndex].bounds.height / appModel.drawings[appModel.drawingIndex].bounds.width))
     }
 
     ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
