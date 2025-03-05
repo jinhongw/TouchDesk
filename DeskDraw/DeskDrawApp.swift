@@ -97,7 +97,7 @@ struct DeskDrawApp: App {
     }
 
     ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
-      PlaceCanvasImmersiveView(viewModel: appModel.immersiveDrawingViewModel)
+      PlaceCanvasImmersiveView(viewModel: appModel.placeCanvasImmersiveViewModel)
     }
     .immersionStyle(selection: $drawingImmersiveStyle, in: .mixed)
   }

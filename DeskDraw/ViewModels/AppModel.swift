@@ -29,7 +29,7 @@ struct DeletedDrawing {
 @MainActor
 @Observable
 class AppModel {
-  let immersiveDrawingViewModel = PlaceCanvasImmersiveViewModel()
+  let placeCanvasImmersiveViewModel = PlaceCanvasImmersiveViewModel()
   var subscriptionViewModel = SubscriptionViewModel()
   var dataModel = DataModel()
   var thumbnails = [UIImage]()

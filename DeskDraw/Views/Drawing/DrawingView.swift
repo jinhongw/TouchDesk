@@ -45,7 +45,7 @@ struct DrawingView: View {
 
   var body: some View {
     GeometryReader3D { proxy in
-      VStack {
+      ZStack {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
             drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
@@ -55,7 +55,6 @@ struct DrawingView: View {
           }
           .overlay {
             topToolbarView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
@@ -81,70 +80,6 @@ struct DrawingView: View {
       .animation(.spring, value: appModel.hideInMini)
       .animation(.spring, value: isHorizontal)
     }
-  }
-
-  @MainActor
-  func configureTips() {
-    do {
-      try Tips.configure()
-    } catch {
-      print("Error initializing TipKit \(error.localizedDescription)")
-    }
-  }
-
-  @MainActor
-  @ViewBuilder
-  private func drawingRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
-    RealityView { content, attachments in
-      if let drawingView = attachments.entity(for: "drawingView")
-//         let tips = attachments.entity(for: "tips")
-      {
-        drawingView.name = "drawingView"
-        drawingView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
-        content.add(drawingView)
-
-//        tips.position = .init(x: 0, y: 0.15, z: 0)
-//        content.add(tips)
-      }
-    } attachments: {
-      Attachment(id: "drawingView") {
-        drawingView(width: width, height: height, depth: depth)
-          .cornerRadius(20)
-          .frame(width: width, height: depth - zOffset)
-          .colorScheme(.light)
-      }
-
-//      Attachment(id: "tips") {
-//        TipView(tipGroup.currentTip, arrowEdge: .bottom)
-//          .tipBackground(.ultraThickMaterial)
-//      }
-    }
-    .frame(width: width)
-    .frame(depth: depth - zOffset)
-    .offset(y: height / 2 - placeZOffset)
-    .offset(z: isHorizontal ? -depth + zOffset : -depth)
-  }
-
-  @MainActor
-  @ViewBuilder
-  private func notesView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
-    RealityView { content, attachments in
-      if let notesView = attachments.entity(for: "notesView") {
-        notesView.position = .init(x: 0, y: 0, z: 0)
-        notesView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
-        content.add(notesView)
-      }
-    } attachments: {
-      Attachment(id: "notesView") {
-        NotesView(canvas: canvas)
-          .environment(appModel)
-          .frame(width: width, height: depth - zOffset)
-      }
-    }
-    .frame(width: width)
-    .frame(depth: depth - zOffset)
-    .offset(y: height / 2)
-    .offset(z: isHorizontal ? -depth + zOffset : -depth)
   }
 
   @MainActor
@@ -176,26 +111,62 @@ struct DrawingView: View {
 
   @MainActor
   @ViewBuilder
-  private func topToolbarView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+  private func drawingRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     RealityView { content, attachments in
-      if let toolbarView = attachments.entity(for: "toolbarView") {
-        toolbarView.name = "toolbarView"
-        toolbarView.position = .init(x: 0, y: 0, z: 0)
-        content.add(toolbarView)
+      if let drawingView = attachments.entity(for: "drawingView") {
+        drawingView.name = "drawingView"
+        drawingView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        content.add(drawingView)
       }
     } attachments: {
-      Attachment(id: "toolbarView") {
-        DrawingToolsView(
-          canvas: canvas,
-          toolStatus: $toolStatus,
-          pencilType: $pencilType,
-          eraserType: $eraserType
-        )
-        .environment(appModel)
-        .frame(width: width, height: 44)
+      Attachment(id: "drawingView") {
+        drawingView(width: width, height: height, depth: depth)
+          .cornerRadius(20)
+          .frame(width: width, height: depth - zOffset)
+          .colorScheme(.light)
       }
     }
     .frame(width: width)
+    .frame(depth: depth - zOffset)
+    .offset(y: height / 2 - placeZOffset)
+    .offset(z: isHorizontal ? -depth + zOffset : -depth)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func notesView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    RealityView { content, attachments in
+      if let notesView = attachments.entity(for: "notesView") {
+        notesView.position = .init(x: 0, y: 0, z: 0)
+        notesView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        content.add(notesView)
+      }
+    } attachments: {
+      Attachment(id: "notesView") {
+        NotesView(canvas: canvas)
+          .environment(appModel)
+          .frame(width: width, height: depth - zOffset)
+      }
+    }
+    .frame(width: width)
+    .frame(depth: depth - zOffset)
+    .offset(y: height / 2)
+    .offset(z: isHorizontal ? -depth + zOffset : -depth)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func topToolbarView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    DrawingToolsView(
+      canvas: canvas,
+      toolStatus: $toolStatus,
+      pencilType: $pencilType,
+      eraserType: $eraserType
+    )
+    .environment(appModel)
+    .frame(width: width, height: 44)
+    .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+    .offset(y: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : zOffset)
     .offset(y: height / 2 - zOffset)
     .offset(z: isHorizontal ? -depth + zOffset / 1.5 : -zOffset / 1.5)
   }
@@ -288,7 +259,7 @@ struct DrawingView: View {
         Spacer(minLength: 0)
       }
       .scaleEffect(appModel.isBeginingPlacement ? 0 : 1)
-      .offset(y: (depth - zOffset) / 2 - 80)
+      .offset(y: (depth - zOffset) / 2 - 65)
       .offset(z: placeZOffset * 2)
       .animation(.spring, value: appModel.isBeginingPlacement)
       if appModel.isBeginingPlacement {
