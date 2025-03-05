@@ -160,6 +160,7 @@ struct DrawingToolsView: View {
             appModel.isBeginingPlacement = false
             appModel.isOpeningPlaceCanvasImmersive = false
             showMoreFuncsMenu = false
+            appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.moveCanvas()
           case .userCancelled, .error:
             fallthrough
           @unknown default: break

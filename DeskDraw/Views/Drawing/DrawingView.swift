@@ -29,6 +29,9 @@ struct DrawingView: View {
   @AppStorage("showGestureGuide") private var showGestureGuide = true
 
   @State private var canvas = PKCanvasView()
+  @State private var lastCanvasPosition: AffineTransform3D? = nil
+  @State private var canvasPositionHasChangedCount = 0
+  @State private var placeCanvasTimer: Timer?
 
   let zOffset: CGFloat = 72
   let placeZOffset: CGFloat = 4
@@ -45,6 +48,7 @@ struct DrawingView: View {
 
   var body: some View {
     GeometryReader3D { proxy in
+//      let _ = print(#function, "proxy \(proxy.transform(in: .immersiveSpace))")
       ZStack {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
@@ -69,6 +73,12 @@ struct DrawingView: View {
           .overlay {
             if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
               placeAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+                .onAppear {
+                  onPlaceAssistViewAppear(proxy: proxy)
+                }
+                .onDisappear {
+                  placeCanvasTimer?.invalidate()
+                }
             }
           }
       }
@@ -210,7 +220,7 @@ struct DrawingView: View {
   @ViewBuilder
   private func placeAssistView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     var text: AttributedString {
-      var string = AttributedString(appModel.isBeginingPlacement ? NSLocalizedString("Click the button to start placing board", comment: "") : NSLocalizedString("Drag the board to any surface, \n it turns green when aligned.", comment: ""))
+      var string = AttributedString(NSLocalizedString("Drag the board to any surface, \n it turns green when aligned.", comment: ""))
       if let range = string.range(of: "turns green") {
         string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
       } else if let range = string.range(of: "底色变绿") {
@@ -230,12 +240,10 @@ struct DrawingView: View {
     }
 
     ZStack {
-      PlaceAssistView(width: width, height: height, style: appModel.isBeginingPlacement ? .any : .blue)
-        .animation(.spring, value: appModel.isBeginingPlacement)
+      PlaceAssistView(width: width, height: height, style: .blue)
       PlaceAssistView(width: width, height: height, style: .green)
         .offset(z: placeZOffset * 2)
         .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
-        .animation(.spring, value: appModel.isBeginingPlacement)
       VStack {
         Spacer(minLength: 0)
         HStack {
@@ -261,25 +269,25 @@ struct DrawingView: View {
       .scaleEffect(appModel.isBeginingPlacement ? 0 : 1)
       .offset(y: (depth - zOffset) / 2 - 65)
       .offset(z: placeZOffset * 2)
-      .animation(.spring, value: appModel.isBeginingPlacement)
-      if appModel.isBeginingPlacement {
+      HStack(spacing: 12) {
         HStack {
           Button(action: {
             Task {
-              appModel.isOpeningPlaceCanvasImmersive = true
-              switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
-              case .opened:
-                try await Task.sleep(for: .seconds(0.01))
-                appModel.isInPlaceCanvasImmersive = true
-                appModel.isBeginingPlacement = false
-                appModel.isOpeningPlaceCanvasImmersive = false
-              case .userCancelled, .error:
-                fallthrough
-              @unknown default: break
+              appModel.isClosingPlaceCanvasImmersive = true
+              await dismissImmersiveSpace()
+              print(#function, "dismissImmersiveSpace")
+              try await Task.sleep(for: .seconds(0.01))
+              appModel.isInPlaceCanvasImmersive = false
+              appModel.isClosingPlaceCanvasImmersive = false
+              print(#function, "isInImmersive false")
+              if showGestureGuide {
+                dismissWindow(id: "gestureGuide")
+                openWindow(id: "gestureGuide")
+                showGestureGuide = false
               }
             }
           }, label: {
-            Text("Start align with surface")
+            Text("Aligned with surface")
           })
           .padding(6)
           .frame(height: 44)
@@ -287,41 +295,10 @@ struct DrawingView: View {
         .buttonStyle(.borderless)
         .controlSize(.small)
         .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-        .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
-        .offset(z: 200)
-        .offset(y: -50)
-      } else {
-        HStack(spacing: 12) {
-          HStack {
-            Button(action: {
-              Task {
-                appModel.isClosingPlaceCanvasImmersive = true
-                await dismissImmersiveSpace()
-                print(#function, "dismissImmersiveSpace")
-                try await Task.sleep(for: .seconds(0.01))
-                appModel.isInPlaceCanvasImmersive = false
-                appModel.isClosingPlaceCanvasImmersive = false
-                print(#function, "isInImmersive false")
-                if showGestureGuide {
-                  dismissWindow(id: "gestureGuide")
-                  openWindow(id: "gestureGuide")
-                  showGestureGuide = false
-                }
-              }
-            }, label: {
-              Text("Aligned with surface")
-            })
-            .padding(6)
-            .frame(height: 44)
-          }
-          .buttonStyle(.borderless)
-          .controlSize(.small)
-          .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-        }
-        .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
-        .offset(z: 200)
-        .offset(y: -50)
       }
+      .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
+      .offset(z: 200)
+      .offset(y: -50)
     }
     .clipped()
     .padding(12)
@@ -330,6 +307,44 @@ struct DrawingView: View {
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
     .offset(y: height / 2)
     .offset(z: isHorizontal ? -depth / 2 + zOffset / 2 : -depth / 2 - zOffset / 2)
+  }
+
+  private func onPlaceAssistViewAppear(proxy: GeometryProxy3D) {
+    guard appModel.isBeginingPlacement else { return }
+    Task {
+      appModel.isOpeningPlaceCanvasImmersive = true
+      switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
+      case .opened:
+        try await Task.sleep(for: .seconds(0.01))
+        appModel.isInPlaceCanvasImmersive = true
+        appModel.isBeginingPlacement = false
+        appModel.isOpeningPlaceCanvasImmersive = false
+      case .userCancelled, .error:
+        fallthrough
+      @unknown default: break
+      }
+    }
+
+    lastCanvasPosition = proxy.transform(in: .immersiveSpace)
+    placeCanvasTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+      print("Position check: \(String(describing: proxy.transform(in: .immersiveSpace)))")
+      guard canvasPositionHasChangedCount <= 5 else {
+        placeCanvasTimer?.invalidate()
+        return
+      }
+      let position = proxy.transform(in: .immersiveSpace)
+      if let last = lastCanvasPosition, last != position {
+        print("Position changed: \(String(describing: position))")
+        canvasPositionHasChangedCount += 1
+        if canvasPositionHasChangedCount == 5 {
+          Task {
+            await appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.moveCanvas()
+          }
+          placeCanvasTimer?.invalidate()
+        }
+      }
+      lastCanvasPosition = position
+    }
   }
 }
 

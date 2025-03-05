@@ -11,6 +11,7 @@ import RealityKit
 
 class PlaneAnchorHandler {
   var rootEntity: Entity
+  var canvasMoved: Bool = false
 
   // A map of plane anchor UUIDs to their entities.
   private var planeEntities: [UUID: Entity] = [:]
@@ -44,20 +45,22 @@ class PlaneAnchorHandler {
     entity.name = "Plane \(anchor.id)"
     entity.setTransformMatrix(anchor.originFromAnchorTransform, relativeTo: nil)
 
-    var meshResource: MeshResource?
-    do {
-      let contents = MeshResource.Contents(planeGeometry: anchor.geometry)
-      meshResource = try MeshResource.generate(from: contents)
-    } catch {
-      print("Failed to create a mesh resource for a plane anchor: \(error).")
-      return
-    }
-
-    if let meshResource {
-      // Make this plane occlude virtual objects behind it.
-      entity.components.set(ModelComponent(mesh: meshResource, materials: [OcclusionMaterial()]))
-//      entity.components.set(ModelComponent(mesh: meshResource, materials: [SimpleMaterial(color: .white, roughness: 1, isMetallic: false), OcclusionMaterial()]))
-//      entity.components.set(OpacityComponent(opacity: 0.3))
+    if canvasMoved {
+      var meshResource: MeshResource?
+      do {
+        let contents = MeshResource.Contents(planeGeometry: anchor.geometry)
+        meshResource = try MeshResource.generate(from: contents)
+      } catch {
+        print("Failed to create a mesh resource for a plane anchor: \(error).")
+        return
+      }
+      
+      if let meshResource {
+        // Make this plane occlude virtual objects behind it.
+        entity.components.set(ModelComponent(mesh: meshResource, materials: [OcclusionMaterial()]))
+        //      entity.components.set(ModelComponent(mesh: meshResource, materials: [SimpleMaterial(color: .white, roughness: 1, isMetallic: false), OcclusionMaterial()]))
+        //      entity.components.set(OpacityComponent(opacity: 0.3))
+      }
     }
 
     let existingEntity = planeEntities[anchor.id]
@@ -65,6 +68,26 @@ class PlaneAnchorHandler {
 
     rootEntity.addChild(entity)
     existingEntity?.removeFromParent()
+  }
+  
+  @MainActor
+  func moveCanvas() {
+    guard !canvasMoved else { return }
+    canvasMoved = true
+    for id in planeEntities.keys {
+      guard let anchor = planeAnchorsByID[id], let entity = planeEntities[id] else { break }
+      var meshResource: MeshResource?
+      do {
+        let contents = MeshResource.Contents(planeGeometry: anchor.geometry)
+        meshResource = try MeshResource.generate(from: contents)
+      } catch {
+        print("Failed to create a mesh resource for a plane anchor: \(error).")
+        return
+      }
+      if let meshResource {
+        entity.components.set(ModelComponent(mesh: meshResource, materials: [OcclusionMaterial()]))
+      }
+    }
   }
 }
 

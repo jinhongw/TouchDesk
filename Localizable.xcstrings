@@ -550,52 +550,6 @@
       },
       "shouldTranslate" : false
     },
-    "Click the button to start placing board" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klicken Sie auf „Platzierung starten“, \num das Board zu platzieren."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Click the “Start Placement” button \nto place the board."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appuyez sur « Démarrer le placement »\npour placer le tableau."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「配置開始」ボタンを押して\nボードを配置します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“배치 시작” 버튼을 눌러\n보드를 배치하세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "点击“开始放置”按钮放置画板。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "點擊「開始放置」按鈕放置畫板。"
-          }
-        }
-      }
-    },
     "Color" : {
       "localizations" : {
         "de" : {
@@ -2825,6 +2779,7 @@
       }
     },
     "Start align with surface" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

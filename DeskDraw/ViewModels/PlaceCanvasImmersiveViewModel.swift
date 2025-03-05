@@ -14,7 +14,7 @@ class PlaceCanvasImmersiveViewModel {
   let session = ARKitSession()
   let planeDetection = PlaneDetectionProvider(alignments: [.horizontal])
   private var rootEntity: Entity
-  private var planeAnchorHandler: PlaneAnchorHandler
+  var planeAnchorHandler: PlaneAnchorHandler
   
   var dataProvidersAreSupported: Bool {
     PlaneDetectionProvider.isSupported
