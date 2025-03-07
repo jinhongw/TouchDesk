@@ -1,8 +1,8 @@
 //
-//  PlaceCanvasImmersiveViewModel.swift
+//  ImmersiveCanvasViewModel.swift
 //  DeskDraw
 //
-//  Created by jinhong on 2025/2/9.
+//  Created by jinhong on 2025/3/6.
 //
 
 import ARKit
@@ -10,9 +10,10 @@ import RealityKit
 import SwiftUI
 
 @MainActor
-class PlaceCanvasImmersiveViewModel {
-  let session = ARKitSession()
-  let planeDetection = PlaneDetectionProvider(alignments: [.horizontal, .vertical])
+class ImmersiveCanvasViewModel {
+  private let session = ARKitSession()
+  private let worldTracking = WorldTrackingProvider()
+  private let planeDetection = PlaneDetectionProvider(alignments: [.horizontal, .vertical])
   private var rootEntity: Entity
   var planeAnchorHandler: PlaneAnchorHandler
   
@@ -24,10 +25,7 @@ class PlaceCanvasImmersiveViewModel {
   init() {
     let root = Entity()
     rootEntity = root
-    planeAnchorHandler = PlaneAnchorHandler(rootEntity: root)
-    if let isHorizontal = UserDefaults.standard.value(forKey: "isHorizontal") as? Bool {
-      planeAnchorHandler.isHorizontal = isHorizontal
-    }
+    planeAnchorHandler = PlaneAnchorHandler(rootEntity: root, isGenerateMesh: true, isCollision: true)
   }
 
   func setUpContentEntity() -> Entity {

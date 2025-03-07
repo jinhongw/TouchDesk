@@ -15,6 +15,7 @@ struct DrawingView: View {
   @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
   @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
+  
   @AppStorage("penWidth") private var penWidth: Double = 0.88
   @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
   @AppStorage("pencilWidth") private var pencilWidth: Double = 2.41
@@ -32,6 +33,9 @@ struct DrawingView: View {
   @State private var lastCanvasPosition: AffineTransform3D? = nil
   @State private var canvasPositionHasChangedCount = 0
   @State private var placeCanvasTimer: Timer?
+  @State private var zRotation: Double = 0
+  @State private var verticalZOffest: CGFloat = 0
+  @State private var horizontalYOffest: CGFloat = 0
 
   let zOffset: CGFloat = 72
   let placeZOffset: CGFloat = 4
@@ -48,7 +52,6 @@ struct DrawingView: View {
 
   var body: some View {
     GeometryReader3D { proxy in
-//      let _ = print(#function, "proxy \(proxy.transform(in: .immersiveSpace))")
       ZStack {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
@@ -72,7 +75,8 @@ struct DrawingView: View {
           }
           .overlay {
             if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
-              placeAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+              PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zOffset: zOffset, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
+                .environment(appModel)
                 .onAppear {
                   onPlaceAssistViewAppear(proxy: proxy)
                 }
@@ -83,8 +87,10 @@ struct DrawingView: View {
           }
       }
       .frame(depth: proxy.size.depth)
+      .rotation3DEffect(.init(degrees: isHorizontal ? 0 : zRotation), axis: (x: 0, y: 0, z: 1), anchor: .center)
       .rotation3DEffect(.init(radians: isHorizontal ? 0 : -.pi / 2), axis: (x: 1, y: 0, z: 0), anchor: .center)
-      .offset(z: isHorizontal ? 0 : proxy.size.depth - zOffset * 1.5)
+      .offset(z: isHorizontal ? 0 : proxy.size.depth - zOffset * 1.5 + verticalZOffest)
+      .offset(y: isHorizontal ? -horizontalYOffest : 0)
       .animation(.spring, value: appModel.showDrawing)
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
@@ -155,11 +161,11 @@ struct DrawingView: View {
       Attachment(id: "notesView") {
         NotesView(canvas: canvas)
           .environment(appModel)
-          .frame(width: width, height: depth - zOffset)
+          .frame(width: width, height: depth - (isHorizontal ? zOffset : 0))
       }
     }
     .frame(width: width)
-    .frame(depth: depth - zOffset)
+    .frame(depth: depth - (isHorizontal ? zOffset : 0))
     .offset(y: height / 2)
     .offset(z: isHorizontal ? -depth + zOffset : -depth)
   }
@@ -214,99 +220,6 @@ struct DrawingView: View {
         }
       )
     }
-  }
-
-  @MainActor
-  @ViewBuilder
-  private func placeAssistView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
-    var text: AttributedString {
-      var string = AttributedString(NSLocalizedString("Drag the board to any surface, \n it turns green when aligned.", comment: ""))
-      if let range = string.range(of: "turns green") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      } else if let range = string.range(of: "底色变绿") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      } else if let range = string.range(of: "底色變綠") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      } else if let range = string.range(of: "devient vert") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      } else if let range = string.range(of: "wird grün") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      } else if let range = string.range(of: "緑色に変わります") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      } else if let range = string.range(of: "녹색으로 변합니다") {
-        string[range].foregroundColor = Color(red: 0.0, green: 0.8, blue: 0.0)
-      }
-      return string
-    }
-
-    ZStack {
-      PlaceAssistView(width: width, height: height, style: .blue)
-      PlaceAssistView(width: width, height: height, style: .green)
-        .offset(z: placeZOffset * 2)
-        .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
-      VStack {
-        Spacer(minLength: 0)
-        HStack {
-          Spacer(minLength: 0)
-          Text(text)
-            .font(.largeTitle)
-            .fontDesign(.rounded)
-            .foregroundStyle(.white)
-            .multilineTextAlignment(.center)
-          Spacer(minLength: 0)
-        }
-        Spacer(minLength: 0)
-      }
-      .offset(z: placeZOffset * 2)
-      VStack {
-        Spacer(minLength: 0)
-        Image("Arrow_11")
-          .resizable()
-          .scaledToFit()
-          .frame(width: 80, height: 80)
-        Spacer(minLength: 0)
-      }
-      .scaleEffect(appModel.isBeginingPlacement ? 0 : 1)
-      .offset(y: (depth - zOffset) / 2 - 65)
-      .offset(z: placeZOffset * 2)
-      HStack(spacing: 12) {
-        HStack {
-          Button(action: {
-            Task {
-              appModel.isClosingPlaceCanvasImmersive = true
-              await dismissImmersiveSpace()
-              print(#function, "dismissImmersiveSpace")
-              try await Task.sleep(for: .seconds(0.01))
-              appModel.isInPlaceCanvasImmersive = false
-              appModel.isClosingPlaceCanvasImmersive = false
-              print(#function, "isInImmersive false")
-              if showGestureGuide {
-                dismissWindow(id: "gestureGuide")
-                openWindow(id: "gestureGuide")
-                showGestureGuide = false
-              }
-            }
-          }, label: {
-            Text("Aligned with surface")
-          })
-          .padding(6)
-          .frame(height: 44)
-        }
-        .buttonStyle(.borderless)
-        .controlSize(.small)
-        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      }
-      .rotation3DEffect(.degrees(-75), axis: (1, 0, 0), anchor: .center)
-      .offset(z: 200)
-      .offset(y: -50)
-    }
-    .clipped()
-    .padding(12)
-    .frame(width: width, height: depth - zOffset)
-    .clipped()
-    .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
-    .offset(y: height / 2)
-    .offset(z: isHorizontal ? -depth / 2 + zOffset / 2 : -depth / 2 - zOffset / 2)
   }
 
   private func onPlaceAssistViewAppear(proxy: GeometryProxy3D) {

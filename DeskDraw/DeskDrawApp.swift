@@ -17,11 +17,12 @@ struct DeskDrawApp: App {
   @State private var drawingImmersiveStyle: ImmersionStyle = .mixed
   
   @AppStorage("volumeBaseplateVisibility") private var volumeBaseplateVisibility = true
+  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
 
   var body: some Scene {
     WindowGroup(id: "drawingView") {
       DrawingView()
-        .volumeBaseplateVisibility(volumeBaseplateVisibility ? (!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement ? .hidden : .automatic) : .hidden)
+        .volumeBaseplateVisibility(volumeBaseplateVisibility ? (!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement || !isHorizontal ? .hidden : .automatic) : .hidden)
         .environment(appModel)
         .task {
           await appModel.subscriptionViewModel.updatePurchasedProducts()

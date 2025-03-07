@@ -50,7 +50,7 @@ struct DrawingToolsView: View {
         rightTools
       }
     }
-    .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 5 / 6), axis: (x: 1, y: 0, z: 0))
+    .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 2 / 3), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, isHorizontal ? 68 : 20)
     .padding(.trailing, 20)
     .animation(.spring, value: isHorizontal)
@@ -135,13 +135,14 @@ struct DrawingToolsView: View {
   private var moreFuncsMenu: some View {
     VStack {
       exportImage
+      toggleOrientation
       placeAssist
       setting
     }
-    .rotation3DEffect(.degrees(-35), axis: (1, 0, 0), anchor: .center)
+    .rotation3DEffect(.degrees(isHorizontal ? -35 : -25), axis: (1, 0, 0), anchor: .center)
     .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
     .opacity(showMoreFuncsMenu ? 1 : 0)
-    .offset(y: -84)
+    .offset(y: -108)
     .offset(z: 64)
     .disabled(!showMoreFuncsMenu)
   }
@@ -161,6 +162,7 @@ struct DrawingToolsView: View {
             appModel.isOpeningPlaceCanvasImmersive = false
             showMoreFuncsMenu = false
             appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.moveCanvas()
+            appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.clearPlanes(isHorizontal: isHorizontal)
           case .userCancelled, .error:
             fallthrough
           @unknown default: break
@@ -182,7 +184,7 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
-  
+
   @MainActor
   @ViewBuilder
   private var exportImage: some View {
@@ -208,7 +210,7 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
-  
+
   @MainActor
   @ViewBuilder
   private var setting: some View {
@@ -235,27 +237,36 @@ struct DrawingToolsView: View {
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 
-//  @MainActor
-//  @ViewBuilder
-//  private var toggleOrientation: some View {
-//    HStack {
-//      Button(action: {
-//        isHorizontal.toggle()
-//      }, label: {
-//        HStack {
-//          Image(systemName: isHorizontal ? "square.3.layers.3d.down.left" : "square.3.layers.3d")
-//            .frame(width: 8)
-//          Text(isHorizontal ? "切换垂直画板" : "切换水平画板")
-//        }
-//      })
-//      .padding(6)
-//      .fixedSize()
-//      .frame(height: 44)
-//    }
-//    .buttonStyle(.borderless)
-//    .controlSize(.small)
-//    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-//  }
+  @MainActor
+  @ViewBuilder
+  private var toggleOrientation: some View {
+    HStack {
+      Button(action: {
+        isHorizontal.toggle()
+      }, label: {
+        HStack {
+          HStack {
+            if isHorizontal {
+              Image(systemName: "square.3.layers.3d.down.left")
+                .frame(width: 8)
+            } else {
+              Image(systemName: "square.3.layers.3d")
+                .frame(width: 8)
+            }
+          }
+          .transition(.opacity)
+          .animation(.smooth, value: isHorizontal)
+          Text(isHorizontal ? "切换垂直画板" : "切换水平画板")
+        }
+      })
+      .padding(6)
+      .fixedSize()
+      .frame(height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
 
   @MainActor
   @ViewBuilder
