@@ -94,7 +94,7 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      WindowPlacement(.leading(context.windows.first!), size: CGSize(width: 480, height: 460 + 480 * appModel.drawings[appModel.drawingIndex].bounds.height / appModel.drawings[appModel.drawingIndex].bounds.width))
+      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 460 + 480 * appModel.drawings[appModel.drawingIndex].bounds.height / appModel.drawings[appModel.drawingIndex].bounds.width))
     }
 
     ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {

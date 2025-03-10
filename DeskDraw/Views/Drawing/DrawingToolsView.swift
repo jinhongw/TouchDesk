@@ -46,14 +46,13 @@ struct DrawingToolsView: View {
     HStack(spacing: 8) {
       leftTools
       Spacer(minLength: 20)
-      if !appModel.isLocked {
-        rightTools
-      }
+      rightTools
     }
     .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 2 / 3), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, isHorizontal ? 68 : 20)
     .padding(.trailing, 20)
     .animation(.spring, value: isHorizontal)
+    .animation(.spring.speed(2), value: appModel.isLocked)
   }
 
   // MARK: LeftTools
@@ -65,10 +64,8 @@ struct DrawingToolsView: View {
       showNotes
       lockCanvas
       moreFuncsButton
-      if !appModel.isLocked {
-        undo
-        redo
-      }
+      undo
+      redo
     }
   }
 
@@ -285,6 +282,8 @@ struct DrawingToolsView: View {
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(!(canvas.undoManager?.canUndo ?? false))
     .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -304,6 +303,8 @@ struct DrawingToolsView: View {
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(!(canvas.undoManager?.canRedo ?? false))
     .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   // MARK: RightTools
@@ -554,6 +555,8 @@ struct DrawingToolsView: View {
         }
     )
     .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -577,6 +580,8 @@ struct DrawingToolsView: View {
       openWindow(id: "colorPicker")
     }
     .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 }
 
@@ -660,6 +665,8 @@ struct InkToolView: View {
         }
     )
     .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
