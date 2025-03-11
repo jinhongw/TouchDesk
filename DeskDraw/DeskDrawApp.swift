@@ -94,7 +94,19 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 460 + 480 * appModel.drawings[appModel.drawingIndex].bounds.height / appModel.drawings[appModel.drawingIndex].bounds.width))
+      guard let drawing = appModel.currentDrawing else {
+        return WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 480))
+      }
+      return WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 460 + 480 * drawing.bounds.height / drawing.bounds.width))
+    }
+    
+    WindowGroup(id: "imagePicker", for: CGPoint.self) { point in
+      ImagePickerView(point: point.wrappedValue ?? .zero)
+        .environment(appModel)
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      WindowPlacement(.utilityPanel)
     }
 
     ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {

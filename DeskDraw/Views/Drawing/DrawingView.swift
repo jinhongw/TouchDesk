@@ -15,7 +15,7 @@ struct DrawingView: View {
   @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
   @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
-  
+
   @AppStorage("penWidth") private var penWidth: Double = 0.88
   @AppStorage("monolineWidth") private var monolineWidth: Double = 0.5
   @AppStorage("pencilWidth") private var pencilWidth: Double = 2.41
@@ -174,10 +174,10 @@ struct DrawingView: View {
   @ViewBuilder
   private func topToolbarView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     DrawingToolsView(
-      canvas: canvas,
       toolStatus: $toolStatus,
       pencilType: $pencilType,
-      eraserType: $eraserType
+      eraserType: $eraserType,
+      canvas: canvas
     )
     .environment(appModel)
     .frame(width: width, height: 44)
@@ -191,15 +191,24 @@ struct DrawingView: View {
   @ViewBuilder
   private func drawingView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     @Bindable var appModel = appModel
-    if appModel.dataModel.drawings.isEmpty || appModel.dataModel.drawings.count - 1 < appModel.drawingIndex {
+    if appModel.drawings.isEmpty || appModel.drawingId == nil {
       ProgressView()
     } else {
       DrawingUIViewRepresentable(
         canvas: canvas,
-        drawing: Binding(
-          get: { appModel.dataModel.drawings[appModel.drawingIndex] },
+        model: Binding(
+          get: {
+            if let drawingId = appModel.drawingId, let drawing = appModel.drawings[drawingId] {
+              print(#function, "canvas show \(drawingId)")
+              return drawing
+            } else {
+              return DrawingModel.init(name: "", drawing: PKDrawing())
+            }
+          },
           set: { newValue in
-            appModel.dataModel.drawings[appModel.drawingIndex] = newValue
+            guard let drawingId = appModel.drawingId else { return }
+            print(#function, "canvas set \(drawingId)")
+            appModel.drawings[drawingId] = newValue
           }
         ),
         toolStatus: $toolStatus,
@@ -216,7 +225,7 @@ struct DrawingView: View {
         canvasWidth: width,
         canvasHeight: height,
         saveDrawing: {
-          appModel.updateDrawing(appModel.drawingIndex)
+          appModel.updateDrawing(appModel.drawingId)
         }
       )
     }

@@ -28,10 +28,11 @@ struct DrawingToolsView: View {
   @State private var showColorPicker = false
   @State private var showMoreFuncsMenu = false
 
-  let canvas: PKCanvasView
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
+
+  let canvas: PKCanvasView
 
   enum SettingType {
     case pen
@@ -40,6 +41,7 @@ struct DrawingToolsView: View {
     case fountainPen
     case crayon
     case eraser
+    case image
   }
 
   var body: some View {
@@ -323,8 +325,46 @@ struct DrawingToolsView: View {
       pencilTool
       crayonTool
       fountainPenTool
+      imageTool
       colorPicker
     }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var imageTool: some View {
+    HStack {
+      Button(action: {
+//        if toolStatus == .image {
+//          if settingType != .image {
+//            settingType = .image
+//          } else {
+//            settingType = nil
+//          }
+//        } else {
+//          toolStatus = .image
+//          settingType = nil
+//        }
+        let visibleCenter = CGPoint(
+          x: canvas.contentOffset.x + canvas.bounds.width / 2,
+          y: canvas.contentOffset.y + canvas.bounds.height / 2
+        )
+        dismissWindow(id: "imagePicker")
+        openWindow(id: "imagePicker", value: visibleCenter)
+//        openWindow(id: "imagePicker")
+      }, label: {
+        Image(systemName: "photo.badge.plus")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+//    .background(toolStatus == .image ? .white.opacity(settingType == .image ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -734,10 +774,10 @@ struct InkToolView: View {
   } attachments: {
     Attachment(id: "toolbarView") {
       DrawingToolsView(
-        canvas: canvas,
         toolStatus: $toolStatus,
         pencilType: $pencilType,
-        eraserType: $eraserType
+        eraserType: $eraserType,
+        canvas: canvas
       )
       .environment(AppModel())
       .frame(width: 1024, height: 44)
@@ -745,3 +785,33 @@ struct InkToolView: View {
   }
   .frame(width: 1024)
 })
+
+class ImagePickerCoordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+  let canvas: PKCanvasView
+  let appModel: AppModel
+
+  init(canvas: PKCanvasView, appModel: AppModel) {
+    self.canvas = canvas
+    self.appModel = appModel
+  }
+
+  func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+    picker.dismiss(animated: true)
+
+    guard let image = info[.originalImage] as? UIImage,
+          let imageData = image.jpegData(compressionQuality: 0.8) else { return }
+
+    // 获取当前画布的可见区域中心点
+    let visibleCenter = CGPoint(
+      x: canvas.contentOffset.x + canvas.bounds.width / 2,
+      y: canvas.contentOffset.y + canvas.bounds.height / 2
+    )
+
+    // 添加图片到画布
+    appModel.addImage(imageData, at: visibleCenter, size: CGSize(width: 320, height: 320))
+  }
+
+  func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+    picker.dismiss(animated: true)
+  }
+}

@@ -129,9 +129,10 @@ struct PlaceAssistView: View {
           Spacer(minLength: 0)
         }
         placementTools
+          .offset(z: 12)
         Spacer(minLength: 0)
       }
-      .offset(z: placeZOffset * 2 + 20)
+      .offset(z: placeZOffset * 2)
       VStack {
         Spacer(minLength: 0)
         Image("Arrow_11")
@@ -163,9 +164,8 @@ struct PlaceAssistView: View {
         HStack(spacing: 12) {
           Image(systemName: "arrowshape.up")
             .frame(width: 20)
-            .rotation3DEffect(.init(radians: -.pi / 5), axis: (1, 0, 0), anchor: .center)
+            .rotation3DEffect(.init(radians: -.pi / 2), axis: (1, 0, 0), anchor: .center)
             .scaleEffect(0.5)
-            .offset(z: 6)
           Slider(value: $horizontalYOffest, in: 0 ... 20, step: 1, onEditingChanged: { _ in
             AudioServicesPlaySystemSound(1104)
           })
@@ -173,8 +173,7 @@ struct PlaceAssistView: View {
           .controlSize(.small)
           Image(systemName: "arrowshape.up")
             .frame(width: 20)
-            .rotation3DEffect(.init(radians: -.pi / 5), axis: (1, 0, 0), anchor: .center)
-            .offset(z: 6)
+            .rotation3DEffect(.init(radians: -.pi / 2), axis: (1, 0, 0), anchor: .center)
         }
         .padding(.horizontal, 200)
       } else {
@@ -183,7 +182,6 @@ struct PlaceAssistView: View {
             Image(systemName: "trapezoid.and.line.horizontal")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: -.pi / 12), axis: (0, 1, 0), anchor: .center)
-              .offset(z: 24)
             Slider(value: $zRotation, in: -2 ... 2, step: 0.2, onEditingChanged: { _ in
               AudioServicesPlaySystemSound(1104)
             })
@@ -193,7 +191,6 @@ struct PlaceAssistView: View {
               .scaleEffect(x: -1, y: 1)
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 12), axis: (0, 1, 0), anchor: .center)
-              .offset(z: 24)
           }
           .padding(.horizontal, 200)
           
@@ -201,7 +198,6 @@ struct PlaceAssistView: View {
             Image(systemName: "arrow.up.to.line.compact")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 5), axis: (1, 0, 0), anchor: .center)
-              .offset(z: 24)
             Slider(value: $verticalZOffest, in: -10 ... 10, step: 1, onEditingChanged: { _ in
               AudioServicesPlaySystemSound(1104)
             })
@@ -210,7 +206,6 @@ struct PlaceAssistView: View {
             Image(systemName: "arrow.down.to.line.compact")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 5), axis: (1, 0, 0), anchor: .center)
-              .offset(z: 24)
           }
           .padding(.horizontal, 200)
         }
