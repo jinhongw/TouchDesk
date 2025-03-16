@@ -28,6 +28,8 @@ class AppModel {
   var isClosingPlaceCanvasImmersive = false
   var isOpeningPlaceCanvasImmersive = false
   var isBeginingPlacement = true
+  var isShareImageViewShowing = false
+  var exportImage: UIImage?
 
   /// The size to use for thumbnail images.
   static let thumbnailSize = CGSize(width: 512, height: 512)
@@ -57,30 +59,24 @@ class AppModel {
 
   private func loadDrawings() {
     do {
-      // 检查新版本数据目录是否存在数据
       if !DrawingFileManager.shared.hasDrawings() {
-        // 如果新版本目录没有数据，尝试从旧版本迁移
         let oldDataURL = FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents/DeskDraw.data")
           ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("DeskDraw.data")
         
         if FileManager.default.fileExists(atPath: oldDataURL.path) {
-          // 迁移旧版本数据
           let decoder = PropertyListDecoder()
           let data = try Data(contentsOf: oldDataURL)
           let oldDataModel = try decoder.decode(LegacyDataModel.self, from: data)
           try DrawingFileManager.shared.migrateFromOldVersion(oldDataModel: oldDataModel)
-          // 不删除旧文件，保留作为备份
         }
       }
       
-      // 加载所有绘图
       drawings = DrawingFileManager.shared.loadAllDrawings()
       ids = DrawingFileManager.shared.loadDrawingIndex()
       if drawings.isEmpty {
-        addNewDrawing() // 如果没有绘图，创建一个新的
+        addNewDrawing()
       }
       
-      // 初始化缩略图数组
       for id in drawings.keys {
         thumbnails[id] = UIImage()
       }
@@ -88,7 +84,6 @@ class AppModel {
       
     } catch {
       logger.info("\(#function) Could not load drawings: \(error.localizedDescription)")
-      // 如果加载失败，创建一个新的绘图
       addNewDrawing()
     }
   }
@@ -98,6 +93,14 @@ class AppModel {
        let lastDrawingId = UUID(uuidString: lastDrawingIdString)
     {
       drawingId = lastDrawingId
+    } else {
+      if let id = ids.first {
+        print(#function, "id \(id)")
+        selectDrawingId(id)
+      } else {
+        print(#function, "addNewDrawing")
+        addNewDrawing()
+      }
     }
 
     if let placementAssistance = UserDefaults.standard.value(forKey: "placementAssistance") as? Bool {
@@ -128,26 +131,26 @@ class AppModel {
 
   /// Helper method to cause regeneration of a specific thumbnail, using the current user interface style
   /// of the thumbnail view controller.
-  private func generateThumbnail(_ id: UUID) {
+  func generateThumbnail(_ id: UUID, isFullScale: Bool = false) {
     guard let drawingModel = drawings[id] else { return }
-    let drawing = drawingModel.drawing
     
-    // 在主线程获取缩略图尺寸
+    var drawing = PKDrawing()
+    drawing.strokes = drawingModel.drawing.strokes.filter { stroke in
+      stroke.ink.color.cgColor.alpha > 0
+    }
+    
     let thumbnailSize = AppModel.thumbnailSize
     
-    // 计算整个内容的边界（包括绘画和图片）
     var contentBounds = drawing.bounds
     for imageElement in drawingModel.images {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
       contentBounds = contentBounds.union(imageFrame)
     }
     
-    // 如果没有内容，使用默认大小
     if contentBounds.isNull || contentBounds.isEmpty {
       contentBounds = CGRect(x: 0, y: 0, width: thumbnailSize.width, height: thumbnailSize.height)
     }
     
-    // 确保边界至少有最小尺寸
     let minSize: CGFloat = 100
     if contentBounds.width < minSize || contentBounds.height < minSize {
       let center = CGPoint(x: contentBounds.midX, y: contentBounds.midY)
@@ -159,38 +162,35 @@ class AppModel {
       )
     }
     
-    // 计算缩略图尺寸，保持宽高比
-    let scale = min(
+    let scale = isFullScale ? 2 : min(
       thumbnailSize.width / contentBounds.width,
       thumbnailSize.height / contentBounds.height
     )
     
+    let finalSize = isFullScale ? 
+      CGSize(width: contentBounds.width * scale, height: contentBounds.height * scale) :
+      thumbnailSize
+    
     thumbnailQueue.async {
-      // 创建一个和最终缩略图同样大小的上下文，支持透明度
       let format = UIGraphicsImageRendererFormat()
       format.opaque = false
-      let renderer = UIGraphicsImageRenderer(size: thumbnailSize, format: format)
+      let renderer = UIGraphicsImageRenderer(size: finalSize, format: format)
       let finalImage = renderer.image { context in
-        // 不需要设置背景色，保持透明
-        
-        // 计算绘制区域，使内容居中
         let drawingSize = CGSize(
           width: contentBounds.width * scale,
           height: contentBounds.height * scale
         )
-        let drawingOrigin = CGPoint(
-          x: (thumbnailSize.width - drawingSize.width) / 2,
-          y: (thumbnailSize.height - drawingSize.height) / 2
-        )
-        let drawingRect = CGRect(origin: drawingOrigin, size: drawingSize)
+        let drawingOrigin = isFullScale ?
+          CGPoint.zero :
+          CGPoint(
+            x: (thumbnailSize.width - drawingSize.width) / 2,
+            y: (thumbnailSize.height - drawingSize.height) / 2
+          )
         
-        // 首先绘制图片
         for imageElement in drawingModel.images {
           if let image = UIImage(data: imageElement.imageData) {
-            // 保存当前的图形状态
             context.cgContext.saveGState()
             
-            // 计算图片在缩略图中的位置和大小
             let relativeX = (imageElement.position.x - contentBounds.minX) * scale
             let relativeY = (imageElement.position.y - contentBounds.minY) * scale
             let scaledPosition = CGPoint(
@@ -202,14 +202,12 @@ class AppModel {
               height: imageElement.size.height * scale
             )
             
-            // 设置旋转变换
             context.cgContext.translateBy(
               x: scaledPosition.x + scaledSize.width / 2,
               y: scaledPosition.y + scaledSize.height / 2
             )
             context.cgContext.rotate(by: imageElement.rotation)
             
-            // 绘制图片
             image.draw(in: CGRect(
               x: -scaledSize.width / 2,
               y: -scaledSize.height / 2,
@@ -217,22 +215,25 @@ class AppModel {
               height: scaledSize.height
             ))
             
-            // 恢复图形状态
             context.cgContext.restoreGState()
           }
         }
         
-        // 然后绘制绘画内容
         let drawingImage = drawing.thumbnail(
           rect: contentBounds,
           scale: scale,
           traitCollection: UITraitCollection(userInterfaceStyle: .light)
         )
+        let drawingRect = CGRect(origin: drawingOrigin, size: drawingSize)
         drawingImage.draw(in: drawingRect)
       }
       
       DispatchQueue.main.async {
-        self.updateThumbnail(finalImage, at: id)
+        if isFullScale {
+          self.updateExportImage(finalImage)
+        } else {
+          self.updateThumbnail(finalImage, at: id)
+        }
       }
     }
   }
@@ -241,18 +242,9 @@ class AppModel {
   private func updateThumbnail(_ image: UIImage, at id: UUID) {
     thumbnails[id] = image
   }
-
-  var exportImage: UIImage {
-    guard let drawing = currentDrawing?.drawing else {
-      return UIImage()
-    }
-    guard !drawing.bounds.isNull && !drawing.strokes.isEmpty && !drawing.bounds.width.isNaN && !drawing.bounds.height.isNaN else {
-      return UIImage()
-    }
-    let minSize: CGFloat = 1024
-    let scale = max(2.0, minSize / max(drawing.bounds.width, drawing.bounds.height))
-    let image = drawing.thumbnail(rect: drawing.bounds, scale: scale, traitCollection: UITraitCollection(userInterfaceStyle: .light))
-    return image
+  
+  func updateExportImage(_ image: UIImage) {
+    exportImage = image
   }
 
   var currentDrawing: DrawingModel? {
@@ -308,7 +300,6 @@ extension AppModel {
   /// Update a drawing at `id` and generate a new thumbnail.
   func updateDrawing(_ id: UUID?) {
     guard let id else { return }
-//    drawings[id]?.modifiedAt = Date()
     generateThumbnail(id)
     saveDrawing(id)
   }
@@ -346,7 +337,6 @@ extension AppModel {
     UserDefaults.standard.set(idString, forKey: AppModel.drawingIdKey)
   }
   
-  // 添加图片到当前绘图
   func addImage(_ imageData: Data, at position: CGPoint, size: CGSize, rotation: Double = 0) {
     let imageElement = ImageElement(id: UUID(), imageData: imageData, position: position, size: size, rotation: rotation)
     guard let drawingId else { return }
@@ -354,7 +344,6 @@ extension AppModel {
     updateDrawing(drawingId)
   }
   
-  // 添加文字到当前绘图
   func addText(_ text: String, at position: CGPoint, fontSize: CGFloat = 16, fontWeight: Font.Weight = .regular, color: Color = .black, rotation: Double = 0) {
     let textElement = TextElement(id: UUID(), text: text, position: position, fontSize: fontSize, fontWeight: fontWeight, color: color, rotation: rotation)
     guard let drawingId else { return }

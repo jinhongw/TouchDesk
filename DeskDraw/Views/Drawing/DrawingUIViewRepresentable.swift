@@ -5,26 +5,13 @@
 //  Created by jinhong on 2024/12/27.
 //
 
+import ObjectiveC
 import PencilKit
 import SwiftUI
-import ObjectiveC
-
-private var imageIdKey: UInt8 = 0
-
-extension UIImageView {
-    var imageId: UUID? {
-        get {
-            return objc_getAssociatedObject(self, &imageIdKey) as? UUID
-        }
-        set {
-            objc_setAssociatedObject(self, &imageIdKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        }
-    }
-}
 
 struct DrawingUIViewRepresentable: UIViewRepresentable {
-  private let canvasOverscrollDistance: CGFloat = 3000
-  private let canvasOverscrollMiniDistance: CGFloat = 600
+  private let canvasOverscrollDistance: CGFloat = 500
+  private let canvasOverscrollMiniDistance: CGFloat = 200
   let canvas: PKCanvasView
   @Binding var model: DrawingModel
   @Binding var toolStatus: DrawingView.CanvasToolStatus
@@ -38,9 +25,11 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   @Binding var eraserWidth: Double
   @Binding var color: Color
   @Binding var isLocked: Bool
+  @Binding var isShareImageViewShowing: Bool
   let canvasWidth: CGFloat
   let canvasHeight: CGFloat
   let saveDrawing: () -> Void
+  let updateExportImage: () -> Void
 
   var ink: PKInkingTool {
     var tool = PKInkingTool(pencilType, color: UIColor(color))
@@ -75,8 +64,6 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     }
   }
 
-//  let lasso = PKLassoTool()
-
   var defaultSize: CGSize {
     CGSize(
       width: canvasWidth + 2 * canvasOverscrollDistance,
@@ -94,7 +81,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   }
 
   func makeUIView(context: Context) -> PKCanvasView {
-    print(#function, "make canvas \(model.id)")
+    print(#function, "make canvas \(model.id) width: \(canvasWidth) height \(canvasHeight)")
     canvas.drawing = model.drawing
     canvas.isDrawingEnabled = !isLocked
     canvas.tool = getTool()
@@ -109,15 +96,18 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     canvas.delegate = context.coordinator
 
     updateContentSizeForDrawing()
-    setPosition()
-    // 清除现有的图片视图
+    
+    Task {
+      try await Task.sleep(for: .seconds(0.5))
+      setPosition()
+    }
+    
     canvas.subviews.forEach { view in
       if view is UIImageView {
         view.removeFromSuperview()
       }
     }
-
-    // 添加图片
+    
     for imageElement in model.images {
       if let image = UIImage(data: imageElement.imageData) {
         let imageView = UIImageView(image: image)
@@ -169,26 +159,27 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     if context.coordinator.lastImages != model.images {
       print(#function, "DEBUG Change images")
-      
+
       // 创建字典以快速查找现有的图片视图
       var existingImageViews: [UUID: UIImageView] = [:]
       canvas.subviews.forEach { view in
         if let imageView = view as? UIImageView,
-           let imageId = imageView.imageId {
+           let imageId = imageView.imageId
+        {
           existingImageViews[imageId] = imageView
         }
       }
-      
+
       // 创建新的图片元素字典以快速查找
       let newImageElements = Dictionary(uniqueKeysWithValues: model.images.map { ($0.id, $0) })
-      
+
       // 删除不再存在的图片视图
       for (imageId, imageView) in existingImageViews {
         if newImageElements[imageId] == nil {
           imageView.removeFromSuperview()
         }
       }
-      
+
       // 更新或添加图片
       for imageElement in model.images {
         if let existingImageView = existingImageViews[imageElement.id] {
@@ -213,7 +204,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
       context.coordinator.lastImages = model.images
       updateContentSizeForDrawing()
-      setPosition()
+      saveDrawing()
+      updateExportImage()
     }
   }
 
@@ -223,14 +215,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
   func updateContentSizeForDrawing() {
     guard !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull && !canvas.contentSize.width.isNaN && !canvas.contentSize.height.isNaN else {
-      print(#function, "canvasWidth \(canvasWidth) canvasHeight \(canvasHeight)")
+      print(#function, "canvasWidth set \(defaultSize) width: \(canvasWidth) height \(canvasHeight)")
       canvas.contentSize = defaultSize
       return
     }
 
     let drawing = canvas.drawing
-    let contentHeight: CGFloat
-    let contentWidth: CGFloat
+    let newContentWidth: CGFloat
+    let newContentHeight: CGFloat
 
     // 计算所有内容（包括绘画和图片）的边界
     var bounds = drawing.bounds
@@ -244,19 +236,19 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     let maxX = bounds.maxX
     let maxY = bounds.maxY
 
-    let canvasWidth = canvas.contentSize.width
-    let canvasHeight = canvas.contentSize.height
+    let contentWidth = canvas.contentSize.width
+    let contentHeight = canvas.contentSize.height
 
     let transformX = canvasOverscrollDistance - minX
     let transformY = canvasOverscrollDistance - minY
-    let addWidth = canvasOverscrollDistance - (canvasWidth - maxX)
-    let addHeight = canvasOverscrollDistance - (canvasHeight - maxY)
+    let addWidth = canvasOverscrollDistance - (contentWidth - maxX)
+    let addHeight = canvasOverscrollDistance - (contentHeight - maxY)
 
     if minX < canvasOverscrollMiniDistance || minY < canvasOverscrollMiniDistance {
-      contentWidth = canvasWidth + transformX + addWidth
-      contentHeight = canvasHeight + transformY + addHeight
-      print(#function, "canvasWidth \(contentWidth) canvasHeight \(contentHeight)")
-      canvas.contentSize = CGSize(width: contentWidth, height: contentHeight)
+      newContentWidth = contentWidth + transformX + addWidth
+      newContentHeight = contentHeight + transformY + addHeight
+      print(#function, "set 1 newContentWidth \(newContentWidth) newCcontentHeight \(newContentHeight) width: \(contentWidth) height \(canvasHeight)")
+      canvas.contentSize = CGSize(width: newContentWidth, height: newContentHeight)
 
       guard transformX != 0 || transformY != 0 else { return }
 
@@ -282,14 +274,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.setContentOffset(CGPoint(x: canvas.contentOffset.x + transformX, y: canvas.contentOffset.y + transformY), animated: false)
       CATransaction.commit()
       canvas.undoManager?.removeAllActions()
-    } else {
-      contentWidth = canvasWidth + addWidth
-      contentHeight = canvasHeight + addHeight
-      print(#function, "canvasWidth \(contentWidth) canvasHeight \(contentHeight)")
-      canvas.contentSize = CGSize(width: contentWidth, height: contentHeight)
+    } else if maxX > contentWidth - canvasOverscrollMiniDistance || maxY > contentHeight - canvasOverscrollMiniDistance {
+      newContentWidth = contentWidth + addWidth
+      newContentHeight = contentHeight + addHeight
+      print(#function, "set 2 newContentWidth \(newContentWidth) newCcontentHeight \(newContentHeight) width: \(canvasWidth) height \(canvasHeight)")
+      canvas.contentSize = CGSize(width: newContentWidth, height: newContentHeight)
     }
   }
-  
+
   func setPosition() {
     Task {
       guard !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull && !canvas.contentSize.width.isNaN && !canvas.contentSize.height.isNaN else {
@@ -298,7 +290,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         return
       }
 //      try await Task.sleep(for: .seconds(0.5))
-      
+
       // 计算所有内容的边界
       var contentBounds = canvas.drawing.bounds
       // 添加图片边界
@@ -306,8 +298,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
         contentBounds = contentBounds.union(imageFrame)
       }
-      
-      print(#function, "contentBounds \(contentBounds)")
+
+      print(#function, "contentBounds \(contentBounds) canvas.frame \(canvas.frame) width: \(canvasWidth) height \(canvasHeight)")
       let x = max(contentBounds.width > canvas.frame.width ? contentBounds.minX : contentBounds.midX - canvas.frame.width / 2, 0)
       let y = max(contentBounds.height > canvas.frame.height ? contentBounds.minY : contentBounds.midY - canvas.frame.height / 2, 0)
       print(#function, "x \(x) y \(y)")
@@ -345,6 +337,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
             self.parent.updateContentSizeForDrawing()
             // 保存绘画
             self.parent.saveDrawing()
+            if self.parent.isShareImageViewShowing {
+              self.parent.updateExportImage()
+            }
           }
         }
       }

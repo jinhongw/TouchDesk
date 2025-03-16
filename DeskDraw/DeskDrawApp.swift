@@ -90,7 +90,18 @@ struct DeskDrawApp: App {
     }
 
     WindowGroup(id: "shareView") {
-      ShareImageView(image: appModel.exportImage)
+      ShareImageView(image: appModel.exportImage, bounds: appModel.currentDrawing?.bounds.size ?? .init(width: 320, height: 320))
+        .onAppear {
+          print(#function, "appModel.isShareImageViewShowing = true")
+          appModel.isShareImageViewShowing = true
+          guard let drawingId = appModel.drawingId else { return }
+          appModel.generateThumbnail(drawingId, isFullScale: true)
+        }
+        .onDisappear {
+          print(#function, "appModel.isShareImageViewShowing = false")
+          appModel.isShareImageViewShowing = false
+          appModel.exportImage = nil
+        }
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in

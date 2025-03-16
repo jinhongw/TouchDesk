@@ -136,6 +136,7 @@ struct DrawingView: View {
       }
     } attachments: {
       Attachment(id: "drawingView") {
+        let _ = print(#function, "drawingRealityView width \(width) height \(depth - zOffset)")
         drawingView(width: width, height: height, depth: depth)
           .cornerRadius(20)
           .frame(width: width, height: depth - zOffset)
@@ -148,6 +149,64 @@ struct DrawingView: View {
     .offset(z: isHorizontal ? -depth + zOffset : -depth)
   }
 
+  @MainActor
+  @ViewBuilder
+  private func drawingView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    @Bindable var appModel = appModel
+    if appModel.drawings.isEmpty || appModel.drawingId == nil {
+      ProgressView()
+    } else {
+      DrawingUIViewRepresentable(
+        canvas: canvas,
+        model: Binding(
+          get: {
+            if let drawing = appModel.currentDrawing {
+              print(#function, "canvas show \(drawing.id)")
+              return drawing
+            } else if let firstDrawingId = appModel.ids.first, let firstDrawing = appModel.drawings[firstDrawingId] {
+              appModel.selectDrawingId(firstDrawingId)
+              print(#function, "canvas show first drawing \(firstDrawingId)")
+              return firstDrawing
+            } else {
+              appModel.addNewDrawing()
+              if let newDrawingId = appModel.drawingId, let newDrawing = appModel.drawings[newDrawingId] {
+                print(#function, "canvas show new drawing \(newDrawingId)")
+                return newDrawing
+              }
+              return DrawingModel.init(name: "", drawing: PKDrawing())
+            }
+          },
+          set: { newValue in
+            guard let drawingId = appModel.drawingId else { return }
+            print(#function, "canvas set \(drawingId)")
+            appModel.drawings[drawingId] = newValue
+          }
+        ),
+        toolStatus: $toolStatus,
+        pencilType: $pencilType,
+        eraserType: $eraserType,
+        penWidth: $penWidth,
+        monolineWidth: $monolineWidth,
+        pencilWidth: $pencilWidth,
+        crayonWidth: $crayonWidth,
+        fountainPenWidth: $fountainPenWidth,
+        eraserWidth: $eraserWidth,
+        color: $appModel.color,
+        isLocked: $appModel.isLocked,
+        isShareImageViewShowing: $appModel.isShareImageViewShowing,
+        canvasWidth: width,
+        canvasHeight: depth - zOffset,
+        saveDrawing: {
+          appModel.updateDrawing(appModel.drawingId)
+        },
+        updateExportImage: {
+          guard let drawingId = appModel.drawingId else { return }
+          appModel.generateThumbnail(drawingId, isFullScale: true)
+        }
+      )
+    }
+  }
+  
   @MainActor
   @ViewBuilder
   private func notesView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
@@ -185,50 +244,6 @@ struct DrawingView: View {
     .offset(y: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : zOffset)
     .offset(y: height / 2 - zOffset)
     .offset(z: isHorizontal ? -depth + zOffset / 1.5 : -zOffset / 1.5)
-  }
-
-  @MainActor
-  @ViewBuilder
-  private func drawingView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
-    @Bindable var appModel = appModel
-    if appModel.drawings.isEmpty || appModel.drawingId == nil {
-      ProgressView()
-    } else {
-      DrawingUIViewRepresentable(
-        canvas: canvas,
-        model: Binding(
-          get: {
-            if let drawingId = appModel.drawingId, let drawing = appModel.drawings[drawingId] {
-              print(#function, "canvas show \(drawingId)")
-              return drawing
-            } else {
-              return DrawingModel.init(name: "", drawing: PKDrawing())
-            }
-          },
-          set: { newValue in
-            guard let drawingId = appModel.drawingId else { return }
-            print(#function, "canvas set \(drawingId)")
-            appModel.drawings[drawingId] = newValue
-          }
-        ),
-        toolStatus: $toolStatus,
-        pencilType: $pencilType,
-        eraserType: $eraserType,
-        penWidth: $penWidth,
-        monolineWidth: $monolineWidth,
-        pencilWidth: $pencilWidth,
-        crayonWidth: $crayonWidth,
-        fountainPenWidth: $fountainPenWidth,
-        eraserWidth: $eraserWidth,
-        color: $appModel.color,
-        isLocked: $appModel.isLocked,
-        canvasWidth: width,
-        canvasHeight: height,
-        saveDrawing: {
-          appModel.updateDrawing(appModel.drawingId)
-        }
-      )
-    }
   }
 
   private func onPlaceAssistViewAppear(proxy: GeometryProxy3D) {

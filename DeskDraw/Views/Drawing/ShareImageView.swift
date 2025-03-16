@@ -8,58 +8,77 @@
 import SwiftUI
 
 struct ShareImageView: View {
-  @AppStorage("exportImageBackgroundColor") var exportImageBackgroundColor: Color = Color.init(uiColor: .systemGray3)
+  @AppStorage("exportImageBackgroundColor") var exportImageBackgroundColor: Color = .init(uiColor: .systemGray3)
   @AppStorage("exportImagePadding") private var exportImagePadding: Double = 36
   @AppStorage("exportImageCornerRaius") var exportImageCornerRaius: Double = 36
-  let image: UIImage
+  let image: UIImage?
+  let bounds: CGSize
+  var newImage: Image {
+    if let image {
+      return Image(
+        uiImage: image
+          .padding(exportImagePadding)
+          .withBackground(color: UIColor(exportImageBackgroundColor))
+          .roundedCorner(with: exportImageCornerRaius)
+      )
+    } else {
+      return Image(systemName: "photo.badge.exclamationmark")
+    }
+  }
+
   var body: some View {
-    let newImage = Image(
-      uiImage: image
-        .padding(exportImagePadding)
-        .withBackground(color: UIColor(exportImageBackgroundColor))
-        .roundedCorner(with: exportImageCornerRaius)
-    )
-    NavigationStack {
-      List {
-        Section {
-          newImage
-            .resizable()
-            .scaledToFit()
-        }
-        Section {
-          HStack {
-            Text("Background")
-            Spacer(minLength: 12)
-            ColorPicker("Color", selection: $exportImageBackgroundColor)
-              .labelsHidden()
-              .frame(width: 20, height: 20)
-              .padding(.trailing, 8)
+    if let image {
+      let newImage = Image(
+        uiImage: image
+          .padding(exportImagePadding)
+          .withBackground(color: UIColor(exportImageBackgroundColor))
+          .roundedCorner(with: exportImageCornerRaius)
+      )
+      NavigationStack {
+        List {
+          Section {
+            newImage
+              .resizable()
+              .scaledToFit()
           }
-          HStack {
-            Text("Padding")
-            Spacer(minLength: 12)
-            Slider(value: $exportImagePadding, in: 0 ... min(image.size.width, image.size.height) / 2)
-              .frame(maxWidth: 320)
+          Section {
+            HStack {
+              Text("Background")
+              Spacer(minLength: 12)
+              ColorPicker("Color", selection: $exportImageBackgroundColor)
+                .labelsHidden()
+                .frame(width: 20, height: 20)
+                .padding(.trailing, 8)
+            }
+            HStack {
+              Text("Padding")
+              Spacer(minLength: 12)
+              Slider(value: $exportImagePadding, in: 0 ... min(image.size.width, image.size.height) / 2)
+                .frame(maxWidth: 320)
+            }
+            HStack {
+              Text("Corner radius")
+              Spacer(minLength: 12)
+              Slider(value: $exportImageCornerRaius, in: 0 ... min(image.size.width, image.size.height) / 2)
+                .frame(maxWidth: 320)
+            }
           }
-          HStack {
-            Text("Corner radius")
-            Spacer(minLength: 12)
-            Slider(value: $exportImageCornerRaius, in: 0 ... min(image.size.width, image.size.height) / 2)
-              .frame(maxWidth: 320)
-          }
-        }
-        Section {
-          ShareLink(item: newImage, preview: SharePreview("Drawing", image: newImage)) {
-            HStack(spacing: 12) {
-              Image(systemName: "square.and.arrow.up")
-                .frame(width: 8)
-              Text("Export Image")
+          Section {
+            ShareLink(item: newImage, preview: SharePreview("Drawing", image: newImage)) {
+              HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.up")
+                  .frame(width: 8)
+                Text("Export Image")
+              }
             }
           }
         }
+        .navigationTitle("Export setting")
+        .navigationBarTitleDisplayMode(.inline)
       }
-      .navigationTitle("Export setting")
-      .navigationBarTitleDisplayMode(.inline)
+    } else {
+      ProgressView()
+        .frame(width: 480, height: 460 + 480 * bounds.height / bounds.width)
     }
   }
 }
@@ -149,6 +168,6 @@ extension UIImage {
 
 #Preview {
   NavigationStack {
-    ShareImageView(image: UIImage(imageLiteralResourceName: "HandDrawCover"))
+    ShareImageView(image: UIImage(imageLiteralResourceName: "HandDrawCover"), bounds: .init(width: 480, height: 480))
   }.frame(width: 480)
 }
