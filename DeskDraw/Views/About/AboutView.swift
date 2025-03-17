@@ -5,7 +5,6 @@
 //  Created by jinhong on 2024/12/20.
 //
 
-import MessageUI
 import StoreKit
 import SwiftUI
 import UIKit
@@ -14,8 +13,6 @@ struct AboutView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.requestReview) private var requestReview
   @Environment(\.openURL) private var openURL
-  @State private var isShowingMailView = false
-  @State private var mailResult: Result<MFMailComposeResult, Error>? = nil
   let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
 
   var isSimplifiedChinese: Bool {
@@ -122,11 +119,6 @@ struct AboutView: View {
     .frame(width: 480, height: 880)
     .scrollDisabled(true)
     .padding(.vertical, 20)
-    .sheet(isPresented: $isShowingMailView) {
-      NavigationStack {
-        mailView
-      }
-    }
   }
 
   @MainActor
@@ -312,7 +304,31 @@ struct AboutView: View {
   @ViewBuilder
   private var feedback: some View {
     Button(action: {
-      isShowingMailView.toggle()
+      let subject = "TouchDesk Feedback"
+      
+      // 获取系统信息
+      let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+      let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+      let systemVersion = ProcessInfo.processInfo.operatingSystemVersionString
+      let deviceModel = UIDevice.current.model
+      
+      // 构建邮件正文
+      let body = """
+      
+      
+      App Version: \(appVersion) (\(buildNumber))
+      System Version: \(systemVersion)
+      Device Model: \(deviceModel)
+      """
+      
+      let email = "jinhongw982@gmail.com"
+      
+      let mailto = "mailto:\(email)?subject=\(subject)&body=\(body)"
+          .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+
+      if let url = URL(string: mailto) {
+          openURL(url)
+      }
     }, label: {
       HStack {
         Image("Gmail")
@@ -326,23 +342,6 @@ struct AboutView: View {
         }
       }
     })
-  }
-
-  @MainActor
-  @ViewBuilder
-  private var mailView: some View {
-    MailView(result: $mailResult)
-      .ignoresSafeArea()
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button(action: {
-            isShowingMailView.toggle()
-          }, label: {
-            Image(systemName: "xmark")
-          })
-          .frame(width: 44, height: 44)
-        }
-      }
   }
   
   @MainActor
@@ -408,7 +407,7 @@ struct AboutView: View {
           .cornerRadius(18)
         VStack(alignment: .leading) {
           Text("EasyBall - AirShot")
-          Text("Shoot as if it’s real life")
+          Text("Shoot as if it's real life")
             .font(.caption)
         }
       }
@@ -438,61 +437,6 @@ struct AboutView: View {
   private func presentReview() {
     requestReview()
   }
-}
-
-struct MailView: UIViewControllerRepresentable {
-  // MARK: - Variables
-
-  @Binding var result: Result<MFMailComposeResult, Error>?
-
-  @Environment(\.presentationMode) var presentation
-
-  // MARK: - Coordinator
-
-  class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
-    @Binding var presentation: PresentationMode
-    @Binding var result: Result<MFMailComposeResult, Error>?
-
-    init(presentation: Binding<PresentationMode>, result: Binding<Result<MFMailComposeResult, Error>?>) {
-      _presentation = presentation
-      _result = result
-    }
-
-    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
-      defer {
-        $presentation.wrappedValue.dismiss()
-      }
-      guard error == nil else {
-        self.result = .failure(error!)
-        return
-      }
-      self.result = .success(result)
-    }
-  }
-
-  func makeCoordinator() -> Coordinator {
-    Coordinator(presentation: presentation, result: $result)
-  }
-
-  // MARK: - UIViewController
-
-  func makeUIViewController(context: UIViewControllerRepresentableContext<MailView>) -> MFMailComposeViewController {
-    let vc = MFMailComposeViewController()
-    vc.mailComposeDelegate = context.coordinator
-    vc.setSubject(Config.reportBugSubject)
-    vc.setToRecipients([Config.contactEmail])
-    vc.navigationBar.prefersLargeTitles = true
-    return vc
-  }
-
-  func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: UIViewControllerRepresentableContext<MailView>) {}
-}
-
-enum Config {
-  // MARK: - Mail
-
-  static let contactEmail = "jinhongw982@gmail.com"
-  static let reportBugSubject = "TouchDesk Feedback"
 }
 
 #Preview {

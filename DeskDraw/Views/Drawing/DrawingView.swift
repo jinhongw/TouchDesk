@@ -139,14 +139,14 @@ struct DrawingView: View {
         let _ = print(#function, "drawingRealityView width \(width) height \(depth - zOffset)")
         drawingView(width: width, height: height, depth: depth)
           .cornerRadius(20)
-          .frame(width: width, height: depth - zOffset)
+          .frame(width: width, height: depth)
           .colorScheme(.light)
       }
     }
     .frame(width: width)
-    .frame(depth: depth - zOffset)
+    .frame(depth: depth)
     .offset(y: height / 2 - placeZOffset)
-    .offset(z: isHorizontal ? -depth + zOffset : -depth)
+    .offset(z: -depth)
   }
 
   @MainActor

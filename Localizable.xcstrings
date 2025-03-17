@@ -2695,7 +2695,11 @@
         }
       }
     },
+    "Shoot as if it's real life" : {
+
+    },
     "Shoot as if it’s real life" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
