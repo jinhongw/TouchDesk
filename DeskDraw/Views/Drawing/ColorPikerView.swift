@@ -8,15 +8,14 @@
 import SwiftUI
 
 struct ColorPickerView: View {
-  @Environment(AppModel.self) var appModel
+  @AppStorage("drawColor") private var drawColor: Color = .white
 
   private let columns = [
     GridItem(.adaptive(minimum: 44, maximum: 44)),
   ]
 
   var body: some View {
-    @Bindable var appModel = appModel
-    ColorPickerUIView(title: "Pick color", selectedColor: $appModel.drawColor)
+    ColorPickerUIView(title: "Pick color", selectedColor: $drawColor)
       .frame(maxWidth: 420)
       .fixedSize()
   }

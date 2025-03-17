@@ -73,7 +73,6 @@ struct DeskDrawApp: App {
     
     WindowGroup(id: "colorPicker") {
       ColorPickerView()
-        .environment(appModel)
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in

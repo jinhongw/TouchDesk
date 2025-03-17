@@ -1,7 +1,7 @@
 import UIKit
 
 class ResizableImageView: UIView {
-  let controlPointTouchSize: CGFloat = 60 // 触控区域大小
+  let controlPointTouchSize: CGFloat = 44 // 触控区域大小
   private let controlPointVisualSize: CGFloat = 10 // 视觉大小
   private let controlPointBorderWidth: CGFloat = 2
   private var controlPoints: [ControlPointView] = []

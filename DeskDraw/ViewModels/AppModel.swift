@@ -20,7 +20,6 @@ class AppModel {
   private(set) var deletedDrawings = [DrawingModel]()
   var drawingId: UUID?
   var imageEditingId: UUID?
-  var drawColor: Color = .white
   var hideInMini = false
   var showDrawing = true
   var showNotes = false

@@ -10,8 +10,8 @@ import PencilKit
 import SwiftUI
 
 struct DrawingUIViewRepresentable: UIViewRepresentable {
-  private let canvasOverscrollDistance: CGFloat = 500
-  private let canvasOverscrollMiniDistance: CGFloat = 200
+  private let canvasOverscrollDistance: CGFloat = 600
+  private let canvasOverscrollMiniDistance: CGFloat = 300
   let canvas: PKCanvasView
   @Binding var model: DrawingModel
   @Binding var toolStatus: DrawingView.CanvasToolStatus

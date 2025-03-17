@@ -28,6 +28,7 @@ struct DrawingView: View {
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("placementAssistance") private var placementAssistance = true
   @AppStorage("showGestureGuide") private var showGestureGuide = true
+  @AppStorage("drawColor") private var drawColor: Color = .white
 
   @State private var canvas = PKCanvasView()
   @State private var lastCanvasPosition: AffineTransform3D? = nil
@@ -75,7 +76,7 @@ struct DrawingView: View {
           }
           .overlay {
             if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
-              PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zOffset: zOffset, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
+              PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
                 .environment(appModel)
                 .onAppear {
                   onPlaceAssistViewAppear(proxy: proxy)
@@ -191,7 +192,7 @@ struct DrawingView: View {
         crayonWidth: $crayonWidth,
         fountainPenWidth: $fountainPenWidth,
         eraserWidth: $eraserWidth,
-        color: $appModel.drawColor,
+        color: $drawColor,
         isLocked: $appModel.isLocked,
         isShareImageViewShowing: $appModel.isShareImageViewShowing,
         imageEditingId: $appModel.imageEditingId,

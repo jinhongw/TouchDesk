@@ -85,7 +85,7 @@ struct PlaceAssistView: View {
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("showGestureGuide") private var showGestureGuide = true
 
-  let width: CGFloat, height: CGFloat, depth: CGFloat, placeZOffset: CGFloat, zOffset: CGFloat
+  let width: CGFloat, height: CGFloat, depth: CGFloat, placeZOffset: CGFloat
 
   @Binding var zRotation: Double
   @Binding var verticalZOffest: CGFloat
@@ -144,16 +144,16 @@ struct PlaceAssistView: View {
         Spacer(minLength: 0)
       }
       .scaleEffect(appModel.isBeginingPlacement ? 0 : 1)
-      .offset(y: (depth - zOffset) / 2 - 65)
+      .offset(y: depth / 2 - 65)
       .offset(z: placeZOffset * 2)
       mainTools
     }
     .padding(12)
-    .frame(width: width, height: depth - zOffset)
+    .frame(width: width, height: depth )
     .clipped(antialiased: true)
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
     .offset(y: height / 2)
-    .offset(z: isHorizontal ? -depth / 2 + zOffset / 2 : -depth / 2 - zOffset / 2)
+    .offset(z: -depth / 2)
   }
   
   @MainActor
@@ -284,7 +284,7 @@ struct PlaceAssistView: View {
   @Previewable @State var horizontalYOffest: CGFloat = 0
   VStack {
     GeometryReader3D { proxy in
-      PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: 2, zOffset: 2, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
+      PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: 2, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
         .environment(AppModel())
         .offset(z: 500)
     }

@@ -23,6 +23,7 @@ struct DrawingToolsView: View {
   @AppStorage("fountainPenWidth") var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
+  @AppStorage("drawColor") private var drawColor: Color = .white
 
   @State private var settingType: SettingType? = nil
   @State private var showColorPicker = false
@@ -596,7 +597,7 @@ struct DrawingToolsView: View {
   var colorPicker: some View {
     @Bindable var appModel = appModel
     HStack {
-      ColorPicker("Color", selection: $appModel.drawColor)
+      ColorPicker("Color", selection: $drawColor)
         .disabled(true)
         .labelsHidden()
         .frame(width: 20, height: 20)
