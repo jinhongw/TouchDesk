@@ -19,10 +19,11 @@ class AppModel {
   var ids = [UUID]()
   var deletedDrawings = [DrawingModel]()
   var drawingId: UUID? = nil
+  var imageEditingId: UUID? = nil
+  var drawColor: Color = .white
   var hideInMini = false
   var showDrawing = true
   var showNotes = false
-  var color: Color = .white
   var isLocked = false
   var isInPlaceCanvasImmersive = false
   var isClosingPlaceCanvasImmersive = false
@@ -342,6 +343,7 @@ extension AppModel {
     guard let drawingId else { return }
     drawings[drawingId]?.images.append(imageElement)
     updateDrawing(drawingId)
+    imageEditingId = imageElement.id
   }
   
   func addText(_ text: String, at position: CGPoint, fontSize: CGFloat = 16, fontWeight: Font.Weight = .regular, color: Color = .black, rotation: Double = 0) {

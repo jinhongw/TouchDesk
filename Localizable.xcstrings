@@ -493,6 +493,9 @@
         }
       }
     },
+    "Button" : {
+
+    },
     "Cancel anytime" : {
       "localizations" : {
         "de" : {
@@ -3508,6 +3511,9 @@
           }
         }
       }
+    },
+    "添加图片" : {
+
     },
     "解锁无限图画、iCloud 储存" : {
       "localizations" : {

@@ -30,6 +30,8 @@ struct DeskDrawApp: App {
         .onDisappear {
           drawingViewDisappeared = true
         }
+//      TestMainView()
+//        .environment(appModel)
     }
     .windowStyle(.volumetric)
     .volumeWorldAlignment(.gravityAligned)

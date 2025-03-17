@@ -41,7 +41,6 @@ struct DrawingToolsView: View {
     case fountainPen
     case crayon
     case eraser
-    case image
   }
 
   var body: some View {
@@ -336,14 +335,8 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
 //        if toolStatus == .image {
-//          if settingType != .image {
-//            settingType = .image
-//          } else {
-//            settingType = nil
-//          }
 //        } else {
 //          toolStatus = .image
-//          settingType = nil
 //        }
         let visibleCenter = CGPoint(
           x: canvas.contentOffset.x + canvas.bounds.width / 2,
@@ -351,16 +344,15 @@ struct DrawingToolsView: View {
         )
         dismissWindow(id: "imagePicker")
         openWindow(id: "imagePicker", value: visibleCenter)
-//        openWindow(id: "imagePicker")
       }, label: {
-        Image(systemName: "photo.badge.plus")
+        Image(systemName: "photo.on.rectangle.angled.fill")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-//    .background(toolStatus == .image ? .white.opacity(settingType == .image ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+//    .background(toolStatus == .image ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(appModel.isLocked)
     .opacity(appModel.isLocked ? 0 : 1)
@@ -604,7 +596,7 @@ struct DrawingToolsView: View {
   var colorPicker: some View {
     @Bindable var appModel = appModel
     HStack {
-      ColorPicker("Color", selection: $appModel.color)
+      ColorPicker("Color", selection: $appModel.drawColor)
         .disabled(true)
         .labelsHidden()
         .frame(width: 20, height: 20)

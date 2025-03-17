@@ -174,16 +174,3 @@ extension MeshResource.Contents {
         self.models = [MeshResource.Model(id: "model", parts: [part])]
     }
 }
-
-private var imageIdKey: UInt8 = 0
-
-extension UIImageView {
-  var imageId: UUID? {
-    get {
-      objc_getAssociatedObject(self, &imageIdKey) as? UUID
-    }
-    set {
-      objc_setAssociatedObject(self, &imageIdKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-    }
-  }
-}

@@ -191,9 +191,10 @@ struct DrawingView: View {
         crayonWidth: $crayonWidth,
         fountainPenWidth: $fountainPenWidth,
         eraserWidth: $eraserWidth,
-        color: $appModel.color,
+        color: $appModel.drawColor,
         isLocked: $appModel.isLocked,
         isShareImageViewShowing: $appModel.isShareImageViewShowing,
+        imageEditingId: $appModel.imageEditingId,
         canvasWidth: width,
         canvasHeight: depth - zOffset,
         saveDrawing: {

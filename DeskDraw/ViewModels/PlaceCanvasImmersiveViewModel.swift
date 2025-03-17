@@ -37,7 +37,7 @@ class PlaceCanvasImmersiveViewModel {
 
   func planeDetectionUpdates() async {
     for await anchorUpdate in planeDetection.anchorUpdates {
-      print(#function, "anchorUpdate \(anchorUpdate.description)")
+      print(#function, "anchorUpdate")
       await planeAnchorHandler.process(anchorUpdate)
     }
   }

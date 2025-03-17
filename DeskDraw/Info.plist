@@ -2,8 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Grant photo access to save the drawing.</string>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.com.easybreezy.TouchDesk</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>TouchDesk</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 	<key>NSWorldSensingUsageDescription</key>
 	<string>Scan your environment to enable assisted board placement.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -21,18 +31,6 @@
 					<string>UIImmersionStyleMixed</string>
 				</dict>
 			</array>
-		</dict>
-	</dict>
-	<key>NSUbiquitousContainers</key>
-	<dict>
-		<key>iCloud.com.easybreezy.TouchDesk</key>
-		<dict>
-			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
-			<true/>
-			<key>NSUbiquitousContainerName</key>
-			<string>TouchDesk</string>
-			<key>NSUbiquitousContainerSupportedFolderLevels</key>
-			<string>Any</string>
 		</dict>
 	</dict>
 </dict>

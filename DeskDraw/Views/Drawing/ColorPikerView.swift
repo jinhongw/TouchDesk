@@ -16,7 +16,7 @@ struct ColorPickerView: View {
 
   var body: some View {
     @Bindable var appModel = appModel
-    ColorPickerUIView(title: "Pick color", selectedColor: $appModel.color)
+    ColorPickerUIView(title: "Pick color", selectedColor: $appModel.drawColor)
       .frame(maxWidth: 420)
       .fixedSize()
   }
