@@ -129,9 +129,9 @@ struct PlaceAssistView: View {
           Spacer(minLength: 0)
         }
         placementTools
-          .offset(z: 12)
         Spacer(minLength: 0)
       }
+      .offset(z: 12)
       .offset(z: placeZOffset * 2)
       VStack {
         Spacer(minLength: 0)
