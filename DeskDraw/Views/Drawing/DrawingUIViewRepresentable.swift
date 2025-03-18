@@ -17,6 +17,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
+  @Binding var isSelectorActive: Bool
   @Binding var penWidth: Double
   @Binding var monolineWidth: Double
   @Binding var pencilWidth: Double
@@ -138,9 +139,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       context.coordinator.lastDrawingId = model.id
       context.coordinator.lastImages = model.images
       context.coordinator.isUpdatingFromModel = false
-    }
-
-    if context.coordinator.lastImages != model.images {
+    } else if context.coordinator.lastImages != model.images {
       print(#function, "DEBUG Change images")
       
       // 更新图片视图
@@ -150,6 +149,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       updateContentSizeForDrawing()
       saveDrawing()
       updateExportImage()
+    } else if context.coordinator.lastSelectorActive != isSelectorActive || context.coordinator.lastImageEditingId != imageEditingId {
+      print(#function, "DEBUG Change selector active state")
+      context.coordinator.lastSelectorActive = isSelectorActive
+      updateImageViews(in: canvas, context: context)
+    } else if context.coordinator.lastImageEditingId != imageEditingId {
+      print(#function, "DEBUG Change imageEditingId")
+      context.coordinator.lastImageEditingId = imageEditingId
+      updateImageViews(in: canvas, context: context)
     }
   }
 
@@ -174,6 +181,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       
       // 设置编辑状态
       imageView.editingId = imageEditingId
+      
+      // 设置是否可以响应点击事件
+      imageView.isUserInteractionEnabled = isSelectorActive || imageView.editingId == imageElement.id
       
       // 使用字典快速查找上一次的图片信息
       let lastElement = context.coordinator.lastImageElements[imageElement.id]
@@ -222,6 +232,19 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
           height: newSize.height - inset
         )
         coordinator.updateImageSize(imageId: imageElement.id, size: actualSize)
+      }
+      
+      imageView.onTapped = {
+        guard let imageId = imageView.imageId else { return }
+
+        if imageId == imageEditingId {
+          imageEditingId = nil
+        } else {
+          imageEditingId = imageId
+        }
+        
+        imageView.editingId = imageEditingId
+        imageView.isUserInteractionEnabled = isSelectorActive || imageEditingId == imageId
       }
     }
   }
@@ -326,12 +349,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     var lastImages: [ImageElement] = []
     var saveWorkItem: DispatchWorkItem?
     var isUpdatingFromModel = false
+    var lastImageEditingId: UUID?
+    var lastImageElements: [UUID: ImageElement] = [:]
+    var lastSelectorActive: Bool = false
     var imageViewCache: [UUID: ResizableImageView] = [:] {
       didSet {
         print(#function, "imageViewCache \(oldValue.count)")
       }
     }
-    var lastImageElements: [UUID: ImageElement] = [:]
 
     init(_ parent: DrawingUIViewRepresentable) {
       self.parent = parent

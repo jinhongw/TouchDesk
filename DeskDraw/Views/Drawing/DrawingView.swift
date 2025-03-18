@@ -24,6 +24,7 @@ struct DrawingView: View {
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
   @AppStorage("eraserType") private var eraserType: EraserType = .bitmap
   @AppStorage("toolStatus") private var toolStatus: CanvasToolStatus = .ink
+  @AppStorage("isSelectorActive") private var isSelectorActive: Bool = false
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("placementAssistance") private var placementAssistance = true
@@ -186,6 +187,7 @@ struct DrawingView: View {
         toolStatus: $toolStatus,
         pencilType: $pencilType,
         eraserType: $eraserType,
+        isSelectorActive: $isSelectorActive,
         penWidth: $penWidth,
         monolineWidth: $monolineWidth,
         pencilWidth: $pencilWidth,
@@ -238,6 +240,7 @@ struct DrawingView: View {
       toolStatus: $toolStatus,
       pencilType: $pencilType,
       eraserType: $eraserType,
+      isSelectorActive: $isSelectorActive,
       canvas: canvas
     )
     .environment(appModel)

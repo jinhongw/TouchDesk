@@ -25,17 +25,18 @@ struct DrawingToolsView: View {
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("drawColor") private var drawColor: Color = .white
 
-  @State private var settingType: SettingType? = nil
+  @State private var toolSettingType: ToolSettingType? = nil
   @State private var showColorPicker = false
   @State private var showMoreFuncsMenu = false
 
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
+  @Binding var isSelectorActive: Bool
 
   let canvas: PKCanvasView
 
-  enum SettingType {
+  enum ToolSettingType {
     case pen
     case pencil
     case monoline
@@ -325,9 +326,31 @@ struct DrawingToolsView: View {
       pencilTool
       crayonTool
       fountainPenTool
+      selectTool
       imageTool
       colorPicker
     }
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var selectTool: some View {
+    HStack {
+      Button(action: {
+        isSelectorActive.toggle()
+      }, label: {
+        Image(systemName: "hand.point.up.left")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -335,10 +358,6 @@ struct DrawingToolsView: View {
   private var imageTool: some View {
     HStack {
       Button(action: {
-//        if toolStatus == .image {
-//        } else {
-//          toolStatus = .image
-//        }
         let visibleCenter = CGPoint(
           x: canvas.contentOffset.x + canvas.bounds.width / 2,
           y: canvas.contentOffset.y + canvas.bounds.height / 2
@@ -346,14 +365,13 @@ struct DrawingToolsView: View {
         dismissWindow(id: "imagePicker")
         openWindow(id: "imagePicker", value: visibleCenter)
       }, label: {
-        Image(systemName: "photo.on.rectangle.angled.fill")
+        Image(systemName: "photo.on.rectangle.angled")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-//    .background(toolStatus == .image ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(appModel.isLocked)
     .opacity(appModel.isLocked ? 0 : 1)
@@ -365,13 +383,13 @@ struct DrawingToolsView: View {
   var penTool: some View {
     InkToolView(
       inkType: .pen,
-      setType: .pen,
+      toolType: .pen,
       iconName: "pencil.tip",
       calculateWidth: { value in
         0.88 + value * 6
       },
       pencilType: $pencilType,
-      settingType: $settingType,
+      settingType: $toolSettingType,
       penWidth: $penWidth,
       toolStatus: $toolStatus
     )
@@ -382,13 +400,13 @@ struct DrawingToolsView: View {
   var monolineTool: some View {
     InkToolView(
       inkType: .monoline,
-      setType: .monoline,
+      toolType: .monoline,
       iconName: "pencil.and.scribble",
       calculateWidth: { value in
         0.5 + value * 0.875
       },
       pencilType: $pencilType,
-      settingType: $settingType,
+      settingType: $toolSettingType,
       penWidth: $monolineWidth,
       toolStatus: $toolStatus
     )
@@ -399,13 +417,13 @@ struct DrawingToolsView: View {
   var pencilTool: some View {
     InkToolView(
       inkType: .pencil,
-      setType: .pencil,
+      toolType: .pencil,
       iconName: "pencil",
       calculateWidth: { value in
         max(2.41, 2.4 + value * 3.4)
       },
       pencilType: $pencilType,
-      settingType: $settingType,
+      settingType: $toolSettingType,
       penWidth: $pencilWidth,
       toolStatus: $toolStatus
     )
@@ -416,13 +434,13 @@ struct DrawingToolsView: View {
   var crayonTool: some View {
     InkToolView(
       inkType: .crayon,
-      setType: .crayon,
+      toolType: .crayon,
       iconName: "paintbrush",
       calculateWidth: { value in
         10 + value * 10
       },
       pencilType: $pencilType,
-      settingType: $settingType,
+      settingType: $toolSettingType,
       penWidth: $crayonWidth,
       toolStatus: $toolStatus
     )
@@ -433,13 +451,13 @@ struct DrawingToolsView: View {
   var fountainPenTool: some View {
     InkToolView(
       inkType: .fountainPen,
-      setType: .fountainPen,
+      toolType: .fountainPen,
       iconName: "paintbrush.pointed",
       calculateWidth: { value in
         1.5 + value * 3.125
       },
       pencilType: $pencilType,
-      settingType: $settingType,
+      settingType: $toolSettingType,
       penWidth: $fountainPenWidth,
       toolStatus: $toolStatus
     )
@@ -453,14 +471,14 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         if toolStatus == .eraser {
-          if settingType != .eraser {
-            settingType = .eraser
+          if toolSettingType != .eraser {
+            toolSettingType = .eraser
           } else {
-            settingType = nil
+            toolSettingType = nil
           }
         } else {
           toolStatus = .eraser
-          settingType = nil
+          toolSettingType = nil
         }
       }, label: {
         Image(systemName: "eraser")
@@ -470,7 +488,7 @@ struct DrawingToolsView: View {
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(toolStatus == .eraser ? .white.opacity(settingType == .eraser ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .background(toolStatus == .eraser ? .white.opacity(toolSettingType == .eraser ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .overlay {
       VStack {
@@ -506,14 +524,14 @@ struct DrawingToolsView: View {
       .buttonStyle(.borderless)
       .controlSize(.mini)
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      .scaleEffect(toolStatus == .eraser && settingType == .eraser ? 0.85 : 0, anchor: .bottom)
-      .opacity(toolStatus == .eraser && settingType == .eraser ? 1 : 0)
-      .disabled(toolStatus != .eraser || !(settingType == .eraser))
+      .scaleEffect(toolStatus == .eraser && toolSettingType == .eraser ? 0.85 : 0, anchor: .bottom)
+      .opacity(toolStatus == .eraser && toolSettingType == .eraser ? 1 : 0)
+      .disabled(toolStatus != .eraser || !(toolSettingType == .eraser))
       .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
       .offset(y: -64)
       .offset(z: 40)
       .animation(.spring.speed(2), value: toolStatus)
-      .animation(.spring.speed(2), value: settingType)
+      .animation(.spring.speed(2), value: toolSettingType)
     }
     .overlay {
       ZStack {
@@ -526,18 +544,18 @@ struct DrawingToolsView: View {
         }
         .frame(width: 44, height: 60)
         .padding(12)
-        .scaleEffect(toolStatus == .eraser && eraserType == .bitmap && settingType != .eraser ? 1 : 0, anchor: .top)
-        .opacity(toolStatus == .eraser && eraserType == .bitmap && settingType != .eraser ? 1 : 0)
+        .scaleEffect(toolStatus == .eraser && eraserType == .bitmap && toolSettingType != .eraser ? 1 : 0, anchor: .top)
+        .opacity(toolStatus == .eraser && eraserType == .bitmap && toolSettingType != .eraser ? 1 : 0)
         Image(systemName: "xmark.app.fill")
           .frame(width: 44, height: 60)
           .padding(12)
           .font(.system(size: 6, weight: .medium))
-          .scaleEffect(toolStatus == .eraser && settingType != .eraser && eraserType == .vector ? 1 : 0, anchor: .top)
-          .opacity(toolStatus == .eraser && settingType != .eraser && eraserType == .vector ? 1 : 0)
+          .scaleEffect(toolStatus == .eraser && toolSettingType != .eraser && eraserType == .vector ? 1 : 0, anchor: .top)
+          .opacity(toolStatus == .eraser && toolSettingType != .eraser && eraserType == .vector ? 1 : 0)
       }
       .animation(.spring.speed(2), value: eraserType)
       .animation(.spring.speed(2), value: toolStatus)
-      .animation(.spring.speed(2), value: settingType)
+      .animation(.spring.speed(2), value: toolSettingType)
       .offset(y: 32)
     }
     .simultaneousGesture(
@@ -622,12 +640,12 @@ struct InkToolView: View {
   @Environment(AppModel.self) private var appModel
 
   let inkType: PKInkingTool.InkType
-  let setType: DrawingToolsView.SettingType
+  let toolType: DrawingToolsView.ToolSettingType
   let iconName: String
   let calculateWidth: (CGFloat) -> CGFloat
 
   @Binding var pencilType: PKInkingTool.InkType
-  @Binding var settingType: DrawingToolsView.SettingType?
+  @Binding var settingType: DrawingToolsView.ToolSettingType?
   @Binding var penWidth: Double
   @Binding var toolStatus: DrawingView.CanvasToolStatus
 
@@ -637,8 +655,8 @@ struct InkToolView: View {
     HStack {
       Button(action: {
         if toolStatus == .ink, pencilType == inkType {
-          if settingType != setType {
-            settingType = setType
+          if settingType != toolType {
+            settingType = toolType
           } else {
             settingType = nil
           }
@@ -655,7 +673,7 @@ struct InkToolView: View {
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(pencilType == inkType && toolStatus == .ink ? .white.opacity(settingType == setType ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .background(pencilType == inkType && toolStatus == .ink ? .white.opacity(settingType == toolType ? 0.6 : 0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .help("\(inkType)")
     .overlay {
@@ -720,9 +738,9 @@ struct InkToolView: View {
     .buttonStyle(.borderless)
     .controlSize(.mini)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .scaleEffect(pencilType == inkType && toolStatus == .ink && settingType == setType ? 0.85 : 0, anchor: .bottom)
-    .opacity(pencilType == inkType && toolStatus == .ink && settingType == setType ? 1 : 0)
-    .disabled(pencilType == inkType && toolStatus != .ink || !(settingType == setType))
+    .scaleEffect(pencilType == inkType && toolStatus == .ink && settingType == toolType ? 0.85 : 0, anchor: .bottom)
+    .opacity(pencilType == inkType && toolStatus == .ink && settingType == toolType ? 1 : 0)
+    .disabled(pencilType == inkType && toolStatus != .ink || !(settingType == toolType))
     .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
     .offset(y: -64)
     .offset(z: 24)
@@ -743,8 +761,8 @@ struct InkToolView: View {
     }
     .frame(width: 44, height: 60)
     .padding(12)
-    .scaleEffect(pencilType == inkType && toolStatus == .ink && settingType != setType ? 1 : 0, anchor: .top)
-    .opacity(pencilType == inkType && toolStatus == .ink && settingType != setType ? 1 : 0)
+    .scaleEffect(pencilType == inkType && toolStatus == .ink && settingType != toolType ? 1 : 0, anchor: .top)
+    .opacity(pencilType == inkType && toolStatus == .ink && settingType != toolType ? 1 : 0)
     .animation(.spring.speed(2), value: pencilType)
     .animation(.spring.speed(2), value: toolStatus)
     .animation(.spring.speed(2), value: settingType)
@@ -757,6 +775,7 @@ struct InkToolView: View {
   @Previewable @State var toolStatus: DrawingView.CanvasToolStatus = .ink
   @Previewable @State var pencilType: PKInkingTool.InkType = .pen
   @Previewable @State var eraserType: DrawingView.EraserType = .bitmap
+  @Previewable @State var isSelectorActive: Bool = false
   let canvas = PKCanvasView()
 
   RealityView { content, attachments in
@@ -770,6 +789,7 @@ struct InkToolView: View {
         toolStatus: $toolStatus,
         pencilType: $pencilType,
         eraserType: $eraserType,
+        isSelectorActive: $isSelectorActive,
         canvas: canvas
       )
       .environment(AppModel())

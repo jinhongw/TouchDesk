@@ -9,8 +9,8 @@ class ResizableImageView: UIView {
 
   var imageId: UUID?
   var onSizeChanged: ((CGSize) -> Void)?
-  var onSelected: ((UUID) -> Void)?
   var onPositionChanged: ((CGPoint) -> Void)?
+  var onTapped: (() -> Void)?
 
   var image: UIImage? {
     get { imageContentView.image }
@@ -32,7 +32,6 @@ class ResizableImageView: UIView {
     imageContentView.contentMode = .scaleAspectFit
     super.init(frame: .zero)
     backgroundColor = .clear // 确保背景透明
-    isUserInteractionEnabled = true // 确保可以接收触摸事件
 
     imageContentView.frame = CGRect(
       x: controlPointTouchSize / 2,
@@ -45,8 +44,10 @@ class ResizableImageView: UIView {
 
     setupControlPoints()
     setupDragGesture()
+    setupTapGesture() // 添加点击手势设置
   }
 
+  @available(*, unavailable)
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
@@ -127,7 +128,12 @@ class ResizableImageView: UIView {
   }
 
   private func updateDragGesture() {
-    isUserInteractionEnabled = imageId == editingId
+    // 只在编辑状态下启用拖拽手势
+    gestureRecognizers?.forEach { gesture in
+      if gesture is UIPanGestureRecognizer {
+        gesture.isEnabled = imageId == editingId
+      }
+    }
     layer.zPosition = imageId == editingId ? 1 : -1
   }
 
@@ -188,17 +194,26 @@ class ResizableImageView: UIView {
     gesture.setTranslation(.zero, in: superview)
   }
 
+  private func setupTapGesture() {
+    let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+    addGestureRecognizer(tapGesture)
+  }
+
+  @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+    onTapped?()
+  }
+
   override func removeFromSuperview() {
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
-        $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
-        $0.removeFromSuperview()
+      $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
+      $0.removeFromSuperview()
     }
     controlPoints.forEach { $0.removeFromSuperview() }
     controlPoints.removeAll()
     onSizeChanged = nil
-    onSelected = nil
     onPositionChanged = nil
+    onTapped = nil
 
     super.removeFromSuperview()
   }
@@ -207,14 +222,14 @@ class ResizableImageView: UIView {
     // 确保所有资源都被清理
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
-        $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
-        $0.removeFromSuperview()
+      $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
+      $0.removeFromSuperview()
     }
     controlPoints.forEach { $0.removeFromSuperview() }
     controlPoints.removeAll()
     onSizeChanged = nil
-    onSelected = nil
     onPositionChanged = nil
+    onTapped = nil
   }
 }
 
