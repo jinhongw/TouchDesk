@@ -32,6 +32,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   let canvasHeight: CGFloat
   let saveDrawing: () -> Void
   let updateExportImage: () -> Void
+  let deleteImage: (UUID) -> Void
 
   var ink: PKInkingTool {
     var tool = PKInkingTool(pencilType, color: UIColor(color))
@@ -245,6 +246,12 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         
         imageView.editingId = imageEditingId
         imageView.isUserInteractionEnabled = isSelectorActive || imageEditingId == imageId
+      }
+      
+      // 添加删除回调
+      imageView.onDelete = { [weak coordinator = context.coordinator] in
+        guard let coordinator = coordinator else { return }
+        coordinator.parent.deleteImage(imageElement.id)
       }
     }
   }

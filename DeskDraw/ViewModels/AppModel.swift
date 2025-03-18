@@ -418,6 +418,15 @@ extension AppModel {
     drawings[drawingId]?.texts.append(textElement)
     updateDrawing(drawingId)
   }
+
+  func deleteImage(_ imageId: UUID) {
+    guard let drawingId else { return }
+    drawings[drawingId]?.images.removeAll { $0.id == imageId }
+    // 清除编辑状态
+    imageEditingId = nil
+    // 保存更改
+    updateDrawing(drawingId)
+  }
 }
 
 extension PKDrawing {

@@ -1,16 +1,19 @@
 import UIKit
 
 class ResizableImageView: UIView {
-  let controlPointTouchSize: CGFloat = 44 // 触控区域大小
+  let controlPointTouchSize: CGFloat = 32 // 触控区域大小
   private let controlPointVisualSize: CGFloat = 10 // 视觉大小
   private let controlPointBorderWidth: CGFloat = 2
+  private let toolButtonSize: CGFloat = 32
   private var controlPoints: [ControlPointView] = []
   private var imageContentView: UIImageView
+  private var deleteButton: UIButton
 
   var imageId: UUID?
   var onSizeChanged: ((CGSize) -> Void)?
   var onPositionChanged: ((CGPoint) -> Void)?
   var onTapped: (() -> Void)?
+  var onDelete: (() -> Void)?
 
   var image: UIImage? {
     get { imageContentView.image }
@@ -23,6 +26,8 @@ class ResizableImageView: UIView {
       controlPoints.forEach { $0.isHidden = imageId != editingId }
       // 根据编辑状态更新拖拽手势
       updateDragGesture()
+      // 根据编辑状态更新删除按钮显示
+      updateDeleteButtonVisibility()
     }
   }
 
@@ -30,6 +35,13 @@ class ResizableImageView: UIView {
     // 先初始化 imageContentView
     imageContentView = UIImageView(image: image)
     imageContentView.contentMode = .scaleAspectFit
+    
+    // 初始化删除按钮
+    deleteButton = UIButton(type: .system)
+    deleteButton.setImage(UIImage(systemName: "trash.circle.fill"), for: .normal)
+    deleteButton.tintColor = .red
+    deleteButton.isHidden = true
+    
     super.init(frame: .zero)
     backgroundColor = .clear // 确保背景透明
 
@@ -41,10 +53,26 @@ class ResizableImageView: UIView {
     )
     // 添加 imageContentView 作为子视图
     addSubview(imageContentView)
-
+    
+    // 添加删除按钮
+    deleteButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+    deleteButton.layer.cornerRadius = toolButtonSize / 2
+    
+    // 配置按钮样式
+    var config = UIButton.Configuration.plain()
+    config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)
+    config.image = UIImage(systemName: "trash.circle.fill")
+    config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+    deleteButton.configuration = config
+    deleteButton.tintColor = .white
+    deleteButton.hoverStyle = .init(effect: .automatic, shape: .circle)
+    
+    addSubview(deleteButton)
+    deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
+    
     setupControlPoints()
     setupDragGesture()
-    setupTapGesture() // 添加点击手势设置
+    setupTapGesture()
   }
 
   @available(*, unavailable)
@@ -57,12 +85,12 @@ class ResizableImageView: UIView {
     controlPoints.forEach { $0.removeFromSuperview() }
     controlPoints.removeAll()
     let inset = controlPointTouchSize / 2
-    // 创建四个角落的控制点
+    // 创建四个角落的控制点，使用相同的位置计算逻辑
     let positions = [
       CGPoint(x: inset, y: inset), // 左上
-      CGPoint(x: bounds.maxX - inset, y: inset), // 右上
-      CGPoint(x: inset, y: bounds.maxY - inset), // 左下
-      CGPoint(x: bounds.maxX - inset, y: bounds.maxY - inset), // 右下
+      CGPoint(x: bounds.width - inset, y: inset), // 右上
+      CGPoint(x: inset, y: bounds.height - inset), // 左下
+      CGPoint(x: bounds.width - inset, y: bounds.height - inset), // 右下
     ]
 
     for (index, position) in positions.enumerated() {
@@ -84,14 +112,22 @@ class ResizableImageView: UIView {
       touchSize: controlPointTouchSize
     )
     controlPoint.frame = CGRect(
-      x: position.x,
-      y: position.y,
+      x: position.x - controlPointTouchSize / 2,
+      y: position.y - controlPointTouchSize / 2,
       width: controlPointTouchSize,
       height: controlPointTouchSize
     )
     controlPoint.isUserInteractionEnabled = true
 
     return controlPoint
+  }
+
+  private func updateDeleteButtonVisibility() {
+    deleteButton.isHidden = imageId != editingId
+  }
+
+  @objc private func handleDelete() {
+    onDelete?()
   }
 
   override func layoutSubviews() {
@@ -102,6 +138,14 @@ class ResizableImageView: UIView {
     let imageFrame = bounds.inset(by: UIEdgeInsets(top: inset, left: inset, bottom: inset, right: inset))
     imageContentView.frame = imageFrame
 
+    // 更新删除按钮位置
+    deleteButton.frame = CGRect(
+      x: bounds.width / 2 - toolButtonSize / 2,
+      y: inset - toolButtonSize / 2,
+      width: toolButtonSize,
+      height: toolButtonSize
+    )
+
     updateControlPointsPosition()
   }
 
@@ -109,12 +153,12 @@ class ResizableImageView: UIView {
     guard controlPoints.count == 4 else { return }
 
     let inset = controlPointTouchSize / 2
-    // 创建四个角落的控制点
+    // 创建四个角落的控制点，使用 imageContentView 的边界来定位
     let positions = [
       CGPoint(x: inset, y: inset), // 左上
-      CGPoint(x: bounds.maxX - inset, y: inset), // 右上
-      CGPoint(x: inset, y: bounds.maxY - inset), // 左下
-      CGPoint(x: bounds.maxX - inset, y: bounds.maxY - inset), // 右下
+      CGPoint(x: bounds.width - inset, y: inset), // 右上
+      CGPoint(x: inset, y: bounds.height - inset), // 左下
+      CGPoint(x: bounds.width - inset, y: bounds.height - inset), // 右下
     ]
 
     for (index, position) in positions.enumerated() {
@@ -180,18 +224,26 @@ class ResizableImageView: UIView {
   }
 
   @objc private func handleImageTranslationPan(_ gesture: UIPanGestureRecognizer) {
-    let translation = gesture.translation(in: superview)
-
-    center = CGPoint(
-      x: center.x + translation.x,
-      y: center.y + translation.y
-    )
-
-    if gesture.state == .ended || gesture.state == .cancelled {
+    switch gesture.state {
+    case .began:
+      // 开始拖拽时设置透明度为 50% 并隐藏删除按钮
+      alpha = 0.5
+      deleteButton.isHidden = true
+    case .changed:
+      let translation = gesture.translation(in: superview)
+      center = CGPoint(
+        x: center.x + translation.x,
+        y: center.y + translation.y
+      )
+      gesture.setTranslation(.zero, in: superview)
+    case .ended, .cancelled:
+      // 拖拽结束时恢复透明度和删除按钮显示
+      alpha = 1.0
+      updateDeleteButtonVisibility()
       onPositionChanged?(frame.origin)
+    default:
+      break
     }
-
-    gesture.setTranslation(.zero, in: superview)
   }
 
   private func setupTapGesture() {
@@ -204,6 +256,7 @@ class ResizableImageView: UIView {
   }
 
   override func removeFromSuperview() {
+    deleteButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
       $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
@@ -214,12 +267,13 @@ class ResizableImageView: UIView {
     onSizeChanged = nil
     onPositionChanged = nil
     onTapped = nil
+    onDelete = nil
 
     super.removeFromSuperview()
   }
 
   deinit {
-    // 确保所有资源都被清理
+    deleteButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
       $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
@@ -230,6 +284,7 @@ class ResizableImageView: UIView {
     onSizeChanged = nil
     onPositionChanged = nil
     onTapped = nil
+    onDelete = nil
   }
 }
 

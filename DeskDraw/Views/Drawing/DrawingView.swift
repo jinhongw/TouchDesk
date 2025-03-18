@@ -206,6 +206,9 @@ struct DrawingView: View {
         updateExportImage: {
           guard let drawingId = appModel.drawingId else { return }
           appModel.generateThumbnail(drawingId, isFullScale: true)
+        },
+        deleteImage: { imageId in
+          appModel.deleteImage(imageId)
         }
       )
     }
