@@ -11,7 +11,6 @@ import UIKit
 
 struct AboutView: View {
   @Environment(AppModel.self) private var appModel
-  @Environment(\.requestReview) private var requestReview
   @Environment(\.openURL) private var openURL
   let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
 
@@ -244,7 +243,7 @@ struct AboutView: View {
   @ViewBuilder
   private var appStore: some View {
     Button(action: {
-      presentReview()
+      openURL(URL(string: "https://apps.apple.com/us/app/touchdesk-desktop-canvas/id6740164313?action=write-review")!)
     }, label: {
       HStack {
         Image("AppStore")
@@ -432,10 +431,6 @@ struct AboutView: View {
         }
       }
     })
-  }
-
-  private func presentReview() {
-    requestReview()
   }
 }
 
