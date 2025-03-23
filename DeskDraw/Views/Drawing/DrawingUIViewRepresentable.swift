@@ -28,6 +28,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   @Binding var isLocked: Bool
   @Binding var isShareImageViewShowing: Bool
   @Binding var imageEditingId: UUID?
+  @Binding var contentOffset: CGPoint
   let canvasWidth: CGFloat
   let canvasHeight: CGFloat
   let saveDrawing: () -> Void
@@ -98,20 +99,33 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     context.coordinator.lastImages = model.images
     canvas.delegate = context.coordinator
 
-    updateContentSizeForDrawing()
-    
+    // 添加滚动视图代理
+    canvas.delegate = context.coordinator
+
+    // 监听滚动位置变化
+    let observer = canvas.observe(\.contentOffset, options: [.new]) { _, change in
+      if let newOffset = change.newValue {
+        context.coordinator.parent.contentOffset = newOffset
+      }
+    }
+    context.coordinator.contentOffsetObserver = observer
+
+    DispatchQueue.main.async {
+      updateContentSizeForDrawing()
+    }
+
     Task {
       try await Task.sleep(for: .seconds(0.5))
       setPosition()
     }
-    
+
     // 清理现有的图片视图
     canvas.subviews.forEach { view in
       if view is UIImageView {
         view.removeFromSuperview()
       }
     }
-    
+
     // 使用新的图片视图管理逻辑
     updateImageViews(in: canvas, context: context)
 
@@ -126,28 +140,32 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       print(#function, "DEBUG Change drawing")
       context.coordinator.isUpdatingFromModel = true
       canvas.undoManager?.removeAllActions()
-      
+
       // 清理图片视图缓存
       context.coordinator.cleanupImageViewCache(currentImageIds: Set(model.images.map { $0.id }))
-      
+
       canvas.drawing = model.drawing
-      updateContentSizeForDrawing()
-      setPosition()
+      DispatchQueue.main.async {
+        updateContentSizeForDrawing()
+        setPosition()
+      }
 
       // 更新图片视图
       updateImageViews(in: canvas, context: context)
-      
+
       context.coordinator.lastDrawingId = model.id
       context.coordinator.lastImages = model.images
       context.coordinator.isUpdatingFromModel = false
     } else if context.coordinator.lastImages != model.images {
       print(#function, "DEBUG Change images")
-      
+
       // 更新图片视图
       updateImageViews(in: canvas, context: context)
-      
+
       context.coordinator.lastImages = model.images
-      updateContentSizeForDrawing()
+      DispatchQueue.main.async {
+        updateContentSizeForDrawing()
+      }
       saveDrawing()
       updateExportImage()
     } else if context.coordinator.lastSelectorActive != isSelectorActive || context.coordinator.lastImageEditingId != imageEditingId {
@@ -164,10 +182,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   private func updateImageViews(in canvas: PKCanvasView, context: Context) {
     // 创建当前图片ID集合
     let currentImageIds = Set(model.images.map { $0.id })
-    
+
     // 直接使用 imageViewCache
     let existingImageViews = context.coordinator.imageViewCache
-    
+
     // 删除不再需要的图片视图
     for (imageId, imageView) in existingImageViews {
       if !currentImageIds.contains(imageId) {
@@ -175,25 +193,25 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         context.coordinator.imageViewCache.removeValue(forKey: imageId)
       }
     }
-    
+
     // 更新或添加图片视图
     for imageElement in model.images {
       guard let imageView = context.coordinator.getOrCreateImageView(for: imageElement, in: canvas) else { continue }
-      
+
       // 设置编辑状态
       imageView.editingId = imageEditingId
-      
+
       // 设置是否可以响应点击事件
       imageView.isUserInteractionEnabled = isSelectorActive || imageView.editingId == imageElement.id
-      
+
       // 使用字典快速查找上一次的图片信息
       let lastElement = context.coordinator.lastImageElements[imageElement.id]
       let needsUpdate = existingImageViews[imageElement.id] == nil ||
-                       lastElement?.imageData != imageElement.imageData ||
-                       lastElement?.position != imageElement.position ||
-                       lastElement?.size != imageElement.size ||
-                       lastElement?.rotation != imageElement.rotation
-      
+        lastElement?.imageData != imageElement.imageData ||
+        lastElement?.position != imageElement.position ||
+        lastElement?.size != imageElement.size ||
+        lastElement?.rotation != imageElement.rotation
+
       if needsUpdate {
         // 考虑控制点触控区域，调整 frame
         let inset = imageView.controlPointTouchSize / 2
@@ -205,13 +223,13 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         )
         imageView.frame = adjustedFrame
         imageView.transform = CGAffineTransform(rotationAngle: imageElement.rotation)
-        
+
         // 如果视图不在画布上，添加它
         if imageView.superview == nil {
           canvas.addSubview(imageView)
         }
       }
-      
+
       // 更新回调
       imageView.onPositionChanged = { [weak coordinator = context.coordinator] newPosition in
         guard let coordinator = coordinator else { return }
@@ -223,7 +241,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         )
         coordinator.updateImagePosition(imageId: imageElement.id, position: actualPosition)
       }
-      
+
       imageView.onSizeChanged = { [weak coordinator = context.coordinator] newSize in
         guard let coordinator = coordinator else { return }
         // 需要考虑控制点触控区域的大小
@@ -234,7 +252,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         )
         coordinator.updateImageSize(imageId: imageElement.id, size: actualSize)
       }
-      
+
       imageView.onTapped = {
         guard let imageId = imageView.imageId else { return }
 
@@ -243,11 +261,11 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         } else {
           imageEditingId = imageId
         }
-        
+
         imageView.editingId = imageEditingId
         imageView.isUserInteractionEnabled = isSelectorActive || imageEditingId == imageId
       }
-      
+
       // 添加删除回调
       imageView.onDelete = { [weak coordinator = context.coordinator] in
         guard let coordinator = coordinator else { return }
@@ -350,7 +368,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     }
   }
 
-  class Coordinator: NSObject, PKCanvasViewDelegate {
+  class Coordinator: NSObject, PKCanvasViewDelegate, UIScrollViewDelegate {
     var parent: DrawingUIViewRepresentable
     var lastDrawingId: UUID = .init()
     var lastImages: [ImageElement] = []
@@ -365,16 +383,18 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       }
     }
 
+    var contentOffsetObserver: NSKeyValueObservation?
+
     init(_ parent: DrawingUIViewRepresentable) {
       self.parent = parent
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
       guard !isUpdatingFromModel else { return }
-      
+
       saveWorkItem?.cancel()
       saveWorkItem = nil
-      
+
       let workItem = DispatchWorkItem { [weak self] in
         guard let self = self else { return }
         if self.parent.model.drawing != canvasView.drawing {
@@ -389,7 +409,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
           }
         }
       }
-      
+
       saveWorkItem = workItem
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
     }
@@ -399,7 +419,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       var updatedImage = parent.model.images[index]
       updatedImage.position = position
       parent.model.images[index] = updatedImage
-      
+
       parent.saveDrawing()
       if parent.isShareImageViewShowing {
         parent.updateExportImage()
@@ -411,7 +431,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       var updatedImage = parent.model.images[index]
       updatedImage.size = size
       parent.model.images[index] = updatedImage
-      
+
       parent.saveDrawing()
       if parent.isShareImageViewShowing {
         parent.updateExportImage()
@@ -426,7 +446,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         }
         return cachedView
       }
-      
+
       // 创建新视图
       if let image = UIImage(data: imageElement.imageData) {
         let imageView = ResizableImageView(image: image, size: image.size)
@@ -435,15 +455,15 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         imageViewCache[imageElement.id] = imageView
         return imageView
       }
-      
+
       print(#function, "Failed to create image view")
       return nil
     }
-    
+
     func cleanupImageViewCache(currentImageIds: Set<UUID>) {
       let unusedIds = Set(imageViewCache.keys).subtracting(currentImageIds)
       print("Cleaning up \(unusedIds.count) unused image views")
-      
+
       unusedIds.forEach { id in
         imageViewCache[id]?.removeFromSuperview()
         imageViewCache[id] = nil
@@ -453,7 +473,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     deinit {
       saveWorkItem?.cancel()
       saveWorkItem = nil
-      
+      contentOffsetObserver?.invalidate()
+
       // 清理所有缓存的视图
       cleanupImageViewCache(currentImageIds: [])
     }

@@ -296,7 +296,7 @@ class AppModel {
     return drawings[drawingId]
   }
 
-  private func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {
+  func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {
     if let cachedImage = imageCache[id] {
       return cachedImage
     }

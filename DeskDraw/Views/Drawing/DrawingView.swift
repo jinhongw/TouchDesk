@@ -38,6 +38,7 @@ struct DrawingView: View {
   @State private var zRotation: Double = 0
   @State private var verticalZOffest: CGFloat = 0
   @State private var horizontalYOffest: CGFloat = 0
+  @State private var contentOffset: CGPoint = .zero
 
   let zOffset: CGFloat = 72
   let placeZOffset: CGFloat = 4
@@ -143,6 +144,11 @@ struct DrawingView: View {
           .cornerRadius(20)
           .frame(width: width, height: depth)
           .colorScheme(.light)
+          .overlay(alignment: .bottomTrailing) {
+            MiniMapView(canvas: canvas, contentOffset: $contentOffset)
+              .padding(20)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+          }
       }
     }
     .frame(width: width)
@@ -198,6 +204,7 @@ struct DrawingView: View {
         isLocked: $appModel.isLocked,
         isShareImageViewShowing: $appModel.isShareImageViewShowing,
         imageEditingId: $appModel.imageEditingId,
+        contentOffset: $contentOffset,
         canvasWidth: width,
         canvasHeight: depth - zOffset,
         saveDrawing: {
