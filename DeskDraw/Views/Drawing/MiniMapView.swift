@@ -72,15 +72,27 @@ struct MiniMapView: View {
     }
     
     private func getContentBounds() -> CGRect {
-        var bounds = canvas.drawing.bounds
-        for subview in canvas.subviews {
-            if let imageView = subview as? UIImageView {
-                bounds = bounds.union(imageView.frame)
-            }
+        guard let drawingId = appModel.drawingId,
+              let drawing = appModel.drawings[drawingId] else {
+            return CGRect(origin: .zero, size: canvas.contentSize)
         }
-        if bounds.isNull || bounds.isEmpty {
+        
+        // 检查是否有任何内容（绘画或图片）
+        let hasDrawing = !drawing.drawing.bounds.isNull && !drawing.drawing.bounds.isEmpty
+        var bounds = hasDrawing ? drawing.drawing.bounds : .zero
+        
+        // 从 model 中获取图片信息
+        let hasImages = !drawing.images.isEmpty
+        for imageElement in drawing.images {
+            let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
+            bounds = bounds == .zero ? imageFrame : bounds.union(imageFrame)
+        }
+        
+        // 如果既没有绘画也没有图片，使用画布尺寸
+        if !hasDrawing && !hasImages {
             bounds = CGRect(origin: .zero, size: canvas.contentSize)
         }
+        
         return bounds
     }
     

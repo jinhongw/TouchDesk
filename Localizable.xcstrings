@@ -202,21 +202,6 @@
       },
       "shouldTranslate" : false
     },
-    "1" : {
-      "shouldTranslate" : false
-    },
-    "2" : {
-      "shouldTranslate" : false
-    },
-    "3" : {
-      "shouldTranslate" : false
-    },
-    "4" : {
-      "shouldTranslate" : false
-    },
-    "5" : {
-      "shouldTranslate" : false
-    },
     "50% OFF" : {
       "localizations" : {
         "de" : {
@@ -2783,6 +2768,7 @@
       }
     },
     "System Sounds" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

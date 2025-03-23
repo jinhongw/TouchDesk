@@ -109,10 +109,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       }
     }
     context.coordinator.contentOffsetObserver = observer
-
-    DispatchQueue.main.async {
-      updateContentSizeForDrawing()
-    }
+    updateContentSizeForDrawing()
 
     Task {
       try await Task.sleep(for: .seconds(0.5))
@@ -148,10 +145,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.contentSize = defaultSize
       canvas.drawing = model.drawing
 
-      DispatchQueue.main.async {
-        updateContentSizeForDrawing()
-        setPosition()
-      }
+      updateContentSizeForDrawing()
+      setPosition()
 
       // 更新图片视图
       updateImageViews(in: canvas, context: context)
@@ -166,9 +161,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       updateImageViews(in: canvas, context: context)
 
       context.coordinator.lastImages = model.images
-      DispatchQueue.main.async {
-        updateContentSizeForDrawing()
-      }
+      updateContentSizeForDrawing()
       saveDrawing()
       updateExportImage()
     } else if context.coordinator.lastSelectorActive != isSelectorActive || context.coordinator.lastImageEditingId != imageEditingId {
@@ -282,21 +275,26 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   }
 
   func updateContentSizeForDrawing() {
-    guard !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull && !canvas.contentSize.width.isNaN && !canvas.contentSize.height.isNaN else {
+    // 检查是否有任何内容（绘画或图片）
+    let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
+    let hasImages = !model.images.isEmpty
+    
+    guard hasDrawing || hasImages else {
       print(#function, "canvasWidth set \(defaultSize) width: \(canvasWidth) height \(canvasHeight)")
       canvas.contentSize = defaultSize
       return
     }
-    
+
     let drawing = canvas.drawing
     let newContentWidth: CGFloat
     let newContentHeight: CGFloat
 
     // 计算所有内容（包括绘画和图片）的边界
-    var bounds = drawing.bounds
+    var bounds = hasDrawing ? drawing.bounds : .zero
     for imageElement in model.images {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
-      bounds = bounds.union(imageFrame)
+      print(#function, "bounds \(bounds) imageFrame \(imageFrame)")
+      bounds = bounds == .zero ? imageFrame : bounds.union(imageFrame)
     }
 
     let minX = bounds.minX
@@ -353,15 +351,21 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
   func setPosition() {
     Task {
-      guard !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull && !canvas.contentSize.width.isNaN && !canvas.contentSize.height.isNaN else {
+      // 检查是否有任何内容（绘画或图片）
+      let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
+      let hasImages = !model.images.isEmpty
+      
+      guard hasDrawing || hasImages else {
         print(#function, "Set default position")
         canvas.setContentOffset(CGPoint(x: defaultSize.width / 2, y: defaultSize.height / 2), animated: true)
         return
       }
-      var contentBounds = canvas.drawing.bounds
+
+      // 计算所有内容的边界
+      var contentBounds = hasDrawing ? canvas.drawing.bounds : .zero
       for imageElement in model.images {
         let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
-        contentBounds = contentBounds.union(imageFrame)
+        contentBounds = contentBounds == .zero ? imageFrame : contentBounds.union(imageFrame)
       }
 
       print(#function, "contentBounds \(contentBounds) canvas.frame \(canvas.frame) width: \(canvasWidth) height \(canvasHeight)")

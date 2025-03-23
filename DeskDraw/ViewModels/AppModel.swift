@@ -90,7 +90,7 @@ class AppModel {
       drawings = DrawingFileManager.shared.loadAllDrawings()
       ids = DrawingFileManager.shared.loadDrawingIndex()
       if drawings.isEmpty {
-        addNewDrawing()
+        addDefulatDrawing()
       }
 
       for id in drawings.keys {
@@ -335,6 +335,20 @@ extension AppModel {
     thumbnails[drawing.id] = UIImage()
     selectDrawingId(drawing.id)
     saveDrawing(drawing.id)
+  }
+  
+  func addDefulatDrawing() {
+    guard let data = NSDataAsset(name: "Notes")?.data else { return }
+    if let newDrawing = try? PKDrawing(data: data) {
+      let drawing = DrawingModel(
+        name: "Drawing \(drawings.count + 1)",
+        drawing: newDrawing
+      )
+      drawings[drawing.id] = drawing
+      thumbnails[drawing.id] = UIImage()
+      selectDrawingId(drawing.id)
+      saveDrawing(drawing.id)
+    }
   }
 
   private func createDefaultStrokes() -> [PKStroke] {
