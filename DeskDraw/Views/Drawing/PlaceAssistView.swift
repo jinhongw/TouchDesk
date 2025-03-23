@@ -113,7 +113,7 @@ struct PlaceAssistView: View {
 
   var body: some View {
     ZStack {
-      PlaceAssistLayerView(width: width, height: height, style: .any)
+      PlaceAssistLayerView(width: width, height: height, style: .blue)
       PlaceAssistLayerView(width: width, height: height, style: .green)
         .offset(z: placeZOffset * 2)
         .opacity(appModel.isBeginingPlacement ? 0 : 0.3)

@@ -70,8 +70,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
   var defaultSize: CGSize {
     CGSize(
-      width: canvasWidth + 2 * canvasOverscrollDistance,
-      height: canvasHeight + 2 * canvasOverscrollDistance
+      width: canvasWidth,
+      height: canvasHeight
     )
   }
 
@@ -144,7 +144,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       // 清理图片视图缓存
       context.coordinator.cleanupImageViewCache(currentImageIds: Set(model.images.map { $0.id }))
 
+      // 先重置 contentSize 到默认大小
+      canvas.contentSize = defaultSize
       canvas.drawing = model.drawing
+
       DispatchQueue.main.async {
         updateContentSizeForDrawing()
         setPosition()
@@ -284,7 +287,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.contentSize = defaultSize
       return
     }
-
+    
     let drawing = canvas.drawing
     let newContentWidth: CGFloat
     let newContentHeight: CGFloat
@@ -309,6 +312,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     let addWidth = canvasOverscrollDistance - (contentWidth - maxX)
     let addHeight = canvasOverscrollDistance - (contentHeight - maxY)
 
+    print(#function, "minX \(minX) minY \(minY) maxX \(maxX) maxY \(maxY) contentWidth \(contentWidth) contentHeight \(contentHeight)")
     if minX < canvasOverscrollMiniDistance || minY < canvasOverscrollMiniDistance {
       newContentWidth = contentWidth + transformX + addWidth
       newContentHeight = contentHeight + transformY + addHeight
