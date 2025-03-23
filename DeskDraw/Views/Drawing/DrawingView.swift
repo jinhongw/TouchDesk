@@ -30,6 +30,7 @@ struct DrawingView: View {
   @AppStorage("placementAssistance") private var placementAssistance = true
   @AppStorage("showGestureGuide") private var showGestureGuide = true
   @AppStorage("drawColor") private var drawColor: Color = .white
+  @AppStorage("showMiniMap") private var showMiniMap = true
 
   @State private var canvas = PKCanvasView()
   @State private var lastCanvasPosition: AffineTransform3D? = nil
@@ -145,9 +146,11 @@ struct DrawingView: View {
           .frame(width: width, height: depth)
           .colorScheme(.light)
           .overlay(alignment: .bottomTrailing) {
-            MiniMapView(canvas: canvas, contentOffset: $contentOffset)
-              .padding(16)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            if showMiniMap {
+              MiniMapView(canvas: canvas, contentOffset: $contentOffset)
+                .padding(16)
+                .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            }
           }
       }
     }

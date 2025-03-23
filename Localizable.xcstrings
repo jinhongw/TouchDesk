@@ -2767,6 +2767,9 @@
         }
       }
     },
+    "Show mini map" : {
+
+    },
     "System Sounds" : {
       "extractionState" : "stale",
       "localizations" : {
