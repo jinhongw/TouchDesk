@@ -133,19 +133,6 @@ struct PlaceAssistView: View {
       }
       .offset(z: 12)
       .offset(z: placeZOffset * 2)
-      VStack {
-        Spacer(minLength: 0)
-        Image("Arrow_11")
-          .resizable()
-          .scaledToFit()
-          .frame(width: 80, height: 80)
-          .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 12 : .pi / 12), axis: (1, 0, 0), anchor: .center)
-          .offset(z: isHorizontal ? 20 : 60)
-        Spacer(minLength: 0)
-      }
-      .scaleEffect(appModel.isBeginingPlacement ? 0 : 1)
-      .offset(y: depth / 2 - 65)
-      .offset(z: placeZOffset * 2)
       mainTools
     }
     .padding(12)
@@ -170,12 +157,11 @@ struct PlaceAssistView: View {
             AudioServicesPlaySystemSound(1104)
           })
           .backgroundStyle(.white)
-          .controlSize(.small)
+          .controlSize(.mini)
           Image(systemName: "arrowshape.up")
             .frame(width: 20)
             .rotation3DEffect(.init(radians: -.pi / 2), axis: (1, 0, 0), anchor: .center)
         }
-        .padding(.horizontal, 200)
       } else {
         VStack(spacing: 16) {
           HStack(spacing: 12) {
@@ -186,13 +172,12 @@ struct PlaceAssistView: View {
               AudioServicesPlaySystemSound(1104)
             })
             .backgroundStyle(.white)
-            .controlSize(.small)
+            .controlSize(.mini)
             Image(systemName: "trapezoid.and.line.horizontal")
               .scaleEffect(x: -1, y: 1)
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 12), axis: (0, 1, 0), anchor: .center)
           }
-          .padding(.horizontal, 200)
           
           HStack(spacing: 12) {
             Image(systemName: "arrow.up.to.line.compact")
@@ -202,15 +187,14 @@ struct PlaceAssistView: View {
               AudioServicesPlaySystemSound(1104)
             })
             .backgroundStyle(.white)
-            .controlSize(.small)
+            .controlSize(.mini)
             Image(systemName: "arrow.down.to.line.compact")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 5), axis: (1, 0, 0), anchor: .center)
           }
-          .padding(.horizontal, 200)
         }
       }
-    }
+    }.frame(width: 320)
   }
   
   @MainActor
