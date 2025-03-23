@@ -78,7 +78,7 @@ struct NotesView: View {
       .aspectRatio(1, contentMode: .fit)
       .padding(8)
       .hoverEffect { effect, isActive, geometry in
-        effect.animation(.default) {
+        effect.animation(.smooth) {
           $0.scaleEffect(isActive ? 1.1 : 1.0)
         }
       }
@@ -117,7 +117,7 @@ struct NotesView: View {
       .aspectRatio(1, contentMode: .fit)
       .padding(8)
       .hoverEffect { effect, isActive, geometry in
-        effect.animation(.default) {
+        effect.animation(.smooth) {
           $0.scaleEffect(isActive ? 1.1 : 1.0)
         }
       }

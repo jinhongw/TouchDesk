@@ -146,7 +146,7 @@ struct DrawingView: View {
           .colorScheme(.light)
           .overlay(alignment: .bottomTrailing) {
             MiniMapView(canvas: canvas, contentOffset: $contentOffset)
-              .padding(20)
+              .padding(16)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
           }
       }
