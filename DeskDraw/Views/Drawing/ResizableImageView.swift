@@ -4,7 +4,7 @@ class ResizableImageView: UIView {
   let controlPointTouchSize: CGFloat = 32 // 触控区域大小
   private let controlPointVisualSize: CGFloat = 10 // 视觉大小
   private let controlPointBorderWidth: CGFloat = 2
-  private let toolButtonSize: CGFloat = 32
+  private let toolButtonSize: CGFloat = 23
   private var controlPoints: [ControlPointView] = []
   private var imageContentView: UIImageView
   private var deleteButton: UIButton
@@ -40,8 +40,6 @@ class ResizableImageView: UIView {
     
     // 初始化删除按钮
     deleteButton = UIButton(type: .system)
-    deleteButton.setImage(UIImage(systemName: "trash.circle.fill"), for: .normal)
-    deleteButton.tintColor = .red
     deleteButton.isHidden = true
     
     super.init(frame: .zero)
@@ -58,14 +56,28 @@ class ResizableImageView: UIView {
     
     // 添加删除按钮
     deleteButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
-    deleteButton.layer.cornerRadius = toolButtonSize / 2
+    
+    // 创建并配置毛玻璃效果
+    let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
+    let blurView = UIVisualEffectView(effect: blurEffect)
+    blurView.frame = deleteButton.bounds
+    blurView.layer.cornerRadius = toolButtonSize / 2
+    blurView.clipsToBounds = true
+    blurView.isUserInteractionEnabled = false
+    deleteButton.insertSubview(blurView, at: 0)
     
     // 配置按钮样式
     var config = UIButton.Configuration.plain()
-    config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)
-    config.image = UIImage(systemName: "trash.circle.fill")
-    config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+    config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    config.image = UIImage(systemName: "trash")
+    config.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    config.baseForegroundColor = .white
     deleteButton.configuration = config
+    
+    // 确保按钮内容居中
+    deleteButton.contentVerticalAlignment = .center
+    deleteButton.contentHorizontalAlignment = .center
+    deleteButton.imageView?.contentMode = .center
     deleteButton.tintColor = .white
     deleteButton.hoverStyle = .init(effect: .automatic, shape: .circle)
     

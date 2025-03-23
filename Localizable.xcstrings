@@ -2678,10 +2678,6 @@
       }
     },
     "Shoot as if it's real life" : {
-
-    },
-    "Shoot as if it’s real life" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2768,51 +2764,47 @@
       }
     },
     "Show mini map" : {
-
-    },
-    "System Sounds" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Systemklang"
+            "value" : "Minikarte anzeigen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "System Sound"
+            "value" : "Show Mini Map"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Son système"
+            "value" : "Afficher la mini-carte"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "システムサウンド"
+            "value" : "ミニマップを表示"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시스템 사운드"
+            "value" : "미니맵 표시"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "系统声音"
+            "value" : "显示小地图"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "系統聲音"
+            "value" : "顯示小地圖"
           }
         }
       }

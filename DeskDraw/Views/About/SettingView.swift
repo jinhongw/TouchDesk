@@ -25,9 +25,6 @@ struct SettingView: View {
         }
 
       }
-//      header: {
-//        Text("Canvas")
-//      }
     }
     .listStyle(.insetGrouped)
     .frame(width: 480)

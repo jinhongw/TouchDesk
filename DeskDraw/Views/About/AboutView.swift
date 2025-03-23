@@ -115,7 +115,7 @@ struct AboutView: View {
           .font(.subheadline)
       }
     }
-    .frame(width: 480, height: 880)
+    .frame(width: 480, height: isSimplifiedChinese ? 1000 : 880)
     .scrollDisabled(true)
     .padding(.vertical, 20)
   }
