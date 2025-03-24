@@ -13,7 +13,6 @@ struct ImagePickerView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.dismiss) private var dismiss
   let point: CGPoint
-//  @Environment(\.canvasView) private var canvas
 
   var body: some View {
     ImagePickerUIView(point: point)
@@ -51,11 +50,6 @@ struct ImagePickerUIView: UIViewControllerRepresentable {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
       if let image = info[.originalImage] as? UIImage,
          let imageData = image.jpegData(compressionQuality: 1) {
-        // 获取当前画布的可见区域中心点
-//        let visibleCenter = CGPoint(
-//          x: parent.canvas.contentOffset.x + parent.canvas.bounds.width / 2,
-//          y: parent.canvas.contentOffset.y + parent.canvas.bounds.height / 2
-//        )
         
         // 计算合适的图片尺寸
         let maxSize: CGFloat = 320

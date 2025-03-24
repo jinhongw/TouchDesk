@@ -65,10 +65,14 @@ struct DrawingToolsView: View {
   var leftTools: some View {
     HStack(spacing: 12) {
       showNotes
-      lockCanvas
+      addNewNote
       moreFuncsButton
-      undo
-      redo
+      if appModel.isLocked {
+        unlockCanvas
+      } else {
+        undo
+        redo
+      }
     }
   }
 
@@ -92,19 +96,19 @@ struct DrawingToolsView: View {
 
   @MainActor
   @ViewBuilder
-  private var lockCanvas: some View {
+  private var addNewNote: some View {
     HStack {
       Button(action: {
-        appModel.isLocked.toggle()
+        appModel.addNewDrawing()
       }, label: {
-        Image(systemName: appModel.isLocked ? "lock" : "lock.open")
+        Image(systemName: "plus")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
+      .disabled(appModel.isInPlaceCanvasImmersive)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 
@@ -132,18 +136,37 @@ struct DrawingToolsView: View {
 
   @MainActor
   @ViewBuilder
+  private var unlockCanvas: some View {
+    HStack {
+      Button(action: {
+        appModel.isLocked.toggle()
+      }, label: {
+        Image(systemName: appModel.isLocked ? "lock" : "lock.open")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+
+  @MainActor
+  @ViewBuilder
   private var moreFuncsMenu: some View {
     VStack {
+      setting
       exportImage
       toggleOrientation
       placeAssist
-      setting
+      lockCanvas
     }
-    .rotation3DEffect(.degrees(isHorizontal ? -35 : -25), axis: (1, 0, 0), anchor: .center)
-    .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottom)
+    .rotation3DEffect(.degrees(isHorizontal ? -40 : -25), axis: (1, 0, 0), anchor: .center)
+    .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottomFront)
     .opacity(showMoreFuncsMenu ? 1 : 0)
-    .offset(y: -108)
-    .offset(z: 64)
+    .offset(y: isHorizontal ? -126 : -146)
+    .offset(z: isHorizontal ? 84 : 64)
     .disabled(!showMoreFuncsMenu)
   }
 
@@ -234,6 +257,30 @@ struct DrawingToolsView: View {
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var lockCanvas: some View {
+    HStack {
+      Button(action: {
+        appModel.isLocked.toggle()
+        showMoreFuncsMenu = false
+      }, label: {
+        HStack {
+          Image(systemName: appModel.isLocked ? "lock" : "lock.open")
+            .frame(width: 8)
+          Text(appModel.isLocked ? "Unlock Canvas" : "Lock Canvas")
+        }
+      })
+      .padding(6)
+      .fixedSize()
+      .frame(height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 
@@ -331,7 +378,7 @@ struct DrawingToolsView: View {
       colorPicker
     }
   }
-  
+
   @MainActor
   @ViewBuilder
   private var selectTool: some View {

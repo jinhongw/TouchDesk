@@ -172,6 +172,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       print(#function, "DEBUG Change imageEditingId")
       context.coordinator.lastImageEditingId = imageEditingId
       updateImageViews(in: canvas, context: context)
+    } else if context.coordinator.lastLocked != isLocked {
+      print(#function, "DEBUG Change locked state")
+      context.coordinator.lastLocked = isLocked
+      updateImageViews(in: canvas, context: context)
     }
   }
 
@@ -196,6 +200,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
       // 设置编辑状态
       imageView.editingId = imageEditingId
+      
+      // 设置锁定状态
+      imageView.isLocked = isLocked
 
       // 设置是否可以响应点击事件
       imageView.isUserInteractionEnabled = isSelectorActive || imageView.editingId == imageElement.id
@@ -385,6 +392,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     var lastImageEditingId: UUID?
     var lastImageElements: [UUID: ImageElement] = [:]
     var lastSelectorActive: Bool = false
+    var lastLocked: Bool = false
     var imageViewCache: [UUID: ResizableImageView] = [:] {
       didSet {
         print(#function, "imageViewCache \(oldValue.count)")
@@ -395,6 +403,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     init(_ parent: DrawingUIViewRepresentable) {
       self.parent = parent
+      self.lastLocked = parent.isLocked
+      super.init()
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {

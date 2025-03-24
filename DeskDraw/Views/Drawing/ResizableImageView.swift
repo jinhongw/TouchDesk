@@ -11,6 +11,12 @@ class ResizableImageView: UIView {
   private var dragStartPoint: CGPoint?
   private let minimumDragDistance: CGFloat = 5.0
 
+  var isLocked: Bool = false {
+    didSet {
+      updateInteractionState()
+    }
+  }
+
   var imageId: UUID?
   var onSizeChanged: ((CGSize) -> Void)?
   var onPositionChanged: ((CGPoint) -> Void)?
@@ -24,13 +30,30 @@ class ResizableImageView: UIView {
 
   var editingId: UUID? {
     didSet {
-      // 根据编辑状态显示或隐藏控制点
-      controlPoints.forEach { $0.isHidden = imageId != editingId }
-      // 根据编辑状态更新拖拽手势
-      updateDragGesture()
-      // 根据编辑状态更新删除按钮显示
-      updateDeleteButtonVisibility()
+      updateInteractionState()
     }
+  }
+
+  private func updateInteractionState() {
+    // 根据锁定状态和编辑状态更新交互
+    let shouldShowControls = imageId == editingId && !isLocked
+    controlPoints.forEach { $0.isHidden = !shouldShowControls }
+    updateDragGesture()
+    updateDeleteButtonVisibility()
+  }
+
+  private func updateDeleteButtonVisibility() {
+    deleteButton.isHidden = imageId != editingId || isLocked
+  }
+
+  private func updateDragGesture() {
+    // 只在编辑状态且未锁定时启用拖拽手势
+    gestureRecognizers?.forEach { gesture in
+      if gesture is UIPanGestureRecognizer {
+        gesture.isEnabled = imageId == editingId && !isLocked
+      }
+    }
+    layer.zPosition = (imageId == editingId && !isLocked) ? 1 : -1
   }
 
   init(image: UIImage?, size: CGSize) {
@@ -136,12 +159,10 @@ class ResizableImageView: UIView {
     return controlPoint
   }
 
-  private func updateDeleteButtonVisibility() {
-    deleteButton.isHidden = imageId != editingId
-  }
-
   @objc private func handleDelete() {
-    onDelete?()
+    if !isLocked {
+      onDelete?()
+    }
   }
 
   override func layoutSubviews() {
@@ -185,17 +206,8 @@ class ResizableImageView: UIView {
     addGestureRecognizer(panGesture)
   }
 
-  private func updateDragGesture() {
-    // 只在编辑状态下启用拖拽手势
-    gestureRecognizers?.forEach { gesture in
-      if gesture is UIPanGestureRecognizer {
-        gesture.isEnabled = imageId == editingId
-      }
-    }
-    layer.zPosition = imageId == editingId ? 1 : -1
-  }
-
   @objc private func handleControlPointPan(_ gesture: UIPanGestureRecognizer) {
+    if isLocked { return }
     guard let controlPoint = gesture.view else { return }
     
     switch gesture.state {
@@ -246,6 +258,7 @@ class ResizableImageView: UIView {
   }
 
   @objc private func handleImageTranslationPan(_ gesture: UIPanGestureRecognizer) {
+    if isLocked { return }
     switch gesture.state {
     case .began:
       dragStartPoint = gesture.location(in: superview)
@@ -287,7 +300,9 @@ class ResizableImageView: UIView {
   }
 
   @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-    onTapped?()
+    if !isLocked {
+      onTapped?()
+    }
   }
 
   override func removeFromSuperview() {
