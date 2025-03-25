@@ -24,6 +24,9 @@ struct DrawingToolsView: View {
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("drawColor") private var drawColor: Color = .white
+  @AppStorage("showRecentColors") private var showRecentColors = true
+  @AppStorage("recentColors") private var recentColorsArray: ColorArray = .init(colors: [])
+  @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
 
   @State private var toolSettingType: ToolSettingType? = nil
   @State private var showColorPicker = false
@@ -45,6 +48,19 @@ struct DrawingToolsView: View {
     case eraser
   }
 
+  private func updateRecentColors(oldColor: Color, newColor: Color) {
+    var colors = recentColorsArray.colors
+    if !colors.contains(oldColor) {
+      colors.insert(oldColor, at: 0)
+    } else if let existColorIndex = colors.firstIndex(of: oldColor) {
+      colors.remove(at: existColorIndex)
+      colors.insert(oldColor, at: 0)
+    }
+    colors = colors.filter({$0 != newColor})
+    colors = Array(colors.prefix(6))
+    recentColorsArray = ColorArray(colors: colors)
+  }
+
   var body: some View {
     HStack(spacing: 8) {
       leftTools
@@ -52,8 +68,8 @@ struct DrawingToolsView: View {
       rightTools
     }
     .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 2 / 3), axis: (x: 1, y: 0, z: 0))
-    .padding(.leading, isHorizontal ? 68 : 20)
-    .padding(.trailing, 20)
+    .padding(.leading, isHorizontal ? 68 : 28)
+    .padding(.trailing, 28)
     .animation(.spring, value: isHorizontal)
     .animation(.spring.speed(2), value: appModel.isLocked)
   }
@@ -657,6 +673,8 @@ struct DrawingToolsView: View {
     .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
+  let testColors: [Color] = [.black, .white, .red]
+
   @MainActor
   @ViewBuilder
   var colorPicker: some View {
@@ -666,6 +684,10 @@ struct DrawingToolsView: View {
         .disabled(true)
         .labelsHidden()
         .frame(width: 20, height: 20)
+        .onChange(of: drawColor) { oldColor, newColor in
+          print(#function, "oldColor \(oldColor) newColor \(newColor)")
+          updateRecentColors(oldColor: oldColor, newColor: newColor)
+        }
     }
     .padding(12)
     .buttonStyle(.borderless)
@@ -676,6 +698,16 @@ struct DrawingToolsView: View {
       AudioServicesPlaySystemSound(1104)
       dismissWindow(id: "colorPicker")
       openWindow(id: "colorPicker")
+    }
+    .overlay {
+      if showRecentColors {
+        RecentColorsView(
+          colors: recentColorsArray.colors,
+          maxColors: maxRecentColors,
+          drawColor: $drawColor,
+          updateRecentColors: updateRecentColors
+        )
+      }
     }
     .disabled(appModel.isLocked)
     .opacity(appModel.isLocked ? 0 : 1)
@@ -817,35 +849,6 @@ struct InkToolView: View {
   }
 }
 
-#Preview(body: {
-  @Previewable @State var boradHeight: Float = 0
-  @Previewable @State var toolStatus: DrawingView.CanvasToolStatus = .ink
-  @Previewable @State var pencilType: PKInkingTool.InkType = .pen
-  @Previewable @State var eraserType: DrawingView.EraserType = .bitmap
-  @Previewable @State var isSelectorActive: Bool = false
-  let canvas = PKCanvasView()
-
-  RealityView { content, attachments in
-    if let toolbarView = attachments.entity(for: "toolbarView") {
-      toolbarView.position = .init(x: 0, y: 0, z: 0)
-      content.add(toolbarView)
-    }
-  } attachments: {
-    Attachment(id: "toolbarView") {
-      DrawingToolsView(
-        toolStatus: $toolStatus,
-        pencilType: $pencilType,
-        eraserType: $eraserType,
-        isSelectorActive: $isSelectorActive,
-        canvas: canvas
-      )
-      .environment(AppModel())
-      .frame(width: 1024, height: 44)
-    }
-  }
-  .frame(width: 1024)
-})
-
 class ImagePickerCoordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
   let canvas: PKCanvasView
   let appModel: AppModel
@@ -875,3 +878,125 @@ class ImagePickerCoordinator: NSObject, UIImagePickerControllerDelegate, UINavig
     picker.dismiss(animated: true)
   }
 }
+
+struct ColorArray: RawRepresentable {
+  var colors: [Color]
+
+  init(colors: [Color] = []) {
+    self.colors = colors
+  }
+
+  init?(rawValue: String) {
+    guard let data = rawValue.data(using: .utf8),
+          let colorStrings = try? JSONDecoder().decode([String].self, from: data),
+          let colors = colorStrings.map({ Color(rawValue: $0) }) as? [Color]
+    else {
+      return nil
+    }
+    self.colors = colors
+  }
+
+  var rawValue: String {
+    let colorStrings = colors.map { $0.rawValue }
+    guard let data = try? JSONEncoder().encode(colorStrings),
+          let string = String(data: data, encoding: .utf8)
+    else {
+      return "[]"
+    }
+    return string
+  }
+}
+
+struct RecentColorsView: View {
+  let colors: [Color]
+  let maxColors: Int
+  @Binding var drawColor: Color
+  let updateRecentColors: (Color, Color) -> Void
+  
+  var body: some View {
+    ZStack(spacing: 0) {
+      ForEach(Array(colors.prefix(maxColors).enumerated()), id: \.offset) { index, color in
+        RecentColorButton(
+          index: index,
+          count: colors.prefix(maxColors).count,
+          color: color,
+          drawColor: $drawColor,
+          updateRecentColors: updateRecentColors
+        )
+        .id(color)
+      }
+    }
+    .frame(width: 200, height: 200)
+    .animation(.easeOut, value: colors)
+    .animation(.easeOut, value: drawColor)
+    .offset(z: 12)
+  }
+}
+
+struct RecentColorButton: View {
+  let index: Int
+  let count: Int
+  let color: Color
+  @Binding var drawColor: Color
+  let updateRecentColors: (Color, Color) -> Void
+  
+  var offset: CGFloat {
+    switch (index, count) {
+    case (_, 1): return 0.0
+    case (_, 2): return 0.5
+    case (3, 4): return -1
+    case let (i, 5) where i > 2: return -0.5
+    case let (i, c) where c > 3 && i > 2: return -0.0
+    default: return 1.0
+    }
+  }
+  
+  var body: some View {
+    let angle = .pi * CGFloat(CGFloat(index) - offset) / 4.0
+    let radius: CGFloat = 44
+    
+    Button(action: {
+      print(#function, "index \(index) color \(color)")
+      updateRecentColors(drawColor, color)
+      drawColor = color
+    }, label: {
+      Circle()
+        .frame(width: 16, height: 16)
+        .foregroundColor(color)
+    })
+    .buttonStyle(.plain)
+    .offset(
+      x: radius * sin(angle),
+      y: -radius * cos(angle)
+    )
+  }
+}
+
+#Preview(body: {
+  @Previewable @State var boradHeight: Float = 0
+  @Previewable @State var toolStatus: DrawingView.CanvasToolStatus = .ink
+  @Previewable @State var pencilType: PKInkingTool.InkType = .pen
+  @Previewable @State var eraserType: DrawingView.EraserType = .bitmap
+  @Previewable @State var isSelectorActive: Bool = false
+  let canvas = PKCanvasView()
+
+  RealityView { content, attachments in
+    if let toolbarView = attachments.entity(for: "toolbarView") {
+      toolbarView.position = .init(x: 0, y: 0, z: 0)
+      content.add(toolbarView)
+    }
+  } attachments: {
+    Attachment(id: "toolbarView") {
+      DrawingToolsView(
+        toolStatus: $toolStatus,
+        pencilType: $pencilType,
+        eraserType: $eraserType,
+        isSelectorActive: $isSelectorActive,
+        canvas: canvas
+      )
+      .environment(AppModel())
+      .frame(width: 1024, height: 44)
+    }
+  }
+  .frame(width: 1024)
+})

@@ -10,10 +10,6 @@ import SwiftUI
 struct ColorPickerView: View {
   @AppStorage("drawColor") private var drawColor: Color = .white
 
-  private let columns = [
-    GridItem(.adaptive(minimum: 44, maximum: 44)),
-  ]
-
   var body: some View {
     ColorPickerUIView(title: "Pick color", selectedColor: $drawColor)
       .frame(maxWidth: 420)
@@ -46,7 +42,6 @@ class ColorPickerDelegate: NSObject, UIColorPickerViewControllerDelegate {
 struct ColorPickerUIView: UIViewControllerRepresentable {
   @Binding var selectedColor: Color
   private let pickerTitle: String
-  @State var update = 0
 
   init(title: String, selectedColor: Binding<Color>) {
     pickerTitle = title
@@ -69,8 +64,6 @@ struct ColorPickerUIView: UIViewControllerRepresentable {
   func updateUIViewController(_ uiViewController: UIColorPickerViewController, context: Context) {
     if uiViewController.selectedColor != UIColor(selectedColor) {
       uiViewController.selectedColor = UIColor(selectedColor)
-      print(#function, update)
-      update += 1
     }
   }
 }

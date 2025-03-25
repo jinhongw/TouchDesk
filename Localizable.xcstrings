@@ -1953,6 +1953,9 @@
         }
       }
     },
+    "Maximum recent colors" : {
+
+    },
     "Monthly" : {
       "localizations" : {
         "de" : {
@@ -2848,6 +2851,9 @@
           }
         }
       }
+    },
+    "Show Recent Colors" : {
+
     },
     "Term of Service" : {
       "localizations" : {
