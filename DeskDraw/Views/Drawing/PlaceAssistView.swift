@@ -8,74 +8,6 @@
 import AVFoundation
 import SwiftUI
 
-struct MovingCircle: View {
-  @State private var offset: CGSize = .zero
-  private var color: Color = .init(hue: Double.random(in: 0.25 ... 0.4), saturation: 0.8, brightness: 0.9)
-  private var size: CGFloat
-  private var blurRadius: CGFloat
-  private var offsetDistance: CGFloat
-
-  init(width: CGFloat, style: PlaceAssistLayerView.ColorStyle) {
-    size = CGFloat.random(in: width / 2 ... width * 2)
-    blurRadius = CGFloat.random(in: width / 3 ... width / 1.5)
-    offsetDistance = width / 2
-    switch style {
-    case .green:
-      color = Color(hue: Double.random(in: 0.25 ... 0.4), saturation: Double.random(in: 0.3 ... 1.0), brightness: Double.random(in: 0.4 ... 1.0))
-    case .blue:
-      color = Color(hue: Double.random(in: 0.6 ... 0.75), saturation: Double.random(in: 0.6 ... 1.0), brightness: Double.random(in: 0.7 ... 1.0))
-    case .any:
-      color = Color(hue: [Double.random(in: 0.0 ... 0.2), Double.random(in: 0.4 ... 0.6), Double.random(in: 0.8 ... 1)].randomElement()!, saturation: Double.random(in: 0.0 ... 1.0), brightness: Double.random(in: 0.0 ... 1.0))
-    }
-  }
-
-  var body: some View {
-    Circle()
-      .fill(color)
-      .frame(width: size, height: size)
-      .blur(radius: blurRadius)
-      .offset(offset)
-      .onAppear {
-        withAnimation(
-          Animation.easeInOut(duration: Double.random(in: 1 ... 3))
-            .repeatForever(autoreverses: true)
-        ) {
-          offset = CGSize(width: CGFloat.random(in: -offsetDistance ... offsetDistance), height: CGFloat.random(in: -offsetDistance ... offsetDistance))
-        }
-      }
-  }
-}
-
-struct PlaceAssistLayerView: View {
-  var width: CGFloat
-  var height: CGFloat
-  var style: ColorStyle
-
-  enum ColorStyle {
-    case green
-    case blue
-    case any
-  }
-
-  var body: some View {
-    let _ = print(#function, "PlaceAssistView Rerender \(width)")
-    VStack {
-      ForEach(0 ..< 5, id: \.self) { _ in
-        HStack {
-          ForEach(0 ..< 5, id: \.self) { _ in
-            let circleWidth = CGFloat.random(in: width / 6 ... width / 3)
-            MovingCircle(width: circleWidth, style: style)
-              .frame(width: circleWidth)
-          }
-        }
-      }
-    }
-    .opacity(1)
-    .frame(width: width, height: height)
-    .clipped()
-  }
-}
-
 struct PlaceAssistView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.openImmersiveSpace) private var openImmersiveSpace
@@ -136,13 +68,12 @@ struct PlaceAssistView: View {
       mainTools
     }
     .padding(12)
-    .frame(width: width, height: depth )
-    .clipped(antialiased: true)
+    .frame(width: width, height: depth)
     .rotation3DEffect(.degrees(90), axis: (1, 0, 0), anchor: .center)
     .offset(y: height / 2)
     .offset(z: -depth / 2)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var placementTools: some View {
@@ -178,7 +109,7 @@ struct PlaceAssistView: View {
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 12), axis: (0, 1, 0), anchor: .center)
           }
-          
+
           HStack(spacing: 12) {
             Image(systemName: "arrow.up.to.line.compact")
               .frame(width: 20)
@@ -196,7 +127,7 @@ struct PlaceAssistView: View {
       }
     }.frame(width: 320)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var mainTools: some View {
@@ -225,7 +156,7 @@ struct PlaceAssistView: View {
       .buttonStyle(.borderless)
       .controlSize(.small)
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-      
+
       HStack {
         Button(action: {
           finishPlacement()
@@ -259,6 +190,129 @@ struct PlaceAssistView: View {
         showGestureGuide = false
       }
     }
+  }
+}
+
+struct PlaceAssistLayerView: View {
+  var width: CGFloat
+  var height: CGFloat
+  var style: ColorStyle
+  let count: Int = 10
+
+  enum ColorStyle {
+    case green
+    case blue
+    case any
+  }
+
+  var body: some View {
+    let _ = print(#function, "PlaceAssistView Rerender \(width)")
+    ZStack {
+      // 上边
+      HStack {
+        ForEach(1 ..< count, id: \.self) { index in
+          let circleWidth = CGFloat.random(in: width / CGFloat(count) ... width / CGFloat(count) * 1.5)
+          MovingCircle(width: circleWidth, style: style, position: .top)
+            .frame(width: circleWidth, height: circleWidth)
+          if index < count - 1 {
+            Spacer(minLength: 0)
+          }
+        }
+      }
+      .offset(y: -height / 2)
+
+      // 下边
+      HStack {
+        ForEach(1 ..< count, id: \.self) { index in
+          let circleWidth = CGFloat.random(in: width / CGFloat(count) ... width / CGFloat(count) * 1.5)
+          MovingCircle(width: circleWidth, style: style, position: .bottom)
+            .frame(width: circleWidth, height: circleWidth)
+          if index < count - 1 {
+            Spacer(minLength: 0)
+          }
+        }
+      }
+      .offset(y: height / 2)
+
+      // 左边
+      VStack {
+        ForEach(1 ..< count, id: \.self) { index in
+          let circleWidth = CGFloat.random(in: height / CGFloat(count) ... height / CGFloat(count) * 1.5)
+          MovingCircle(width: circleWidth, style: style, position: .left)
+            .frame(width: circleWidth, height: circleWidth)
+          if index < count - 1 {
+            Spacer(minLength: 0)
+          }
+        }
+      }
+      .offset(x: -width / 2)
+
+      // 右边
+      VStack {
+        ForEach(1 ..< count, id: \.self) { index in
+          let circleWidth = CGFloat.random(in: height / CGFloat(count) ... height / CGFloat(count) * 1.5)
+          MovingCircle(width: circleWidth, style: style, position: .right)
+            .frame(width: circleWidth, height: circleWidth)
+          if index < count - 1 {
+            Spacer(minLength: 0)
+          }
+        }
+      }
+      .offset(x: width / 2)
+    }
+    .opacity(1)
+    .frame(width: width, height: height)
+    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+  }
+}
+
+struct MovingCircle: View {
+  @State private var offset: CGSize = .zero
+  private var color: Color = .init(hue: Double.random(in: 0.25 ... 0.4), saturation: 0.8, brightness: 0.9)
+  private var size: CGFloat
+  private var blurRadius: CGFloat
+  private var offsetDistance: CGFloat
+  private var position: Position
+
+  enum Position {
+    case top, bottom, left, right
+  }
+
+  init(width: CGFloat, style: PlaceAssistLayerView.ColorStyle, position: Position) {
+    size = CGFloat.random(in: width / 2 ... width * 2)
+    blurRadius = CGFloat.random(in: width / 2 ... width / 1.5)
+    offsetDistance = width / 2
+    self.position = position
+
+    switch style {
+    case .green:
+      color = Color(hue: Double.random(in: 0.25 ... 0.4), saturation: Double.random(in: 0.3 ... 1.0), brightness: Double.random(in: 0.4 ... 1.0))
+    case .blue:
+      color = Color(hue: Double.random(in: 0.6 ... 0.75), saturation: Double.random(in: 0.6 ... 1.0), brightness: Double.random(in: 0.7 ... 1.0))
+    case .any:
+      color = Color(hue: [Double.random(in: 0.0 ... 0.2), Double.random(in: 0.4 ... 0.6), Double.random(in: 0.8 ... 1)].randomElement()!, saturation: Double.random(in: 0.0 ... 1.0), brightness: Double.random(in: 0.0 ... 1.0))
+    }
+  }
+
+  var body: some View {
+    Circle()
+      .fill(color)
+      .frame(width: size, height: size)
+      .blur(radius: blurRadius)
+      .offset(offset)
+      .onAppear {
+        withAnimation(
+          Animation.easeInOut(duration: Double.random(in: 1 ... 3))
+            .repeatForever(autoreverses: true)
+        ) {
+          switch position {
+          case .top, .bottom:
+            offset = CGSize(width: CGFloat.random(in: -offsetDistance ... offsetDistance), height: 0)
+          case .left, .right:
+            offset = CGSize(width: 0, height: CGFloat.random(in: -offsetDistance ... offsetDistance))
+          }
+        }
+      }
   }
 }
 

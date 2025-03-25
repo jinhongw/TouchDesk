@@ -145,7 +145,7 @@ struct DrawingView: View {
           .cornerRadius(20)
           .frame(width: width, height: depth)
           .colorScheme(.light)
-          .overlay(alignment: .bottomTrailing) {
+          .overlay(alignment: isHorizontal ? .bottomTrailing : .topTrailing) {
             if showMiniMap {
               MiniMapView(canvas: canvas, contentOffset: $contentOffset)
                 .padding(16)

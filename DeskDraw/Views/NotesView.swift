@@ -192,6 +192,7 @@ struct NotesView: View {
   private var aboutButton: some View {
     Button(action: {
       dismissWindow(id: "about")
+      appModel.aboutNavigationPath.removeLast(appModel.aboutNavigationPath.count)
       openWindow(id: "about")
     }, label: {
       Text("About")

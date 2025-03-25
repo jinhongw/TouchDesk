@@ -50,11 +50,14 @@ struct DrawingToolsView: View {
 
   private func updateRecentColors(oldColor: Color, newColor: Color) {
     var colors = recentColorsArray.colors
-    if !colors.contains(oldColor) {
-      colors.insert(oldColor, at: 0)
-    } else if let existColorIndex = colors.firstIndex(of: oldColor) {
+    let insertIndex = colors.prefix(maxRecentColors).firstIndex(of: newColor) ?? 0
+    print(#function, "insertIndex \(insertIndex)")
+    if !colors.prefix(maxRecentColors).contains(oldColor) {
+      colors = colors.filter({$0 != oldColor})
+      colors.insert(oldColor, at: insertIndex)
+    } else if let existColorIndex = colors.prefix(maxRecentColors).firstIndex(of: oldColor) {
       colors.remove(at: existColorIndex)
-      colors.insert(oldColor, at: 0)
+      colors.insert(oldColor, at: insertIndex)
     }
     colors = colors.filter({$0 != newColor})
     colors = Array(colors.prefix(6))
@@ -257,8 +260,9 @@ struct DrawingToolsView: View {
       Button(action: {
         Task {
           dismissWindow(id: "about")
-          openWindow(id: "about")
+          appModel.aboutNavigationPath.removeLast(appModel.aboutNavigationPath.count)
           appModel.aboutNavigationPath.append(AboutView.Route.setting)
+          openWindow(id: "about")
         }
       }, label: {
         HStack {
@@ -705,8 +709,7 @@ struct DrawingToolsView: View {
         RecentColorsView(
           colors: recentColorsArray.colors,
           maxColors: maxRecentColors,
-          drawColor: $drawColor,
-          updateRecentColors: updateRecentColors
+          drawColor: $drawColor
         )
       }
     }
@@ -912,7 +915,6 @@ struct RecentColorsView: View {
   let colors: [Color]
   let maxColors: Int
   @Binding var drawColor: Color
-  let updateRecentColors: (Color, Color) -> Void
   
   var body: some View {
     ZStack(spacing: 0) {
@@ -921,8 +923,7 @@ struct RecentColorsView: View {
           index: index,
           count: colors.prefix(maxColors).count,
           color: color,
-          drawColor: $drawColor,
-          updateRecentColors: updateRecentColors
+          drawColor: $drawColor
         )
         .id(color)
       }
@@ -939,7 +940,6 @@ struct RecentColorButton: View {
   let count: Int
   let color: Color
   @Binding var drawColor: Color
-  let updateRecentColors: (Color, Color) -> Void
   
   var offset: CGFloat {
     switch (index, count) {
@@ -958,7 +958,6 @@ struct RecentColorButton: View {
     
     Button(action: {
       print(#function, "index \(index) color \(color)")
-      updateRecentColors(drawColor, color)
       drawColor = color
     }, label: {
       Circle()
