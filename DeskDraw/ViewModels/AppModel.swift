@@ -30,6 +30,7 @@ class AppModel {
   var isBeginingPlacement = true
   var isShareImageViewShowing = false
   var exportImage: UIImage?
+  var aboutNavigationPath = NavigationPath()
 
   /// The size to use for thumbnail images.
   static let thumbnailSize = CGSize(width: 512, height: 512)

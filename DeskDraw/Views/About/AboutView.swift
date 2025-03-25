@@ -18,8 +18,16 @@ struct AboutView: View {
     Locale.current.language.languageCode?.identifier == "zh" && Locale.current.language.script!.identifier == "Hans"
   }
 
+  enum Route: Hashable {
+    case setting
+    case subscription
+    case gestureGuide
+    case credit
+  }
+
   var body: some View {
-    NavigationStack {
+    @Bindable var appModel = appModel
+    NavigationStack(path: $appModel.aboutNavigationPath) {
       ScrollView {
         VStack(spacing: 20) {
           header
@@ -28,6 +36,14 @@ struct AboutView: View {
         }
         .padding(48)
       }
+      .navigationDestination(for: Route.self, destination: { route in
+        switch route {
+        case .setting: SettingView()
+        case .subscription: SubscriptionView().environment(appModel.subscriptionViewModel)
+        case .gestureGuide: GestureGuideView()
+        case .credit: CreditView()
+        }
+      })
     }
   }
 
@@ -49,7 +65,7 @@ struct AboutView: View {
       }
     }
   }
-  
+
   @MainActor
   @ViewBuilder
   private var proLogo: some View {
@@ -123,10 +139,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var settings: some View {
-    NavigationLink {
-      SettingView()
-        .environment(appModel)
-    } label: {
+    NavigationLink(value: Route.setting) {
       HStack {
         Image(systemName: "gearshape.fill")
           .resizable()
@@ -148,13 +161,11 @@ struct AboutView: View {
       }
     }
   }
-  
+
   @MainActor
   @ViewBuilder
   private var gestureGuide: some View {
-    NavigationLink {
-      GestureGuideView()
-    } label: {
+    NavigationLink(value: Route.gestureGuide) {
       HStack {
         Image(systemName: "questionmark.circle.fill")
           .resizable()
@@ -180,10 +191,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var upgrade: some View {
-    NavigationLink {
-      SubscriptionView()
-        .environment(appModel.subscriptionViewModel)
-    } label: {
+    NavigationLink(value: Route.subscription) {
       HStack {
         Image(systemName: "crown.fill")
           .resizable()
@@ -216,9 +224,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var credits: some View {
-    NavigationLink {
-      CreditView()
-    } label: {
+    NavigationLink(value: Route.credit) {
       HStack {
         Image(systemName: "info.circle.fill")
           .resizable()
@@ -304,29 +310,29 @@ struct AboutView: View {
   private var feedback: some View {
     Button(action: {
       let subject = "TouchDesk Feedback"
-      
+
       // 获取系统信息
       let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
       let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
       let systemVersion = ProcessInfo.processInfo.operatingSystemVersionString
       let deviceModel = UIDevice.current.model
-      
+
       // 构建邮件正文
       let body = """
-      
-      
+
+
       App Version: \(appVersion) (\(buildNumber))
       System Version: \(systemVersion)
       Device Model: \(deviceModel)
       """
-      
+
       let email = "jinhongw982@gmail.com"
-      
+
       let mailto = "mailto:\(email)?subject=\(subject)&body=\(body)"
-          .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
       if let url = URL(string: mailto) {
-          openURL(url)
+        openURL(url)
       }
     }, label: {
       HStack {
@@ -342,7 +348,7 @@ struct AboutView: View {
       }
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var privacyPolicy: some View {
@@ -368,7 +374,7 @@ struct AboutView: View {
       }
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var termsOfService: some View {
@@ -392,7 +398,7 @@ struct AboutView: View {
       }
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var easyballLink: some View {
@@ -412,7 +418,7 @@ struct AboutView: View {
       }
     })
   }
-  
+
   @MainActor
   @ViewBuilder
   private var littleSunshineLink: some View {

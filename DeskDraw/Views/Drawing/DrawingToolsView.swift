@@ -258,12 +258,13 @@ struct DrawingToolsView: View {
         Task {
           dismissWindow(id: "about")
           openWindow(id: "about")
+          appModel.aboutNavigationPath.append(AboutView.Route.setting)
         }
       }, label: {
         HStack {
-          Image(systemName: "info.circle")
+          Image(systemName: "gearshape")
             .frame(width: 8)
-          Text("About")
+          Text("Settings")
         }
       })
       .disabled(appModel.isClosingPlaceCanvasImmersive)
