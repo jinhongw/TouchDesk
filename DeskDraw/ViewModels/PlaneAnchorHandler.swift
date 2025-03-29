@@ -99,6 +99,7 @@ class PlaneAnchorHandler {
 
   @MainActor
   func moveCanvas() {
+    print(#function, "moveCanvas")
     guard !isGenerateMesh else { return }
     isGenerateMesh = true
     for id in planeEntities.keys {

@@ -71,7 +71,7 @@ struct DrawingToolsView: View {
       rightTools
     }
     .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 2 / 3), axis: (x: 1, y: 0, z: 0))
-    .padding(.leading, isHorizontal ? 68 : 28)
+    .padding(.leading, 28)
     .padding(.trailing, 28)
     .animation(.spring, value: isHorizontal)
     .animation(.spring.speed(2), value: appModel.isLocked)
@@ -931,7 +931,7 @@ struct RecentColorsView: View {
     .frame(width: 200, height: 200)
     .animation(.easeOut, value: colors)
     .animation(.easeOut, value: drawColor)
-    .offset(z: 12)
+    .offset(z: 4)
   }
 }
 
@@ -964,6 +964,7 @@ struct RecentColorButton: View {
         .frame(width: 16, height: 16)
         .foregroundColor(color)
     })
+    .contentShape(.circle)
     .buttonStyle(.plain)
     .offset(
       x: radius * sin(angle),

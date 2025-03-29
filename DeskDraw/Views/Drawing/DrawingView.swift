@@ -184,7 +184,7 @@ struct DrawingView: View {
                 print(#function, "canvas show new drawing \(newDrawingId)")
                 return newDrawing
               }
-              return DrawingModel.init(name: "", drawing: PKDrawing())
+              return DrawingModel(name: "", drawing: PKDrawing())
             }
           },
           set: { newValue in
@@ -223,7 +223,7 @@ struct DrawingView: View {
       )
     }
   }
-  
+
   @MainActor
   @ViewBuilder
   private func notesView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
@@ -260,7 +260,7 @@ struct DrawingView: View {
     .frame(width: width, height: 44)
     .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
     .offset(y: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : zOffset)
-    .offset(y: height / 2 - zOffset)
+    .offset(y: isHorizontal ? height / 2 - zOffset * 1.3 : height / 2 - zOffset)
     .offset(z: isHorizontal ? -depth + zOffset / 1.5 : -zOffset / 1.5)
   }
 
@@ -270,7 +270,7 @@ struct DrawingView: View {
       appModel.isOpeningPlaceCanvasImmersive = true
       switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
       case .opened:
-        try await Task.sleep(for: .seconds(0.01))
+        try await Task.sleep(for: .seconds(0.1))
         appModel.isInPlaceCanvasImmersive = true
         appModel.isBeginingPlacement = false
         appModel.isOpeningPlaceCanvasImmersive = false
