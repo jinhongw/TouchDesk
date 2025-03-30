@@ -65,11 +65,6 @@ struct DrawingView: View {
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
           }
           .overlay {
-            topToolbarView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
-          }
-          .overlay {
             if !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isOpeningPlaceCanvasImmersive {
               notesView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
                 .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
@@ -90,6 +85,7 @@ struct DrawingView: View {
             }
           }
       }
+      .frame(width: proxy.size.width, height: proxy.size.height)
       .frame(depth: proxy.size.depth)
       .rotation3DEffect(.init(degrees: isHorizontal ? 0 : zRotation), axis: (x: 0, y: 0, z: 1), anchor: .center)
       .rotation3DEffect(.init(radians: isHorizontal ? 0 : -.pi / 2), axis: (x: 1, y: 0, z: 0), anchor: .center)
@@ -154,15 +150,20 @@ struct DrawingView: View {
           }
           .overlay(alignment: isHorizontal ? .bottomLeading : .topLeading) {
             QuickDrawingSwitch()
+              .environment(appModel)
               .padding(16)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-              .environment(appModel)
+          }
+          .overlay(alignment: isHorizontal ? .topLeading : .bottomLeading) {
+            topToolbarView(width: width, height: height, depth: depth)
+              .offset(z: isHorizontal ? zOffset * 1.3 : zOffset * 1)
+              .offset(y: isHorizontal ? -20 : 0)
           }
       }
     }
-    .frame(width: width)
-    .frame(depth: depth)
-    .offset(y: height / 2 - placeZOffset)
+    .frame(width: width, height: depth)
+    .frame(depth: height)
+    .offset(y: height / 2)
     .offset(z: -depth)
   }
 
@@ -263,11 +264,8 @@ struct DrawingView: View {
       canvas: canvas
     )
     .environment(appModel)
-    .frame(width: width, height: 44)
+    .frame(width: width, height: 120)
     .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
-    .offset(y: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : zOffset)
-    .offset(y: isHorizontal ? height / 2 - zOffset * 1.3 : height / 2 - zOffset)
-    .offset(z: isHorizontal ? -depth + zOffset / 1.5 : -zOffset / 1.5)
   }
 
   private func onPlaceAssistViewAppear(proxy: GeometryProxy3D) {

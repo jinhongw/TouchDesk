@@ -156,7 +156,7 @@ struct MiniMapView: View {
     let viewportX = contentX + contentOffset.x * contentScale
     let viewportY = contentY + contentOffset.y * contentScale
 
-    return RoundedRectangle(cornerSize: .init(width: 4, height: 4), style: .continuous)
+    return RoundedRectangle(cornerSize: .init(width: 2, height: 2), style: .continuous)
       .strokeBorder(Color.white.opacity(0.8), lineWidth: 1)
       .frame(width: viewportWidth, height: viewportHeight)
       .position(x: viewportX + viewportWidth / 2, y: viewportY + viewportHeight / 2)

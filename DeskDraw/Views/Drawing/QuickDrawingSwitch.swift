@@ -28,7 +28,7 @@ struct QuickDrawingSwitch: View {
       .mask {
         HStack(spacing: 0) {
           LinearGradient(
-            gradient: Gradient(colors: [.clear, .white, .white, .white, .white, .white, .clear]),
+            gradient: Gradient(colors: [.clear, .white, .white, .white, .white, .clear]),
             startPoint: .leading,
             endPoint: .trailing
           )

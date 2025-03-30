@@ -70,7 +70,7 @@ struct DrawingToolsView: View {
       Spacer(minLength: 20)
       rightTools
     }
-    .rotation3DEffect(.init(radians: isHorizontal ? .pi / 4 : .pi * 2 / 3), axis: (x: 1, y: 0, z: 0))
+    .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, 28)
     .padding(.trailing, 28)
     .animation(.spring, value: isHorizontal)

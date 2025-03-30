@@ -47,7 +47,7 @@ struct PlaceAssistView: View {
     ZStack {
       PlaceAssistLayerView(width: width, height: height, style: .blue)
       PlaceAssistLayerView(width: width, height: height, style: .green)
-        .offset(z: placeZOffset * 2)
+        .offset(z: placeZOffset)
         .opacity(appModel.isBeginingPlacement ? 0 : 0.3)
       VStack(spacing: 32) {
         Spacer(minLength: 0)
@@ -64,7 +64,7 @@ struct PlaceAssistView: View {
         Spacer(minLength: 0)
       }
       .offset(z: 12)
-      .offset(z: placeZOffset * 2)
+      .offset(z: placeZOffset)
       mainTools
     }
     .padding(12)
