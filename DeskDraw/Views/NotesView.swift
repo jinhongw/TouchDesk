@@ -64,7 +64,7 @@ struct NotesView: View {
         if let thumbnail = appModel.thumbnails[id] {
           Image(uiImage: thumbnail)
             .resizable()
-            .cornerRadius(16)
+            .clipShape(.rect(cornerRadius: 16, style: .continuous))
             .padding(8)
         } else {
           Image(systemName: "questionmark.app.dashed")

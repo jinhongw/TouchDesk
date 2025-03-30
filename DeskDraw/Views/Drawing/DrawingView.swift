@@ -152,6 +152,12 @@ struct DrawingView: View {
                 .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
             }
           }
+          .overlay(alignment: isHorizontal ? .bottomLeading : .topLeading) {
+            QuickDrawingSwitch()
+              .padding(16)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+              .environment(appModel)
+          }
       }
     }
     .frame(width: width)

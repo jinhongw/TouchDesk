@@ -323,6 +323,7 @@ class AppModel {
 
 extension AppModel {
   func addNewDrawing() {
+    print(#function, "addNewDrawing")
     var newDrawing = PKDrawing()
     let defaultStrokes = createDefaultStrokes()
     newDrawing.strokes = defaultStrokes
