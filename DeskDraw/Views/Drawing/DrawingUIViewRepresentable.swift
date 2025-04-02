@@ -84,6 +84,23 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     }
   }
 
+  private func saveScrollPosition(_ position: CGPoint, for drawingId: UUID) {
+    let key = "scrollPosition_\(drawingId.uuidString)"
+    let positionData = try? JSONEncoder().encode(position)
+    UserDefaults.standard.set(positionData, forKey: key)
+    print(#function, "save position \(position) for \(drawingId)")
+  }
+  
+  private func getScrollPosition(for drawingId: UUID) -> CGPoint? {
+    let key = "scrollPosition_\(drawingId.uuidString)"
+    guard let positionData = UserDefaults.standard.data(forKey: key),
+          let position = try? JSONDecoder().decode(CGPoint.self, from: positionData) else {
+      return nil
+    }
+    print(#function, "position \(position) for \(drawingId)")
+    return position
+  }
+
   func makeUIView(context: Context) -> PKCanvasView {
     print(#function, "make canvas \(model.id) width: \(canvasWidth) height \(canvasHeight)")
     canvas.drawing = model.drawing
@@ -99,13 +116,32 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     context.coordinator.lastImages = model.images
     canvas.delegate = context.coordinator
 
-    // 添加滚动视图代理
-    canvas.delegate = context.coordinator
-
-    // 监听滚动位置变化
+    // 添加一个初始化标志
+    context.coordinator.isInitializing = true
+    
     let observer = canvas.observe(\.contentOffset, options: [.new]) { _, change in
       if let newOffset = change.newValue {
         context.coordinator.parent.contentOffset = newOffset
+        // 只有当满足以下条件时才保存位置：
+        // 1. 不在初始化阶段
+        // 2. 不是程序性设置位置
+        // 3. 偏移不是(0.0, 0.0)
+        if !context.coordinator.isInitializing && 
+           !context.coordinator.isSettingPosition && 
+           (newOffset.x != 0 || newOffset.y != 0) {
+          
+          // 取消之前的任务
+          context.coordinator.saveScrollWorkItem?.cancel()
+          
+          // 创建新的防抖任务
+          let workItem = DispatchWorkItem {
+            context.coordinator.parent.saveScrollPosition(newOffset, for: context.coordinator.parent.model.id)
+          }
+          
+          // 保存任务引用并延迟执行
+          context.coordinator.saveScrollWorkItem = workItem
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
+        }
       }
     }
     context.coordinator.contentOffsetObserver = observer
@@ -114,6 +150,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     Task {
       try await Task.sleep(for: .seconds(0.5))
       setPosition()
+      // 初始化完成，可以开始正常保存滚动位置
+      context.coordinator.isInitializing = false
     }
 
     // 清理现有的图片视图
@@ -138,6 +176,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       context.coordinator.isUpdatingFromModel = true
       canvas.undoManager?.removeAllActions()
 
+      // 切换drawing时，设置初始化标志为true
+      context.coordinator.isInitializing = true
+
       // 清理图片视图缓存
       context.coordinator.cleanupImageViewCache(currentImageIds: Set(model.images.map { $0.id }))
 
@@ -146,7 +187,15 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.drawing = model.drawing
 
       updateContentSizeForDrawing()
+      
+      // 设置位置
       setPosition()
+      
+      // 延迟将初始化标志设为false
+      Task {
+        try await Task.sleep(for: .seconds(0.5))
+        context.coordinator.isInitializing = false
+      }
 
       // 更新图片视图
       updateImageViews(in: canvas, context: context)
@@ -358,17 +407,36 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
   func setPosition() {
     Task {
-      // 检查是否有任何内容（绘画或图片）
+      // 设置标志，表示当前正在程序性设置滚动位置
+      let coordinator = canvas.delegate as? Coordinator
+      coordinator?.isSettingPosition = true
+      
+      // 首先检查是否有保存的滚动位置
+      if let savedPosition = getScrollPosition(for: model.id) {
+        canvas.setContentOffset(savedPosition, animated: false)
+        // 延迟重置标志
+        Task {
+          try await Task.sleep(for: .milliseconds(100))
+          coordinator?.isSettingPosition = false
+        }
+        return
+      }
+      
+      // 如果没有保存的位置，使用原有逻辑
       let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
       let hasImages = !model.images.isEmpty
       
       guard hasDrawing || hasImages else {
         print(#function, "Set default position")
         canvas.setContentOffset(CGPoint(x: defaultSize.width / 2, y: defaultSize.height / 2), animated: true)
+        // 延迟重置标志
+        Task {
+          try await Task.sleep(for: .milliseconds(100))
+          coordinator?.isSettingPosition = false
+        }
         return
       }
 
-      // 计算所有内容的边界
       var contentBounds = hasDrawing ? canvas.drawing.bounds : .zero
       for imageElement in model.images {
         let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
@@ -380,6 +448,12 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       let y = max(contentBounds.height > canvas.frame.height ? contentBounds.minY : contentBounds.midY - canvas.frame.height / 2, 0)
       print(#function, "x \(x) y \(y)")
       canvas.setContentOffset(CGPoint(x: x, y: y), animated: false)
+      
+      // 延迟重置标志
+      Task {
+        try await Task.sleep(for: .milliseconds(100))
+        coordinator?.isSettingPosition = false
+      }
     }
   }
 
@@ -388,11 +462,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     var lastDrawingId: UUID = .init()
     var lastImages: [ImageElement] = []
     var saveWorkItem: DispatchWorkItem?
+    var saveScrollWorkItem: DispatchWorkItem?  // 添加用于防抖的变量
     var isUpdatingFromModel = false
     var lastImageEditingId: UUID?
     var lastImageElements: [UUID: ImageElement] = [:]
     var lastSelectorActive: Bool = false
     var lastLocked: Bool = false
+    var isInitializing: Bool = false
+    var isSettingPosition: Bool = false
     var imageViewCache: [UUID: ResizableImageView] = [:] {
       didSet {
         print(#function, "imageViewCache \(oldValue.count)")
@@ -491,6 +568,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     deinit {
       saveWorkItem?.cancel()
       saveWorkItem = nil
+      saveScrollWorkItem?.cancel()
+      saveScrollWorkItem = nil
       contentOffsetObserver?.invalidate()
 
       // 清理所有缓存的视图

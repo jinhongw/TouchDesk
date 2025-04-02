@@ -42,7 +42,7 @@ struct DrawingView: View {
   @State private var contentOffset: CGPoint = .zero
 
   let zOffset: CGFloat = 72
-  let placeZOffset: CGFloat = 4
+  let placeZOffset: CGFloat = 6
 
   enum CanvasToolStatus: Int, Hashable {
     case ink = 0

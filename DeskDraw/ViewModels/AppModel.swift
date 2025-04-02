@@ -217,7 +217,6 @@ class AppModel {
 
       let renderer = UIGraphicsImageRenderer(size: finalSize, format: format)
 
-      // 使用 autoreleasepool 来及时释放临时对象
       autoreleasepool {
         let finalImage = renderer.image { context in
           let drawingSize = CGSize(
@@ -232,7 +231,7 @@ class AppModel {
             )
 
           for imageElement in drawingModel.images {
-            if let image = self.getOrCreateImage(from: imageElement.imageData, id: imageElement.id) {
+            if let image = DispatchQueue.main.sync(execute: { self.getOrCreateImage(from: imageElement.imageData, id: imageElement.id) }) {
               context.cgContext.saveGState()
 
               let relativeX = (imageElement.position.x - contentBounds.minX) * scale
