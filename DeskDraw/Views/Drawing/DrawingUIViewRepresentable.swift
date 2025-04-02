@@ -29,6 +29,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   @Binding var isShareImageViewShowing: Bool
   @Binding var imageEditingId: UUID?
   @Binding var contentOffset: CGPoint
+  @Binding var zoomFactor: Double
   let canvasWidth: CGFloat
   let canvasHeight: CGFloat
   let saveDrawing: () -> Void
@@ -74,6 +75,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       height: canvasHeight
     )
   }
+  
+  var zoomFactorValue: CGFloat {
+    CGFloat(zoomFactor / 100)
+  }
 
   func getTool() -> PKTool {
     switch toolStatus {
@@ -111,10 +116,19 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     canvas.alwaysBounceHorizontal = true
     canvas.alwaysBounceVertical = true
     canvas.contentSize = defaultSize
+    canvas.minimumZoomScale = 0.25
+    canvas.maximumZoomScale = 2.0
+    canvas.zoomScale = zoomFactorValue
+    canvas.isOpaque = false
     canvas.becomeFirstResponder()
     context.coordinator.lastDrawingId = model.id
     context.coordinator.lastImages = model.images
     canvas.delegate = context.coordinator
+
+    // 创建并设置图片容器
+    let imageContainer = ImageContainerView(frame: CGRect(origin: .zero, size: defaultSize))
+    context.coordinator.imageContainer = imageContainer
+    canvas.addSubview(imageContainer)
 
     // 添加一个初始化标志
     context.coordinator.isInitializing = true
@@ -145,7 +159,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       }
     }
     context.coordinator.contentOffsetObserver = observer
-    updateContentSizeForDrawing()
+    updateContentSizeForDrawing(coordinator: context.coordinator)
 
     Task {
       try await Task.sleep(for: .seconds(0.5))
@@ -170,6 +184,12 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   func updateUIView(_ canvas: PKCanvasView, context: Context) {
     canvas.isDrawingEnabled = !isLocked
     canvas.tool = getTool()
+    
+    // 更新缩放比例
+    if canvas.zoomScale != zoomFactorValue {
+      canvas.setZoomScale(zoomFactorValue, animated: true)
+      context.coordinator.imageContainer?.setZoomScale(zoomFactorValue, animated: true)
+    }
 
     if context.coordinator.lastDrawingId != model.id {
       print(#function, "DEBUG Change drawing")
@@ -186,7 +206,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.contentSize = defaultSize
       canvas.drawing = model.drawing
 
-      updateContentSizeForDrawing()
+      updateContentSizeForDrawing(coordinator: context.coordinator)
       
       // 设置位置
       setPosition()
@@ -210,7 +230,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       updateImageViews(in: canvas, context: context)
 
       context.coordinator.lastImages = model.images
-      updateContentSizeForDrawing()
+      updateContentSizeForDrawing(coordinator: context.coordinator)
       saveDrawing()
       updateExportImage()
     } else if context.coordinator.lastSelectorActive != isSelectorActive || context.coordinator.lastImageEditingId != imageEditingId {
@@ -238,7 +258,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     // 删除不再需要的图片视图
     for (imageId, imageView) in existingImageViews {
       if !currentImageIds.contains(imageId) {
-        imageView.removeFromSuperview()
+        context.coordinator.imageContainer?.removeImageView(imageView)
         context.coordinator.imageViewCache.removeValue(forKey: imageId)
       }
     }
@@ -276,9 +296,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         imageView.frame = adjustedFrame
         imageView.transform = CGAffineTransform(rotationAngle: imageElement.rotation)
 
-        // 如果视图不在画布上，添加它
+        // 如果视图不在容器中，添加它
         if imageView.superview == nil {
-          canvas.addSubview(imageView)
+          context.coordinator.imageContainer?.addImageView(imageView)
         }
       }
 
@@ -330,14 +350,22 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     Coordinator(self)
   }
 
-  func updateContentSizeForDrawing() {
+  func updateContentSizeForDrawing(coordinator: Coordinator) {
+    // 如果正在缩放，不执行内容大小更新
+    guard coordinator.parent.canvas.isZooming == false else { return }
+    
     // 检查是否有任何内容（绘画或图片）
     let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
     let hasImages = !model.images.isEmpty
     
     guard hasDrawing || hasImages else {
       print(#function, "canvasWidth set \(defaultSize) width: \(canvasWidth) height \(canvasHeight)")
+      CATransaction.begin()
+      CATransaction.setDisableActions(true)
       canvas.contentSize = defaultSize
+      coordinator.imageContainer?.updateFrame(size: defaultSize, transform: .identity)
+      coordinator.imageContainer?.setZoomScale(canvas.zoomScale, animated: false)
+      CATransaction.commit()
       return
     }
 
@@ -371,7 +399,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       newContentWidth = contentWidth + transformX + addWidth
       newContentHeight = contentHeight + transformY + addHeight
       print(#function, "set 1 newContentWidth \(newContentWidth) newCcontentHeight \(newContentHeight) width: \(contentWidth) height \(canvasHeight)")
-      canvas.contentSize = CGSize(width: newContentWidth, height: newContentHeight)
+      let newSize = CGSize(width: newContentWidth, height: newContentHeight)
+      canvas.contentSize = newSize
+      coordinator.imageContainer?.updateFrame(size: newSize, transform: .identity)
+      coordinator.imageContainer?.setZoomScale(canvas.zoomScale, animated: false)
 
       guard transformX != 0 || transformY != 0 else { return }
 
@@ -401,7 +432,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       newContentWidth = contentWidth + addWidth
       newContentHeight = contentHeight + addHeight
       print(#function, "set 2 newContentWidth \(newContentWidth) newCcontentHeight \(newContentHeight) width: \(canvasWidth) height \(canvasHeight)")
-      canvas.contentSize = CGSize(width: newContentWidth, height: newContentHeight)
+      let newSize = CGSize(width: newContentWidth, height: newContentHeight)
+      canvas.contentSize = newSize
+      coordinator.imageContainer?.updateFrame(size: newSize, transform: .identity)
+      coordinator.imageContainer?.setZoomScale(canvas.zoomScale, animated: false)
     }
   }
 
@@ -462,7 +496,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     var lastDrawingId: UUID = .init()
     var lastImages: [ImageElement] = []
     var saveWorkItem: DispatchWorkItem?
-    var saveScrollWorkItem: DispatchWorkItem?  // 添加用于防抖的变量
+    var saveScrollWorkItem: DispatchWorkItem?
     var isUpdatingFromModel = false
     var lastImageEditingId: UUID?
     var lastImageElements: [UUID: ImageElement] = [:]
@@ -470,12 +504,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     var lastLocked: Bool = false
     var isInitializing: Bool = false
     var isSettingPosition: Bool = false
-    var imageViewCache: [UUID: ResizableImageView] = [:] {
-      didSet {
-        print(#function, "imageViewCache \(oldValue.count)")
-      }
-    }
-
+    var imageViewCache: [UUID: ResizableImageView] = [:]
+    var imageContainer: ImageContainerView?
     var contentOffsetObserver: NSKeyValueObservation?
 
     init(_ parent: DrawingUIViewRepresentable) {
@@ -496,7 +526,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
           Task { @MainActor [weak self] in
             guard let self = self else { return }
             self.parent.model.drawing = canvasView.drawing
-            self.parent.updateContentSizeForDrawing()
+            self.parent.updateContentSizeForDrawing(coordinator: self)
             self.parent.saveDrawing()
             if self.parent.isShareImageViewShowing {
               self.parent.updateExportImage()
@@ -564,7 +594,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         imageViewCache[id] = nil
       }
     }
-
+    
     deinit {
       saveWorkItem?.cancel()
       saveWorkItem = nil

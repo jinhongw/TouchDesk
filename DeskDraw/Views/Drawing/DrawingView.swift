@@ -215,6 +215,7 @@ struct DrawingView: View {
         isShareImageViewShowing: $appModel.isShareImageViewShowing,
         imageEditingId: $appModel.imageEditingId,
         contentOffset: $contentOffset,
+        zoomFactor: $appModel.canvasZoomFactor,
         canvasWidth: width,
         canvasHeight: depth - zOffset,
         saveDrawing: {
