@@ -117,7 +117,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     canvas.alwaysBounceVertical = true
     canvas.contentSize = defaultSize
     canvas.minimumZoomScale = 0.25
-    canvas.maximumZoomScale = 2.0
+    canvas.maximumZoomScale = 4.0
     canvas.zoomScale = zoomFactorValue
     canvas.isOpaque = false
     canvas.becomeFirstResponder()

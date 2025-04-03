@@ -76,10 +76,6 @@ struct MiniMapView: View {
       // 切换 drawing 时立即更新缩略图
       updateThumbnail()
     }
-    .onChange(of: canvas.contentSize) { _, _ in
-      // 画布尺寸变化时更新缩略图
-      updateThumbnail()
-    }
     .onChange(of: canvas.drawing) { _, _ in
       // 绘制内容变化时更新缩略图
       updateThumbnail()
@@ -101,6 +97,13 @@ struct MiniMapView: View {
     )
   }
   
+  private var canvasContentSize: CGSize {
+    return .init(
+      width: canvas.contentSize.width / CGFloat(appModel.canvasZoomFactor / 100),
+      height: canvas.contentSize.height / CGFloat(appModel.canvasZoomFactor / 100)
+    )
+  }
+  
   // 根据缩放比例更新画布内容
   private func updateCanvasForZoom() {
     // 画布的缩放由 DrawingUIViewRepresentable 处理
@@ -112,7 +115,7 @@ struct MiniMapView: View {
     guard let drawingId = appModel.drawingId,
           let drawing = appModel.drawings[drawingId]
     else {
-      return CGRect(origin: .zero, size: canvas.contentSize)
+      return CGRect(origin: .zero, size: canvasContentSize)
     }
 
     // 检查是否有任何内容（绘画或图片）
@@ -129,7 +132,7 @@ struct MiniMapView: View {
 
     // 如果既没有绘画也没有图片，使用画布尺寸
     if !hasDrawing && !hasImages {
-      bounds = CGRect(origin: .zero, size: canvas.contentSize)
+      bounds = CGRect(origin: .zero, size: canvasContentSize)
     }
 
     return bounds
@@ -140,8 +143,8 @@ struct MiniMapView: View {
     let availableHeight = size.height - 4
 
     // 使用原始内容尺寸
-    let totalWidth = canvas.contentSize.width
-    let totalHeight = canvas.contentSize.height
+    let totalWidth = canvasContentSize.width
+    let totalHeight = canvasContentSize.height
 
     let scaleX = availableWidth / totalWidth
     let scaleY = availableHeight / totalHeight
@@ -150,14 +153,14 @@ struct MiniMapView: View {
 
   private func calculateThumbnailFrame(contentBounds: CGRect, contentScale: CGFloat, thumbnailSize: CGSize) -> CGRect {
     // 计算画布在小地图中的总尺寸
-    let scaledCanvasWidth = canvas.contentSize.width * contentScale
-    let scaledCanvasHeight = canvas.contentSize.height * contentScale
+    let scaledCanvasWidth = canvasContentSize.width * contentScale
+    let scaledCanvasHeight = canvasContentSize.height * contentScale
 
     // 计算内容区域相对于画布的位置比例
-    let contentXRatio = contentBounds.minX / canvas.contentSize.width
-    let contentYRatio = contentBounds.minY / canvas.contentSize.height
-    let contentWidthRatio = contentBounds.width / canvas.contentSize.width
-    let contentHeightRatio = contentBounds.height / canvas.contentSize.height
+    let contentXRatio = contentBounds.minX / canvasContentSize.width
+    let contentYRatio = contentBounds.minY / canvasContentSize.height
+    let contentWidthRatio = contentBounds.width / canvasContentSize.width
+    let contentHeightRatio = contentBounds.height / canvasContentSize.height
 
     // 计算缩略图在小地图中的位置和大小
     let thumbnailX = (size.width - scaledCanvasWidth) / 2 + scaledCanvasWidth * contentXRatio
@@ -178,8 +181,8 @@ struct MiniMapView: View {
     let viewportHeight = visibleSize.height * contentScale / zoomFactor
 
     // 计算视口在小地图中的位置
-    let scaledCanvasWidth = canvas.contentSize.width * contentScale
-    let scaledCanvasHeight = canvas.contentSize.height * contentScale
+    let scaledCanvasWidth = canvasContentSize.width * contentScale
+    let scaledCanvasHeight = canvasContentSize.height * contentScale
     let contentX = (size.width - scaledCanvasWidth) / 2
     let contentY = (size.height - scaledCanvasHeight) / 2
 
@@ -215,8 +218,8 @@ struct MiniMapView: View {
     let zoomFactor = CGFloat(appModel.canvasZoomFactor / 100)
 
     // 计算画布在小地图中的总尺寸和位置
-    let scaledCanvasWidth = canvas.contentSize.width * contentScale
-    let scaledCanvasHeight = canvas.contentSize.height * contentScale
+    let scaledCanvasWidth = canvasContentSize.width * contentScale
+    let scaledCanvasHeight = canvasContentSize.height * contentScale
     let contentX = (size.width - scaledCanvasWidth) / 2
     let contentY = (size.height - scaledCanvasHeight) / 2
 
@@ -225,8 +228,8 @@ struct MiniMapView: View {
     let newY = (location.y - contentY) / contentScale * zoomFactor - visibleSize.height / 2
 
     // 确保偏移量不超出边界，考虑缩放因子
-    let maxOffsetX = max(0, canvas.contentSize.width * zoomFactor - visibleSize.width)
-    let maxOffsetY = max(0, canvas.contentSize.height * zoomFactor - visibleSize.height)
+    let maxOffsetX = max(0, canvasContentSize.width * zoomFactor - visibleSize.width)
+    let maxOffsetY = max(0, canvasContentSize.height * zoomFactor - visibleSize.height)
 
     let newOffset = CGPoint(
       x: min(max(0, newX), maxOffsetX),
@@ -245,6 +248,8 @@ struct MiniMapView: View {
 struct ZoomControlView: View {
   @Binding var zoomFactor: Double
   private let stepSize: Double = 25 // 25% 的缩放步长
+  private let minZoomFactor: Double = 25
+  private let maxZoomFactor: Double = 400
   
   var body: some View {
     ZStack {
@@ -255,7 +260,7 @@ struct ZoomControlView: View {
         Image(systemName: "minus")
           .font(.system(size: 8, weight: .bold))
           .frame(width: 12, height: 12)
-          .disabled(zoomFactor <= 25)
+          .disabled(zoomFactor <= minZoomFactor)
           .padding(4)
           .contentShape(Circle())
           .hoverEffect(.highlight)
@@ -266,6 +271,7 @@ struct ZoomControlView: View {
         
         Text("\(Int(zoomFactor))%")
           .font(.system(size: 8, weight: .medium))
+          .fixedSize()
           .frame(width: 24, height: 12)
           .padding(4)
           .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -278,7 +284,7 @@ struct ZoomControlView: View {
         Image(systemName: "plus")
           .font(.system(size: 8, weight: .bold))
           .frame(width: 12, height: 12)
-          .disabled(zoomFactor >= 200)
+          .disabled(zoomFactor >= maxZoomFactor)
           .padding(4)
           .contentShape(Circle())
           .hoverEffect(.highlight)
@@ -295,13 +301,13 @@ struct ZoomControlView: View {
   
   private func decreaseZoom() {
     withAnimation(.easeInOut(duration: 0.2)) {
-      zoomFactor = max(25, zoomFactor - stepSize)
+      zoomFactor = max(minZoomFactor, zoomFactor - stepSize)
     }
   }
   
   private func increaseZoom() {
     withAnimation(.easeInOut(duration: 0.2)) {
-      zoomFactor = min(200, zoomFactor + stepSize)
+      zoomFactor = min(maxZoomFactor, zoomFactor + stepSize)
     }
   }
 }

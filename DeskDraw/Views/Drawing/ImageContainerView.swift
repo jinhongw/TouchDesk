@@ -25,10 +25,11 @@ class ImageContainerView: UIScrollView {
     bouncesZoom = false
     showsHorizontalScrollIndicator = false
     showsVerticalScrollIndicator = false
+    clipsToBounds = false
     
     // 设置缩放范围
     minimumZoomScale = 0.25
-    maximumZoomScale = 2.0
+    maximumZoomScale = 4.0
     
     // 设置代理
     delegate = self
