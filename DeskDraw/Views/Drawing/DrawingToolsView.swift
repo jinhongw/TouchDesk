@@ -36,7 +36,7 @@ struct DrawingToolsView: View {
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
   @Binding var isSelectorActive: Bool
-
+  
   let canvas: PKCanvasView
 
   enum ToolSettingType {
@@ -427,8 +427,8 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         let visibleCenter = CGPoint(
-          x: canvas.contentOffset.x + canvas.bounds.width / 2,
-          y: canvas.contentOffset.y + canvas.bounds.height / 2
+          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
         )
         dismissWindow(id: "imagePicker")
         openWindow(id: "imagePicker", value: visibleCenter)

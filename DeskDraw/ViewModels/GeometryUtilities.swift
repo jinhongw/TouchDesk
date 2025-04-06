@@ -193,3 +193,14 @@ extension View {
     }
   }
 }
+
+// CGSize 乘法运算符重载
+extension CGSize {
+  static func * (size: CGSize, scalar: CGFloat) -> CGSize {
+    return CGSize(width: size.width * scalar, height: size.height * scalar)
+  }
+  
+  static func * (scalar: CGFloat, size: CGSize) -> CGSize {
+    return size * scalar
+  }
+}
