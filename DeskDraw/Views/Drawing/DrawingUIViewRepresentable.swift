@@ -112,6 +112,18 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     return position
   }
 
+  private func saveZoomFactor(_ zoom: Double, for drawingId: UUID) {
+    let key = "zoomFactor_\(drawingId.uuidString)"
+    UserDefaults.standard.set(zoom, forKey: key)
+    print(#function, "save zoom \(zoom) for \(drawingId)")
+  }
+
+  private func getZoomFactor(for drawingId: UUID) -> Double? {
+    let key = "zoomFactor_\(drawingId.uuidString)"
+    let zoom = UserDefaults.standard.double(forKey: key)
+    return zoom != 0 ? zoom : nil
+  }
+
   func makeUIView(context: Context) -> PKCanvasView {
     print(#function, "make canvas \(model.id) width: \(canvasWidth) height \(canvasHeight)")
     canvas.drawing = model.drawing
@@ -169,6 +181,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     Task {
       try await Task.sleep(for: .seconds(0.5))
+      // 恢复缩放比例
+      if let savedZoom = getZoomFactor(for: model.id) {
+        canvas.setZoomScale(CGFloat(savedZoom / 100), animated: false)
+        context.coordinator.imageContainer?.setZoomScale(CGFloat(savedZoom / 100), animated: false)
+      } else {
+        canvas.setZoomScale(1, animated: false)
+        context.coordinator.imageContainer?.setZoomScale(1, animated: false)
+      }
       setPosition()
       // 初始化完成，可以开始正常保存滚动位置
       context.coordinator.isInitializing = false
@@ -195,6 +215,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     if canvas.zoomScale != zoomFactorValue {
       canvas.setZoomScale(zoomFactorValue, animated: true)
       context.coordinator.imageContainer?.setZoomScale(zoomFactorValue, animated: true)
+      // 保存缩放比例
+      if !context.coordinator.isInitializing {
+        saveZoomFactor(zoomFactor, for: model.id)
+      }
     }
 
     if context.coordinator.lastDrawingId != model.id {
@@ -213,6 +237,17 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       canvas.drawing = model.drawing
 
       updateContentSizeForDrawing(coordinator: context.coordinator)
+
+      // 恢复缩放比例
+      if let savedZoom = getZoomFactor(for: model.id) {
+        zoomFactor = savedZoom
+        canvas.setZoomScale(CGFloat(savedZoom / 100), animated: false)
+        context.coordinator.imageContainer?.setZoomScale(CGFloat(savedZoom / 100), animated: false)
+      } else {
+        zoomFactor = 100
+        canvas.setZoomScale(1, animated: false)
+        context.coordinator.imageContainer?.setZoomScale(1, animated: false)
+      }
 
       // 设置位置
       setPosition()
