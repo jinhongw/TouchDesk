@@ -15,7 +15,7 @@ struct PlaceAssistView: View {
   @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
-  @AppStorage("showGestureGuide") private var showGestureGuide = true
+  @AppStorage("showGestureGuideV2") private var showGestureGuide = true
 
   let width: CGFloat, height: CGFloat, depth: CGFloat, placeZOffset: CGFloat
 

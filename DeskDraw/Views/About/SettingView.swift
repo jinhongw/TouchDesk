@@ -45,6 +45,12 @@ struct SettingView: View {
           }
         }
       }
+      
+      Section {
+        NavigationLink(value: AppModel.AboutRoute.gestureGuide) {
+          Text("Dominant hand setting")
+        }
+      }
     }
     .listStyle(.insetGrouped)
     .frame(width: 480)

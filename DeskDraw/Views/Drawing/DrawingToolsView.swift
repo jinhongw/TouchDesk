@@ -261,7 +261,7 @@ struct DrawingToolsView: View {
         Task {
           dismissWindow(id: "about")
           appModel.aboutNavigationPath.removeLast(appModel.aboutNavigationPath.count)
-          appModel.aboutNavigationPath.append(AboutView.Route.setting)
+          appModel.aboutNavigationPath.append(AppModel.AboutRoute.setting)
           openWindow(id: "about")
         }
       }, label: {

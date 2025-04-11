@@ -18,13 +18,6 @@ struct AboutView: View {
     Locale.current.language.languageCode?.identifier == "zh" && Locale.current.language.script!.identifier == "Hans"
   }
 
-  enum Route: Hashable {
-    case setting
-    case subscription
-    case gestureGuide
-    case credit
-  }
-
   var body: some View {
     @Bindable var appModel = appModel
     NavigationStack(path: $appModel.aboutNavigationPath) {
@@ -36,7 +29,7 @@ struct AboutView: View {
         }
         .padding(48)
       }
-      .navigationDestination(for: Route.self, destination: { route in
+      .navigationDestination(for: AppModel.AboutRoute.self, destination: { route in
         switch route {
         case .setting: SettingView()
         case .subscription: SubscriptionView().environment(appModel.subscriptionViewModel)
@@ -139,7 +132,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var settings: some View {
-    NavigationLink(value: Route.setting) {
+    NavigationLink(value: AppModel.AboutRoute.setting) {
       HStack {
         Image(systemName: "gearshape.fill")
           .resizable()
@@ -165,7 +158,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var gestureGuide: some View {
-    NavigationLink(value: Route.gestureGuide) {
+    NavigationLink(value: AppModel.AboutRoute.gestureGuide) {
       HStack {
         Image(systemName: "questionmark.circle.fill")
           .resizable()
@@ -191,7 +184,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var upgrade: some View {
-    NavigationLink(value: Route.subscription) {
+    NavigationLink(value: AppModel.AboutRoute.subscription) {
       HStack {
         Image(systemName: "crown.fill")
           .resizable()
@@ -224,7 +217,7 @@ struct AboutView: View {
   @MainActor
   @ViewBuilder
   private var credits: some View {
-    NavigationLink(value: Route.credit) {
+    NavigationLink(value: AppModel.AboutRoute.credit) {
       HStack {
         Image(systemName: "info.circle.fill")
           .resizable()

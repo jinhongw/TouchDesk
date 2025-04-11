@@ -28,7 +28,6 @@ struct DrawingView: View {
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("placementAssistance") private var placementAssistance = true
-  @AppStorage("showGestureGuide") private var showGestureGuide = true
   @AppStorage("drawColor") private var drawColor: Color = .white
   @AppStorage("showMiniMap") private var showMiniMap = true
 

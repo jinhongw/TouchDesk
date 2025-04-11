@@ -58,6 +58,13 @@ class AppModel {
     case drawingImmersiveSpace
     var description: String { rawValue }
   }
+  
+  enum AboutRoute: Hashable {
+    case setting
+    case subscription
+    case gestureGuide
+    case credit
+  }
 
   init() {
     loadDrawings()
