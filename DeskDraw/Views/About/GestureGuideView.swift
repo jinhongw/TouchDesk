@@ -22,13 +22,17 @@ struct GestureGuideView: View {
   }
 
   var body: some View {
-    TabView {
-      pichGestureGuide
-      rightDominantHandGestureGuide
-      leftDominantHandGestureGuide
+    ScrollView {
+      VStack {
+        pichGestureGuide
+        Divider()
+        rightDominantHandGestureGuide
+        Divider()
+        leftDominantHandGestureGuide
+      }
+      .frame(maxWidth: 620)
+      .padding(24)
     }
-    .padding(.bottom, 20)
-    .tabViewStyle(.page)
     .navigationTitle("How to Use")
   }
 
@@ -52,9 +56,10 @@ struct GestureGuideView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
-            .opacity(pichGestureGuideAppeared && puichGuideStatus == .leftPiched ? 1 : pichGestureGuideAppeared && (puichGuideStatus == .showRight || puichGuideStatus == .rightPiching) ? 0.3 : 0)
+            .opacity(pichGestureGuideAppeared && (puichGuideStatus == .showRight || puichGuideStatus == .rightPiching || puichGuideStatus == .leftPiched) ? 1 : 0)
+            .offset(x: -20)
         })
-        .offset(z: puichGuideStatus == .showLeft || puichGuideStatus == .leftPiching || puichGuideStatus == .leftPiched ? 50 : 0)
+        .offset(z: 50)
         ZStack {
           Image(.leftHandPinch)
             .resizable()
@@ -72,9 +77,10 @@ struct GestureGuideView: View {
             .font(.callout)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
-            .opacity(puichGuideStatus == .rightPiched ? 1 : puichGuideStatus == .showLeft || puichGuideStatus == .leftPiching ? 0.3 : 0)
+            .opacity(puichGuideStatus == .rightPiched || puichGuideStatus == .showLeft || puichGuideStatus == .leftPiching ? 1 : 0)
+            .offset(x: 20)
         })
-        .offset(z: puichGuideStatus == .showRight || puichGuideStatus == .rightPiching || puichGuideStatus == .rightPiched ? 50 : 0)
+        .offset(z: 50)
       }
       .offset(y: -20)
       Text("最近一次「捏合点击」画布的手，会成为惯用手。")
@@ -164,5 +170,5 @@ struct GestureGuideView: View {
 #Preview {
   NavigationStack {
     GestureGuideView()
-  }.frame(width: 620, height: 480)
+  }
 }
