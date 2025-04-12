@@ -68,7 +68,7 @@ struct DeskDrawApp: App {
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
-      return WindowPlacement(.above(context.windows.first!), size: CGSize.init(width: 620, height: 480))
+      return WindowPlacement(.utilityPanel, size: CGSize.init(width: 620, height: 1024))
     }
     
     WindowGroup(id: "colorPicker") {
