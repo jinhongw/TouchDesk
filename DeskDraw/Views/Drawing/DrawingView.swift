@@ -30,6 +30,7 @@ struct DrawingView: View {
   @AppStorage("placementAssistance") private var placementAssistance = true
   @AppStorage("drawColor") private var drawColor: Color = .white
   @AppStorage("showMiniMap") private var showMiniMap = true
+  @AppStorage("showQuickDrawingSwitch") private var showQuickDrawingSwitch = true
 
   @State private var canvas = PKCanvasView()
   @State private var lastCanvasPosition: AffineTransform3D? = nil
@@ -148,10 +149,12 @@ struct DrawingView: View {
             }
           }
           .overlay(alignment: isHorizontal ? .bottomLeading : .topLeading) {
-            QuickDrawingSwitch()
-              .environment(appModel)
-              .padding(16)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            if showQuickDrawingSwitch {
+              QuickDrawingSwitch()
+                .environment(appModel)
+                .padding(16)
+                .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+            }
           }
           .overlay(alignment: isHorizontal ? .topLeading : .bottomLeading) {
             topToolbarView(width: width, height: height, depth: depth)

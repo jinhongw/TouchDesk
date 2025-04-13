@@ -45,11 +45,11 @@ struct GestureGuideView: View {
           Image(.leftHandPinch)
             .resizable()
             .scaledToFit()
-            .opacity(puichGuideStatus == .leftPiching ? 1 : 0)
+            .opacity(puichGuideStatus == .leftPiching ? 1 : 0.01)
           Image(.leftHandPinchHalfway)
             .resizable()
             .scaledToFit()
-            .opacity(puichGuideStatus == .showLeft || puichGuideStatus == .leftPiched ? 1 : puichGuideStatus == .leftPiching ? 0 : 0.3)
+            .opacity(puichGuideStatus == .showLeft || puichGuideStatus == .leftPiched ? 1 : puichGuideStatus == .leftPiching ? 0.01 : 0.3)
         }
         .overlay(alignment: .top, content: {
           Text("惯用手")
@@ -57,7 +57,6 @@ struct GestureGuideView: View {
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .opacity(pichGestureGuideAppeared && (puichGuideStatus == .showRight || puichGuideStatus == .rightPiching || puichGuideStatus == .leftPiched) ? 1 : 0)
-            .offset(x: -20)
         })
         .offset(z: 50)
         ZStack {
@@ -65,12 +64,12 @@ struct GestureGuideView: View {
             .resizable()
             .scaledToFit()
             .scaleEffect(x: -1)
-            .opacity(puichGuideStatus == .rightPiching ? 1 : 0)
+            .opacity(puichGuideStatus == .rightPiching ? 1 : 0.01)
           Image(.leftHandPinchHalfway)
             .resizable()
             .scaledToFit()
             .scaleEffect(x: -1)
-            .opacity(puichGuideStatus == .showRight || puichGuideStatus == .rightPiched ? 1 : puichGuideStatus == .rightPiching ? 0 : 0.3)
+            .opacity(puichGuideStatus == .showRight || puichGuideStatus == .rightPiched ? 1 : puichGuideStatus == .rightPiching ? 0.01 : 0.3)
         }
         .overlay(alignment: .top, content: {
           Text("惯用手")
@@ -78,7 +77,6 @@ struct GestureGuideView: View {
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .opacity(puichGuideStatus == .rightPiched || puichGuideStatus == .showLeft || puichGuideStatus == .leftPiching ? 1 : 0)
-            .offset(x: 20)
         })
         .offset(z: 50)
       }
@@ -97,7 +95,7 @@ struct GestureGuideView: View {
       }
       
       animationTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { timer in
-        withAnimation(.easeInOut(duration: 0.8)) {
+        withAnimation(.easeInOut.speed(2)) {
           switch puichGuideStatus {
           case .showRight:
             puichGuideStatus = .rightPiching

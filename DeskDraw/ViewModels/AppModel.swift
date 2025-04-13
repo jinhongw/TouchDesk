@@ -53,6 +53,11 @@ class AppModel {
   private let thumbnailDebounceInterval: TimeInterval = 0.5
   private var imageCache: [UUID: UIImage] = [:]
   private var currentThumbnailId: UUID?
+  
+  var currentDrawing: DrawingModel? {
+    guard let drawingId else { return nil }
+    return drawings[drawingId]
+  }
 
   enum ImmersiveSpaceID: String, CustomStringConvertible {
     case drawingImmersiveSpace
@@ -297,11 +302,6 @@ class AppModel {
 
   func updateExportImage(_ image: UIImage) {
     exportImage = image
-  }
-
-  var currentDrawing: DrawingModel? {
-    guard let drawingId else { return nil }
-    return drawings[drawingId]
   }
 
   func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {

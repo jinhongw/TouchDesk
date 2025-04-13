@@ -13,6 +13,7 @@ struct SettingView: View {
   @AppStorage("showMiniMap") private var showMiniMap = true
   @AppStorage("showRecentColors") private var showRecentColors = true
   @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
+  @AppStorage("showQuickDrawingSwitch") private var showQuickDrawingSwitch = true
   var body: some View {
     List {
       Section {
@@ -21,6 +22,9 @@ struct SettingView: View {
         }
         Toggle(isOn: $showMiniMap) {
           Text("Show mini map")
+        }
+        Toggle(isOn: $showQuickDrawingSwitch) {
+          Text("Show Quick Draw Switch")
         }
         Toggle(isOn: $placementAssistance) {
           Text("Placement assistance")

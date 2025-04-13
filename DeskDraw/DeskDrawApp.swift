@@ -118,6 +118,17 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel)
     }
+    
+    WindowGroup(id: "canvasInspectView") {
+      CanvasInspectView()
+        .environment(appModel)
+    }
+    .defaultWindowPlacement { content, context in
+      guard let drawing = appModel.currentDrawing else {
+        return WindowPlacement(.utilityPanel, size: CGSize(width: 1024, height: 1024))
+      }
+      return WindowPlacement(.utilityPanel, size: CGSize(width: max(1024, drawing.bounds.width + 120), height: max(1024, drawing.bounds.height + 120)))
+    }
 
     ImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
       PlaceCanvasImmersiveView(viewModel: appModel.placeCanvasImmersiveViewModel)

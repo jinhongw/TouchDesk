@@ -118,7 +118,12 @@ struct DrawingToolsView: View {
   private var addNewNote: some View {
     HStack {
       Button(action: {
-        appModel.addNewDrawing()
+        if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
+          appModel.addNewDrawing()
+        } else {
+          dismissWindow(id: "subscription")
+          openWindow(id: "subscription")
+        }
       }, label: {
         Image(systemName: "plus")
           .frame(width: 8)
@@ -147,7 +152,7 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .background(showMoreFuncsMenu ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .overlay {
+    .overlay(alignment: .bottom) {
       moreFuncsMenu
     }
     .animation(.spring.speed(2), value: showMoreFuncsMenu)
@@ -177,16 +182,41 @@ struct DrawingToolsView: View {
     VStack {
       setting
       exportImage
+      inspectCanvas
       toggleOrientation
       placeAssist
       lockCanvas
     }
-    .rotation3DEffect(.degrees(isHorizontal ? -40 : -25), axis: (1, 0, 0), anchor: .center)
-    .scaleEffect(showMoreFuncsMenu ? 1 : 0, anchor: .bottomFront)
+    .rotation3DEffect(.degrees(isHorizontal ? -43 : -25), axis: (1, 0, 0), anchor: .bottom)
+    .scaleEffect(showMoreFuncsMenu ? 0.8 : 0, anchor: .bottomFront)
     .opacity(showMoreFuncsMenu ? 1 : 0)
-    .offset(y: isHorizontal ? -126 : -146)
-    .offset(z: isHorizontal ? 84 : 64)
+    .offset(y: -56)
     .disabled(!showMoreFuncsMenu)
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var inspectCanvas: some View {
+    HStack {
+      Button(action: {
+        Task {
+          openWindow(id: "canvasInspectView")
+        }
+      }, label: {
+        HStack {
+          Image(systemName: "plus.square.on.square")
+            .frame(width: 8)
+          Text("查看画布")
+        }
+      })
+      .disabled(appModel.isClosingPlaceCanvasImmersive)
+      .padding(6)
+      .fixedSize()
+      .frame(height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 
   @MainActor
@@ -997,6 +1027,7 @@ struct RecentColorButton: View {
       )
       .environment(AppModel())
       .frame(width: 1024, height: 44)
+      .rotation3DEffect(.degrees(90), axis: (1, 0, 0))
     }
   }
   .frame(width: 1024)

@@ -5,7 +5,8 @@ import SwiftUI
 struct MiniMapView: View {
   @Environment(AppModel.self) private var appModel
   let canvas: PKCanvasView
-  let size: CGSize = .init(width: 88, height: 88)
+  let size: CGSize = .init(width: 112, height: 88)
+  @AppStorage("onlyShowZoomControl") private var onlyShowZoomControl: Bool = false
   @Binding var contentOffset: CGPoint
 
   // 用于节流的状态
@@ -14,60 +15,36 @@ struct MiniMapView: View {
 
   var body: some View {
     VStack(spacing: 8) {
-      // 添加缩放控制器
       ZoomControlView(zoomFactor: zoomFactorBinding)
         .frame(width: size.width)
-      
-      // 原有的 MiniMap 视图
-      GeometryReader { geometry in
-        ZStack {
-          // 背景
-          RoundedRectangle(cornerSize: .init(width: 12, height: 12), style: .continuous)
-            .fill(.ultraThinMaterial)
 
-          // 画布内容缩略图
-          if let drawingId = appModel.drawingId,
-             let thumbnail = appModel.thumbnails[drawingId]
-          {
-            // 计算实际内容区域
-            let contentBounds = getContentBounds()
-            let contentScale = calculateContentScale(contentBounds: contentBounds)
-
-            // 计算缩略图在小地图中的位置和大小
-            let thumbnailFrame = calculateThumbnailFrame(
-              contentBounds: contentBounds,
-              contentScale: contentScale,
-              thumbnailSize: thumbnail.size
-            )
-
-            Image(uiImage: thumbnail)
-              .resizable()
-              .aspectRatio(contentMode: .fill)
-              .frame(width: thumbnailFrame.width, height: thumbnailFrame.height)
-              .position(x: thumbnailFrame.minX + thumbnailFrame.width / 2,
-                        y: thumbnailFrame.minY + thumbnailFrame.height / 2)
+      if !onlyShowZoomControl {
+        GeometryReader { geometry in
+          ZStack {
+            RoundedRectangle(cornerSize: .init(width: 12, height: 12), style: .continuous)
+              .fill(.ultraThinMaterial)
+            miniMapBackground
+            viewportIndicator
           }
-
-          // 当前视口指示器
-          viewportIndicator
         }
-      }
-      .frame(width: size.width, height: size.height)
-      .gesture(
-        DragGesture()
-          .onChanged { value in
-            updateContentOffset(value.location, isDragging: true)
-          }
-          .onEnded { value in
-            updateContentOffset(value.location, isDragging: false)
-          }
-          .simultaneously(with: SpatialTapGesture()
+        .frame(width: size.width, height: size.height)
+        .gesture(
+          DragGesture()
+            .onChanged { value in
+              updateContentOffset(value.location, isDragging: true)
+            }
             .onEnded { value in
               updateContentOffset(value.location, isDragging: false)
             }
-          )
-      )
+            .simultaneously(with: SpatialTapGesture()
+              .onEnded { value in
+                updateContentOffset(value.location, isDragging: false)
+              }
+            )
+        )
+      }
     }
+    .animation(.spring.speed(2), value: onlyShowZoomControl)
     .onChange(of: canvas.contentOffset) { _, _ in
       throttledUpdateThumbnail()
     }
@@ -87,7 +64,31 @@ struct MiniMapView: View {
       updateThumbnail()
     }
   }
-  
+
+  @MainActor
+  @ViewBuilder
+  private var miniMapBackground: some View {
+    if let drawingId = appModel.drawingId,
+       let thumbnail = appModel.thumbnails[drawingId]
+    {
+      let contentBounds = getContentBounds()
+      let contentScale = calculateContentScale(contentBounds: contentBounds)
+
+      let thumbnailFrame = calculateThumbnailFrame(
+        contentBounds: contentBounds,
+        contentScale: contentScale,
+        thumbnailSize: thumbnail.size
+      )
+
+      Image(uiImage: thumbnail)
+        .resizable()
+        .aspectRatio(contentMode: .fill)
+        .frame(width: thumbnailFrame.width, height: thumbnailFrame.height)
+        .position(x: thumbnailFrame.minX + thumbnailFrame.width / 2,
+                  y: thumbnailFrame.minY + thumbnailFrame.height / 2)
+    }
+  }
+
   // 创建缩放因子的绑定
   private var zoomFactorBinding: Binding<Double> {
     Binding(
@@ -95,14 +96,14 @@ struct MiniMapView: View {
       set: { appModel.canvasZoomFactor = $0 }
     )
   }
-  
+
   private var canvasContentSize: CGSize {
-    return .init(
+    .init(
       width: canvas.contentSize.width / CGFloat(appModel.canvasZoomFactor / 100),
       height: canvas.contentSize.height / CGFloat(appModel.canvasZoomFactor / 100)
     )
   }
-  
+
   // 根据缩放比例更新画布内容
   private func updateCanvasForZoom() {
     // 画布的缩放由 DrawingUIViewRepresentable 处理

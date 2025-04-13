@@ -11,18 +11,19 @@ import SwiftUI
 struct ZoomControlView: View {
   @Binding var zoomFactor: Double
   @State private var showQuickZoomMenu: Bool = false
+  @AppStorage("onlyShowZoomControl") private var onlyShowZoomControl: Bool = false
   
   private let stepSize: Double = 25 // 25% 的缩放步长
   private let minZoomFactor: Double = 25
   private let maxZoomFactor: Double = 400
-  private let quickZoomValues: [Double] = [25, 50, 100, 150, 200, 400]
+  private let quickZoomValues: [Double] = [25, 50, 100, 150, 200, 300, 400]
 
   var body: some View {
     mainZoomControl
       .overlay(alignment: .bottom) {
         quickZoomMenu
           .opacity(showQuickZoomMenu ? 1 : 0)
-          .scaleEffect(showQuickZoomMenu ? 1 : 0, anchor: .bottom)
+          .scaleEffect(showQuickZoomMenu ? 0.8 : 0, anchor: .bottom)
           .offset(y: -28)
       }
       .padding(4)
@@ -42,8 +43,8 @@ struct ZoomControlView: View {
           }
         }, label: {
           Text("\(Int(value))%")
-            .font(.system(size: 8, weight: .medium))
-            .frame(width: 32)
+            .font(.system(size: 10, weight: .medium))
+            .frame(width: 46)
         })
         .controlSize(.mini)
         .buttonBorderShape(.roundedRectangle)
@@ -61,7 +62,7 @@ struct ZoomControlView: View {
         // 减小缩放按钮
         Image(systemName: "minus")
           .foregroundStyle(zoomFactor <= minZoomFactor ? .primary.opacity(0.3) : Color.primary)
-          .font(.system(size: 8, weight: .bold))
+          .font(.system(size: 8, weight: .medium))
           .frame(width: 12, height: 12)
           .disabled(zoomFactor <= minZoomFactor)
           .padding(4)
@@ -89,7 +90,7 @@ struct ZoomControlView: View {
 
         Image(systemName: "plus")
           .foregroundStyle(zoomFactor >= maxZoomFactor ? .primary.opacity(0.3) : Color.primary)
-          .font(.system(size: 8, weight: .bold))
+          .font(.system(size: 8, weight: .medium))
           .frame(width: 12, height: 12)
           .disabled(zoomFactor >= maxZoomFactor)
           .padding(4)
@@ -98,6 +99,18 @@ struct ZoomControlView: View {
           .onTapGesture {
             guard zoomFactor < maxZoomFactor else { return }
             increaseZoom()
+            AudioServicesPlaySystemSound(1104)
+          }
+        
+        Image(systemName: onlyShowZoomControl ? "chevron.up.2" : "chevron.down.2" )
+          .foregroundStyle(.primary)
+          .font(.system(size: 8, weight: .medium))
+          .frame(width: 12, height: 12)
+          .padding(4)
+          .contentShape(Circle())
+          .hoverEffect(.highlight)
+          .onTapGesture {
+            onlyShowZoomControl.toggle()
             AudioServicesPlaySystemSound(1104)
           }
       }
