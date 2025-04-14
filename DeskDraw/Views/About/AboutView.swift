@@ -17,6 +17,23 @@ struct AboutView: View {
   var isSimplifiedChinese: Bool {
     Locale.current.language.languageCode?.identifier == "zh" && Locale.current.language.script!.identifier == "Hans"
   }
+  
+  var isLifetime: Bool {
+    appModel.subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.lifetime" })
+  }
+
+  var isYearlyPlan: Bool {
+    appModel.subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.yearly.subscription" })
+  }
+  
+  func planName(_ id: String) -> String {
+    switch id {
+    case "com.easybreezy.touchdesk.lifetime": return NSLocalizedString("Lifetime", comment: "")
+    case "com.easybreezy.touchdesk.yearly.subscription": return NSLocalizedString("Annual", comment: "")
+    case "com.easybreezy.touchdesk.monthly.subscription": return NSLocalizedString("Monthly", comment: "")
+    default: return ""
+    }
+  }
 
   var body: some View {
     @Bindable var appModel = appModel
@@ -47,14 +64,33 @@ struct AboutView: View {
       Image("TouchDesk App Icon")
         .resizable()
         .frame(width: 120, height: 120)
-      VStack(spacing: 2) {
+      VStack(spacing: 4) {
         Text("TouchDesk")
           .font(.system(size: 32.0, weight: .bold))
           .fontDesign(.rounded)
+          .multilineTextAlignment(.center)
           .overlay(proLogo)
+        if appModel.subscriptionViewModel.hasPro, let transaction = appModel.subscriptionViewModel.purchasedTransactions.first {
+          Text("\(planName(transaction.productID)) plan")
+            .font(.system(size: 17.0, weight: .semibold, design: .rounded))
+            .foregroundStyle(
+              isLifetime ? LinearGradient(
+                gradient: Gradient(colors: [Color.orange, Color.pink, Color.purple]),
+                startPoint: .leading,
+                endPoint: .trailing
+              ) : isYearlyPlan ? LinearGradient(
+                gradient: Gradient(colors: [Color.blue, Color.white]),
+                startPoint: .leading,
+                endPoint: .trailing
+              ) : LinearGradient(
+                gradient: Gradient(colors: [Color.secondary, Color.white]),
+                startPoint: .leading,
+                endPoint: .trailing
+              ))
+        }
         Text("Version: \(appVersion ?? "1.0")")
           .font(.caption)
-          .tint(.secondary)
+          .foregroundColor(.secondary)
       }
     }
   }
@@ -79,7 +115,7 @@ struct AboutView: View {
           .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
           .overlay(sparklesOverlay())
           .rotationEffect(.degrees(16))
-          .offset(z: 16)
+          .offset(z: 8)
           .offset(x: 36, y: -20)
           .foregroundStyle(LinearGradient(
             gradient: Gradient(colors: [Color.orange, Color.purple]),
@@ -160,7 +196,7 @@ struct AboutView: View {
   private var gestureGuide: some View {
     NavigationLink(value: AppModel.AboutRoute.gestureGuide) {
       HStack {
-        Image(systemName: "questionmark.circle.fill")
+        Image(systemName: "hand.draw.fill")
           .resizable()
           .padding(6)
           .frame(width: 36, height: 36)

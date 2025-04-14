@@ -11,24 +11,29 @@ import SwiftUI
 
 struct SubscriptionView: View {
   // MARK: - Properties
+
   @Environment(SubscriptionViewModel.self) private var subscriptionViewModel
   @Environment(\.openURL) private var openURL
   @State private var selectedProduct: Product? = nil
   @State private var showConfetti = false
   @State private var showWelcome = false
-  
+
+  private let lifetimeId = "com.easybreezy.touchdesk.lifetime"
+  private let yearlyPlanId = "com.easybreezy.touchdesk.yearly.subscription"
+  private let monthlyPlanId = "com.easybreezy.touchdesk.monthly.subscription"
+
   var topPadding: CGFloat = 0
 
   var isLifetime: Bool {
-    subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.lifetime" })
+    subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == lifetimeId })
   }
 
   var isYearlyPlan: Bool {
-    subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == "com.easybreezy.touchdesk.yearly.subscription" })
+    subscriptionViewModel.purchasedTransactions.contains(where: { $0.productID == yearlyPlanId })
   }
 
   func manageSubscription() {
-    if let connectedScenes = UIApplication.shared.connectedScenes as? Set<UIWindowScene>, let window = connectedScenes.sorted(by: {$0.windows.count < $1.windows.count}).first {
+    if let connectedScenes = UIApplication.shared.connectedScenes as? Set<UIWindowScene>, let window = connectedScenes.sorted(by: { $0.windows.count < $1.windows.count }).first {
       Task {
         do {
           try await AppStore.showManageSubscriptions(in: window)
@@ -41,9 +46,9 @@ struct SubscriptionView: View {
 
   func planName(_ id: String) -> String {
     switch id {
-    case "com.easybreezy.touchdesk.lifetime": return NSLocalizedString("Lifetime", comment: "")
-    case "com.easybreezy.touchdesk.yearly.subscription": return NSLocalizedString("Annual", comment: "")
-    case "com.easybreezy.touchdesk.monthly.subscription": return NSLocalizedString("Monthly", comment: "")
+    case lifetimeId: return NSLocalizedString("Lifetime", comment: "")
+    case yearlyPlanId: return NSLocalizedString("Annual", comment: "")
+    case monthlyPlanId: return NSLocalizedString("Monthly", comment: "")
     default: return ""
     }
   }
@@ -199,9 +204,10 @@ struct SubscriptionView: View {
             .multilineTextAlignment(.leading)
         }
       }
+      .offset(z: 1)
 
       if subscriptionViewModel.hasPro {
-        if subscriptionViewModel.purchasedTransactions.first?.productID == "com.easybreezy.touchdesk.lifetime" {
+        if subscriptionViewModel.purchasedTransactions.first?.productID == lifetimeId {
           Divider()
           Button(action: {
             showConfetti = true
@@ -251,7 +257,7 @@ struct SubscriptionView: View {
           .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
           .overlay(sparklesOverlay())
           .rotationEffect(.degrees(16))
-          .offset(z: 16)
+          .offset(z: 8)
           .offset(x: 36, y: -20)
           .foregroundStyle(LinearGradient(
             gradient: Gradient(colors: [Color.orange, Color.purple]),
@@ -271,6 +277,35 @@ struct SubscriptionView: View {
       }
     }
     .disabled(subscriptionViewModel.purchasing)
+    .background {
+      if selectedProduct?.id == lifetimeId {
+        ZStack {
+          Circle()
+            .foregroundStyle(.orange)
+            .offset(x: -68)
+          Circle()
+            .foregroundStyle(.pink)
+            .offset(y: 32)
+          Circle()
+            .foregroundStyle(.purple)
+            .offset(x: 68)
+        }
+        .opacity(0.3)
+        .blur(radius: 100)
+        .offset(y: -88)
+      } else if selectedProduct?.id == yearlyPlanId {
+        ZStack {
+          Circle()
+            .foregroundStyle(.blue)
+            .offset(x: -32)
+          Circle()
+            .foregroundStyle(.white)
+            .offset(x: 32)
+        }
+        .opacity(0.3)
+        .blur(radius: 100)
+      }
+    }
   }
 
   private var purchaseSection: some View {
@@ -284,7 +319,7 @@ struct SubscriptionView: View {
     }
     .disabled(subscriptionViewModel.purchasing)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var restoreButton: some View {
@@ -299,7 +334,7 @@ struct SubscriptionView: View {
     .buttonStyle(.borderless)
     .controlSize(.mini)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var privacyPolicyButton: some View {
@@ -312,7 +347,7 @@ struct SubscriptionView: View {
     .buttonStyle(.borderless)
     .controlSize(.mini)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var termsOfServiceButton: some View {
@@ -350,6 +385,14 @@ struct SubscriptionItemView: View {
     }
   }
 
+  var isLifetime: Bool {
+    product.id == "com.easybreezy.touchdesk.lifetime"
+  }
+
+  var isYearlyPlan: Bool {
+    product.id == "com.easybreezy.touchdesk.yearly.subscription"
+  }
+
   var body: some View {
     HStack {
       VStack(alignment: .leading, spacing: 8) {
@@ -357,6 +400,21 @@ struct SubscriptionItemView: View {
           Text("\(product.displayName)")
             .font(.system(size: 16.0, weight: .semibold, design: .rounded))
             .multilineTextAlignment(.leading)
+//            .foregroundStyle(
+//              selectedProduct == product ?
+//                (isLifetime ? LinearGradient(
+//                  gradient: Gradient(colors: [Color.purple, Color.white.mix(with: .pink, by: 0.8), Color.white.mix(with: .orange, by: 0.3)]),
+//                  startPoint: .leading,
+//                  endPoint: .trailing
+//                ) : isYearlyPlan ? LinearGradient(
+//                  gradient: Gradient(colors: [Color.blue.mix(with: .white, by: 0.6), Color.white]),
+//                  startPoint: .leading,
+//                  endPoint: .trailing
+//                ) : LinearGradient(
+//                  gradient: Gradient(colors: [Color.secondary.mix(with: .white, by: 0.3), Color.white]),
+//                  startPoint: .leading,
+//                  endPoint: .trailing
+//                )) : LinearGradient(colors: [Color.primary], startPoint: .leading, endPoint: .trailing))
           if product.id == "com.easybreezy.touchdesk.lifetime" {
             HStack(spacing: 4) {
               Text("\(product.displayPrice)")
@@ -382,10 +440,25 @@ struct SubscriptionItemView: View {
       Image(systemName: selectedProduct == product ? "checkmark.circle.fill" : "circle")
         .foregroundColor(selectedProduct == product ? .white : .white)
     }
-
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
     .background(selectedProduct == product ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 24))
+    .background(
+      selectedProduct == product ?
+        (isLifetime ? LinearGradient(
+          gradient: Gradient(colors: [Color.orange, Color.pink, Color.purple]),
+          startPoint: .leading,
+          endPoint: .trailing
+        ).opacity(0.8) : isYearlyPlan ? LinearGradient(
+          gradient: Gradient(colors: [Color.blue, Color.white]),
+          startPoint: .leading,
+          endPoint: .trailing
+        ).opacity(0.6) : LinearGradient(
+          gradient: Gradient(colors: [Color.secondary, Color.white]),
+          startPoint: .leading,
+          endPoint: .trailing
+        ).opacity(0.3)) : LinearGradient(colors: [Color.primary], startPoint: .leading, endPoint: .trailing).opacity(0), in: RoundedRectangle(cornerRadius: 24)
+    )
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 24))
     .opacity(purchasing ? 0.6 : 1)
     .contentShape(RoundedRectangle(cornerRadius: 24))
@@ -417,7 +490,7 @@ struct SubscriptionItemView: View {
           .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
           .overlay(sparklesOverlay().offset(x: 20))
           .rotationEffect(.degrees(8))
-          .offset(z: 16)
+          .offset(z: 8)
           .offset(x: 12, y: -12)
           .opacity(product.id == "com.easybreezy.touchdesk.lifetime" ? 1 : 0)
       }
@@ -464,8 +537,8 @@ struct PurchaseButtonView: View {
 })
 
 extension String {
-    func removePriceNumbers() -> String {
-        let pattern = "\\d+([.,]\\d+)?"
-        return self.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
-    }
+  func removePriceNumbers() -> String {
+    let pattern = "\\d+([.,]\\d+)?"
+    return replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+  }
 }

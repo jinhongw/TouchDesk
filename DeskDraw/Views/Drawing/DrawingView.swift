@@ -60,16 +60,22 @@ struct DrawingView: View {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
             drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: appModel.hideInMini ? .leadingBack : .center)
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : 200)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+              .offset(y: proxy.size.height / 2)
+              .offset(z: -proxy.size.depth)
           }
           .overlay {
             if !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isOpeningPlaceCanvasImmersive {
               notesView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-                .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+                .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: appModel.hideInMini ? .leadingBack : .center)
+                .blur(radius: appModel.showNotes && !appModel.hideInMini ? 0 : 200)
                 .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
                 .disabled(!appModel.showNotes || appModel.hideInMini)
+                .offset(y: proxy.size.height / 2)
+                .offset(z: isHorizontal ? -proxy.size.depth + zOffset : -proxy.size.depth)
             }
           }
           .overlay {
@@ -106,12 +112,8 @@ struct DrawingView: View {
         content.add(logo)
       }
     }
-    .hoverEffect { effect, isActive, geometry in
-      effect.animation(.spring) {
-        $0.scaleEffect(isActive ? 1.2 : 1.0)
-      }
-    }
-    .scaleEffect(appModel.hideInMini ? 1.1 : 0.8)
+    .hoverEffect(.highlight)
+    .scaleEffect(appModel.hideInMini ? 1.2 : 0.8)
     .offset(x: -width / 2 + zOffset / 2, y: height / 2)
     .offset(z: -depth / 2 + zOffset / 2.7)
     .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
@@ -165,8 +167,6 @@ struct DrawingView: View {
     }
     .frame(width: width, height: depth)
     .frame(depth: height)
-    .offset(y: height / 2)
-    .offset(z: -depth)
   }
 
   @MainActor
@@ -252,8 +252,6 @@ struct DrawingView: View {
     }
     .frame(width: width)
     .frame(depth: depth - (isHorizontal ? zOffset : 0))
-    .offset(y: height / 2)
-    .offset(z: isHorizontal ? -depth + zOffset : -depth)
   }
 
   @MainActor

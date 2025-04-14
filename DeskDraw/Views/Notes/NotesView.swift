@@ -182,7 +182,10 @@ struct NotesView: View {
     Button(action: {
       appModel.recoverNote()
     }, label: {
-      Image(systemName: "arrow.uturn.left")
+      HStack {
+        Image(systemName: "arrow.uturn.left")
+        Text("Undo")
+      }
     })
     .disabled(appModel.deletedDrawings.isEmpty)
   }

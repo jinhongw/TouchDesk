@@ -216,31 +216,28 @@ struct MiniMapView: View {
     let contentScale = calculateContentScale(contentBounds: getContentBounds())
     let visibleSize = canvas.frame.size
     let zoomFactor = CGFloat(appModel.canvasZoomFactor / 100)
-
+    
     // 计算画布在小地图中的总尺寸和位置
     let scaledCanvasWidth = canvasContentSize.width * contentScale
     let scaledCanvasHeight = canvasContentSize.height * contentScale
     let contentX = (size.width - scaledCanvasWidth) / 2
     let contentY = (size.height - scaledCanvasHeight) / 2
-
+    
     // 计算新的偏移量，考虑缩放因子
     let newX = (location.x - contentX) / contentScale * zoomFactor - visibleSize.width / 2
     let newY = (location.y - contentY) / contentScale * zoomFactor - visibleSize.height / 2
-
+    
     // 确保偏移量不超出边界，考虑缩放因子
     let maxOffsetX = max(0, canvasContentSize.width * zoomFactor - visibleSize.width)
     let maxOffsetY = max(0, canvasContentSize.height * zoomFactor - visibleSize.height)
-
+    
     let newOffset = CGPoint(
       x: min(max(0, newX), maxOffsetX),
       y: min(max(0, newY), maxOffsetY)
     )
-
-    // 只有当偏移量真正改变时才更新
-    if abs(contentOffset.x - newOffset.x) > 0.01 || abs(contentOffset.y - newOffset.y) > 0.01 {
-      contentOffset = newOffset
-      canvas.setContentOffset(contentOffset, animated: !isDragging)
-    }
+    
+    contentOffset = newOffset
+    canvas.setContentOffset(contentOffset, animated: !isDragging)
   }
 }
 
