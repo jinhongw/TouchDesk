@@ -14,21 +14,50 @@ struct NotesView: View {
   @Environment(\.openWindow) private var openWindow
   @Environment(\.dismissWindow) private var dismissWindow
   @State private var isEditing = false
-  
+  @State private var isAddButtonVisible = true
+
   let canvas: PKCanvasView
 
   private let columns = [
     GridItem(.adaptive(minimum: 180, maximum: 220)),
   ]
 
+  private var haveFavoriteNotes: Bool {
+    appModel.drawings.contains(where: { $0.value.isFavorite })
+  }
+
   var body: some View {
-    let _ = print(#function, "appModel.thumbnails.count \(appModel.thumbnails.count))")
+    let _ = print(#function, "appModel.thumbnails.count \(appModel.thumbnails.count)")
     NavigationStack {
       ScrollViewReader { proxy in
         ScrollView {
-          LazyVGrid(columns: columns, spacing: 0) {
-            addButton
-            allNotes
+          VStack {
+            if haveFavoriteNotes {
+              LazyVGrid(columns: columns, spacing: 0) {
+                addNoteButton
+                ForEach(appModel.ids, id: \.self) { id in
+                  if appModel.drawings[id]?.isFavorite ?? false {
+                    noteView(id: id)
+                      .id(id)
+                      .hoverEffectGroup()
+                  }
+                }
+              }
+              Divider()
+                .padding(12)
+            }
+            LazyVGrid(columns: columns, spacing: 0) {
+              if !haveFavoriteNotes {
+                addNoteButton
+              }
+              ForEach(appModel.ids, id: \.self) { id in
+                if !(appModel.drawings[id]?.isFavorite ?? false) {
+                  noteView(id: id)
+                    .id(id)
+                    .hoverEffectGroup()
+                }
+              }
+            }
           }
           .padding(.horizontal, 16)
           .padding(.bottom, 24)
@@ -42,6 +71,9 @@ struct NotesView: View {
             if !appModel.subscriptionViewModel.hasPro {
               ToolbarItem(placement: .topBarTrailing) { subscriptionButton }
             }
+            if !isAddButtonVisible {
+              ToolbarItem(placement: .topBarTrailing) { addNoteToolbarButton }
+            }
             ToolbarItem(placement: .topBarTrailing) { aboutButton }
           }
           ToolbarItem(placement: .topBarTrailing) { editButton }
@@ -52,52 +84,74 @@ struct NotesView: View {
         }
       }
     }
+    .animation(.spring, value: isAddButtonVisible)
   }
 
   @MainActor
   @ViewBuilder
-  private var allNotes: some View {
-    ForEach(appModel.ids, id: \.self) { id in
-      ZStack {
+  private func noteView(id: UUID) -> some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: 20)
+        .foregroundStyle(.white.opacity(0.15))
+      if let thumbnail = appModel.thumbnails[id] {
+        Image(uiImage: thumbnail)
+          .resizable()
+          .clipShape(.rect(cornerRadius: 16, style: .continuous))
+          .padding(8)
+      } else {
+        Image(systemName: "questionmark.app.dashed")
+      }
+      if id == appModel.drawingId {
         RoundedRectangle(cornerRadius: 20)
-          .foregroundStyle(.white.opacity(0.15))
-        if let thumbnail = appModel.thumbnails[id] {
-          Image(uiImage: thumbnail)
-            .resizable()
-            .clipShape(.rect(cornerRadius: 16, style: .continuous))
-            .padding(8)
-        } else {
-          Image(systemName: "questionmark.app.dashed")
-        }
-        if id == appModel.drawingId {
-          RoundedRectangle(cornerRadius: 20)
-            .stroke(Color.white, lineWidth: 3)
-        }
+          .stroke(Color.white, lineWidth: 3)
       }
-      .id(id)
-      .aspectRatio(1, contentMode: .fit)
-      .padding(8)
-      .hoverEffect { effect, isActive, geometry in
-        effect.animation(.smooth) {
-          $0.scaleEffect(isActive ? 1.1 : 1.0)
-        }
+    }
+    .aspectRatio(1, contentMode: .fit)
+    .padding(8)
+    .hoverEffect(.highlight)
+    .onTapGesture {
+      handleNoteTap(at: id)
+    }
+    .overlay(alignment: .topTrailing, content: {
+      favoriteButton(id: id)
+        .padding(20)
+    })
+    .overlay {
+      deleteNoteButton(id: id)
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func favoriteButton(id: UUID) -> some View {
+    Button(action: {
+      appModel.favoriteDrawing(id: id)
+    }, label: {
+      Image(systemName: (appModel.drawings[id]?.isFavorite ?? false) ? "star.fill" : "star")
+        .font(.footnote)
+    })
+    .buttonStyle(.plain)
+    .buttonBorderShape(.circle)
+    .hoverEffect { effect, isActive, geometry in
+      effect.animation(.smooth) {
+        $0.opacity(isActive ? 1 : (appModel.drawings[id]?.isFavorite ?? false) ? 1 : 0)
       }
-      .onTapGesture {
-        handleNoteTap(at: id)
-      }
-      .overlay {
-        if isEditing {
-          HStack {
-            Spacer()
-            VStack {
-              Button(action: {
-                appModel.deleteDrawing(id)
-              }, label: {
-                Image(systemName: "minus")
-              })
-              Spacer()
-            }
-          }
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func deleteNoteButton(id: UUID) -> some View {
+    if isEditing {
+      HStack {
+        Spacer()
+        VStack {
+          Button(action: {
+            appModel.deleteDrawing(id)
+          }, label: {
+            Image(systemName: "minus")
+          })
+          Spacer()
         }
       }
     }
@@ -105,54 +159,53 @@ struct NotesView: View {
 
   @MainActor
   @ViewBuilder
-  private var addButton: some View {
-    if appModel.subscriptionViewModel.hasPro {
-      ZStack {
-        RoundedRectangle(cornerRadius: 20).foregroundStyle(.white.opacity(0.15))
-        VStack(spacing: 8) {
-          Image(systemName: "plus")
-            .font(.extraLargeTitle2)
-        }
-      }
-      .aspectRatio(1, contentMode: .fit)
-      .padding(8)
-      .hoverEffect { effect, isActive, geometry in
-        effect.animation(.smooth) {
-          $0.scaleEffect(isActive ? 1.1 : 1.0)
-        }
-      }
-      .onTapGesture {
-        AudioServicesPlaySystemSound(1104)
-        addNewDrawing()
-      }
-    } else {
-      ZStack {
-        RoundedRectangle(cornerRadius: 20).foregroundStyle(.white.opacity(0.15))
-        VStack(spacing: 8) {
-          Image(systemName: "plus")
-            .font(.extraLargeTitle2)
+  private var addNoteButton: some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: 20).foregroundStyle(.white.opacity(0.15))
+      VStack(spacing: 8) {
+        Image(systemName: "plus")
+          .font(.extraLargeTitle2)
+        if !appModel.subscriptionViewModel.hasPro {
           Text("Left \(max(0, 3 - appModel.drawings.count)) drawings")
             .font(.caption)
             .foregroundColor(.secondary)
         }
       }
-      .aspectRatio(1, contentMode: .fit)
-      .padding(8)
-      .hoverEffect { effect, isActive, geometry in
-        effect.animation(.default) {
-          $0.scaleEffect(isActive ? 1.1 : 1.0)
-        }
-      }
-      .onTapGesture {
-        AudioServicesPlaySystemSound(1104)
-        if appModel.drawings.count <= 2 {
-          addNewDrawing()
-        } else {
-          dismissWindow(id: "subscription")
-          openWindow(id: "subscription")
-        }
+    }
+    .aspectRatio(1, contentMode: .fit)
+    .padding(8)
+    .hoverEffect(.highlight)
+    .onTapGesture {
+      AudioServicesPlaySystemSound(1104)
+      if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
+        addNewDrawing()
+      } else {
+        dismissWindow(id: "subscription")
+        openWindow(id: "subscription")
       }
     }
+    .onAppear {
+      isAddButtonVisible = true
+    }
+    .onDisappear {
+      isAddButtonVisible = false
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var addNoteToolbarButton: some View {
+    Button(action: {
+      AudioServicesPlaySystemSound(1104)
+      if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
+        addNewDrawing()
+      } else {
+        dismissWindow(id: "subscription")
+        openWindow(id: "subscription")
+      }
+    }, label: {
+      Image(systemName: "plus")
+    })
   }
 
   @MainActor
@@ -213,7 +266,7 @@ struct NotesView: View {
     })
     .buttonStyle(.borderless)
   }
-  
+
   @MainActor
   private func addNewDrawing() {
     appModel.updateDrawing(appModel.drawingId)
@@ -221,7 +274,7 @@ struct NotesView: View {
     appModel.showNotes = false
     appModel.showDrawing = true
   }
-  
+
   @MainActor
   private func handleNoteTap(at id: UUID) {
     AudioServicesPlaySystemSound(1104)

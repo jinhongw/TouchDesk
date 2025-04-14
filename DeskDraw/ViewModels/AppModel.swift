@@ -346,6 +346,14 @@ extension AppModel {
     saveDrawing(drawing.id)
   }
   
+  func favoriteDrawing(id: UUID) {
+    print(#function, "id \(id)")
+    if let isStared = drawings[id]?.isFavorite {
+      drawings[id]?.isFavorite = !isStared
+      saveDrawing(id)
+    }
+  }
+  
   func addDefulatDrawing() {
     guard let data = NSDataAsset(name: "Notes")?.data else { return }
     if let newDrawing = try? PKDrawing(data: data) {

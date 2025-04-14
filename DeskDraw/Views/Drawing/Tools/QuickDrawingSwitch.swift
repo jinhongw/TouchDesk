@@ -15,8 +15,14 @@ struct QuickDrawingSwitch: View {
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: gap) {
           ForEach(appModel.ids, id: \.self) { id in
-            if let drawing = appModel.drawings[id] {
-              drawingThumbnail(drawing)
+            if let drawing = appModel.drawings[id], drawing.isFavorite {
+              drawingThumbnail(drawing, isFavorite: true)
+                .id(id)
+            }
+          }
+          ForEach(appModel.ids, id: \.self) { id in
+            if let drawing = appModel.drawings[id], !drawing.isFavorite {
+              drawingThumbnail(drawing, isFavorite: false)
                 .id(id)
             }
           }
@@ -54,7 +60,7 @@ struct QuickDrawingSwitch: View {
   
   @MainActor
   @ViewBuilder
-  private func drawingThumbnail(_ drawing: DrawingModel) -> some View {
+  private func drawingThumbnail(_ drawing: DrawingModel, isFavorite: Bool) -> some View {
     ZStack {
       RoundedRectangle(cornerSize: .init(width: 8, height: 8), style: .continuous)
         .fill(.ultraThinMaterial)
@@ -73,6 +79,13 @@ struct QuickDrawingSwitch: View {
     }
     .frame(width: size, height: size)
     .contentShape(Rectangle())
+    .overlay(alignment: .topTrailing, content: {
+      if isFavorite {
+        Image(systemName: "star.fill")
+          .font(.system(size: 6))
+          .padding(4)
+      }
+    })
     .allowsHitTesting(true)
     .onTapGesture {
       appModel.updateDrawing(appModel.drawingId)

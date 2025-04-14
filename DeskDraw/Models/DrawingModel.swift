@@ -10,19 +10,44 @@ struct DrawingModel: Codable {
   var texts: [TextElement]
   var createdAt: Date
   var modifiedAt: Date
+  var isFavorite: Bool
 
   var bounds: CGRect {
     drawing.bounds
   }
 
-  init(id: UUID = UUID(), name: String, drawing: PKDrawing) {
+  init(id: UUID = UUID(), name: String, drawing: PKDrawing, isFavorite: Bool = false) {
     self.id = id
     self.name = name
     self.drawing = drawing
+    self.isFavorite = isFavorite
     images = []
     texts = []
     createdAt = Date()
     modifiedAt = Date()
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(UUID.self, forKey: .id)
+    name = try container.decode(String.self, forKey: .name)
+    drawing = try container.decode(PKDrawing.self, forKey: .drawing)
+    images = try container.decode([ImageElement].self, forKey: .images)
+    texts = try container.decode([TextElement].self, forKey: .texts)
+    createdAt = try container.decode(Date.self, forKey: .createdAt)
+    modifiedAt = try container.decode(Date.self, forKey: .modifiedAt)
+    isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case name
+    case drawing
+    case images
+    case texts
+    case createdAt
+    case modifiedAt
+    case isFavorite
   }
 }
 

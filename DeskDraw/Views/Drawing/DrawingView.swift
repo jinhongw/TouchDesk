@@ -75,7 +75,7 @@ struct DrawingView: View {
                 .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
                 .disabled(!appModel.showNotes || appModel.hideInMini)
                 .offset(y: proxy.size.height / 2)
-                .offset(z: isHorizontal ? -proxy.size.depth + zOffset : -proxy.size.depth)
+                .offset(z: -proxy.size.depth)
             }
           }
           .overlay {
@@ -114,9 +114,11 @@ struct DrawingView: View {
     }
     .hoverEffect(.highlight)
     .scaleEffect(appModel.hideInMini ? 1.2 : 0.8)
+    .scaleEffect(!appModel.showNotes ? 1 : 0, anchor: .center)
+    .blur(radius: !appModel.showNotes ? 0 : 200)
     .offset(x: -width / 2 + zOffset / 2, y: height / 2)
     .offset(z: -depth / 2 + zOffset / 2.7)
-    .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+    .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.showNotes ? 1 : 0)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
         print(#function, "onTapGesture")
@@ -125,6 +127,7 @@ struct DrawingView: View {
       }
     )
     .disabled(!isHorizontal || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+    .animation(.spring.speed(2), value: appModel.showNotes)
   }
 
   @MainActor
@@ -247,11 +250,11 @@ struct DrawingView: View {
       Attachment(id: "notesView") {
         NotesView(canvas: canvas)
           .environment(appModel)
-          .frame(width: width, height: depth - (isHorizontal ? zOffset : 0))
+          .frame(width: width, height: depth)
       }
     }
     .frame(width: width)
-    .frame(depth: depth - (isHorizontal ? zOffset : 0))
+    .frame(depth: depth)
   }
 
   @MainActor
