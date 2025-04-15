@@ -36,7 +36,7 @@ struct DrawingToolsView: View {
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var eraserType: DrawingView.EraserType
   @Binding var isSelectorActive: Bool
-  
+
   let canvas: PKCanvasView
 
   enum ToolSettingType {
@@ -53,13 +53,13 @@ struct DrawingToolsView: View {
     let insertIndex = colors.prefix(maxRecentColors).firstIndex(of: newColor) ?? 0
     print(#function, "insertIndex \(insertIndex)")
     if !colors.prefix(maxRecentColors).contains(oldColor) {
-      colors = colors.filter({$0 != oldColor})
+      colors = colors.filter { $0 != oldColor }
       colors.insert(oldColor, at: insertIndex)
     } else if let existColorIndex = colors.prefix(maxRecentColors).firstIndex(of: oldColor) {
       colors.remove(at: existColorIndex)
       colors.insert(oldColor, at: insertIndex)
     }
-    colors = colors.filter({$0 != newColor})
+    colors = colors.filter { $0 != newColor }
     colors = Array(colors.prefix(6))
     recentColorsArray = ColorArray(colors: colors)
   }
@@ -193,7 +193,7 @@ struct DrawingToolsView: View {
     .offset(y: -56)
     .disabled(!showMoreFuncsMenu)
   }
-  
+
   @MainActor
   @ViewBuilder
   private var inspectCanvas: some View {
@@ -945,7 +945,7 @@ struct RecentColorsView: View {
   let colors: [Color]
   let maxColors: Int
   @Binding var drawColor: Color
-  
+
   var body: some View {
     ZStack(spacing: 0) {
       ForEach(Array(colors.prefix(maxColors).enumerated()), id: \.offset) { index, color in
@@ -970,7 +970,7 @@ struct RecentColorButton: View {
   let count: Int
   let color: Color
   @Binding var drawColor: Color
-  
+
   var offset: CGFloat {
     switch (index, count) {
     case (_, 1): return 0.0
@@ -981,21 +981,24 @@ struct RecentColorButton: View {
     default: return 1.0
     }
   }
-  
+
   var body: some View {
     let angle = .pi * CGFloat(CGFloat(index) - offset) / 4.0
     let radius: CGFloat = 44
-    
+
     Button(action: {
       print(#function, "index \(index) color \(color)")
       drawColor = color
     }, label: {
       Circle()
-        .frame(width: 16, height: 16)
+        .frame(width: 20, height: 20)
         .foregroundColor(color)
+        .padding(4)
     })
     .contentShape(.circle)
+    .buttonBorderShape(.circle)
     .buttonStyle(.plain)
+    .clipShape(Circle())
     .offset(
       x: radius * sin(angle),
       y: -radius * cos(angle)

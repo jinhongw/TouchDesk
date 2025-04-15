@@ -153,7 +153,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     let observer = canvas.observe(\.contentOffset, options: [.new]) { _, change in
       if let newOffset = change.newValue {
-        context.coordinator.parent.contentOffset = newOffset
+        DispatchQueue.main.async {
+            context.coordinator.parent.contentOffset = newOffset
+        }
         // 只有当满足以下条件时才保存位置：
         // 1. 不在初始化阶段
         // 2. 不是程序性设置位置

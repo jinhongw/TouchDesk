@@ -82,7 +82,7 @@ struct QuickDrawingSwitch: View {
       }
     }
     .frame(width: size, height: size)
-    .contentShape(Rectangle())
+    .contentShape(RoundedRectangle(cornerSize: .init(width: 8, height: 8), style: .continuous))
     .overlay(alignment: .topTrailing, content: {
       if isFavorite {
         Image(systemName: "star.fill")
