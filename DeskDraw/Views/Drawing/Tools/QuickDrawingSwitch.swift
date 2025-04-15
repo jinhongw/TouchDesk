@@ -14,15 +14,19 @@ struct QuickDrawingSwitch: View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: gap) {
-          ForEach(appModel.ids, id: \.self) { id in
-            if let drawing = appModel.drawings[id], drawing.isFavorite {
-              drawingThumbnail(drawing, isFavorite: true)
-                .id(id)
+          ForEach(appModel.ids.sorted { id1, id2 in
+            let drawing1 = appModel.drawings[id1]
+            let drawing2 = appModel.drawings[id2]
+            if drawing1?.isFavorite == true && drawing2?.isFavorite == false {
+              return true
             }
-          }
-          ForEach(appModel.ids, id: \.self) { id in
-            if let drawing = appModel.drawings[id], !drawing.isFavorite {
-              drawingThumbnail(drawing, isFavorite: false)
+            if drawing1?.isFavorite == false && drawing2?.isFavorite == true {
+              return false
+            }
+            return false
+          }, id: \.self) { id in
+            if let drawing = appModel.drawings[id] {
+              drawingThumbnail(drawing, isFavorite: drawing.isFavorite)
                 .id(id)
             }
           }
@@ -88,8 +92,8 @@ struct QuickDrawingSwitch: View {
     })
     .allowsHitTesting(true)
     .onTapGesture {
-      appModel.updateDrawing(appModel.drawingId)
       appModel.selectDrawingId(drawing.id)
+      appModel.updateDrawing(drawing.id)
     }
   }
 }

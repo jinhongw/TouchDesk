@@ -171,6 +171,8 @@ struct MiniMapView: View {
     return CGRect(x: thumbnailX, y: thumbnailY, width: thumbnailWidth, height: thumbnailHeight)
   }
 
+  @MainActor
+  @ViewBuilder
   private var viewportIndicator: some View {
     let contentScale = calculateContentScale(contentBounds: getContentBounds())
     let visibleSize = canvas.frame.size
@@ -189,11 +191,15 @@ struct MiniMapView: View {
     // 考虑缩放因子调整偏移量
     let viewportX = contentX + contentOffset.x * contentScale / zoomFactor
     let viewportY = contentY + contentOffset.y * contentScale / zoomFactor
-
-    return RoundedRectangle(cornerSize: .init(width: 2, height: 2), style: .continuous)
-      .strokeBorder(Color.white.opacity(0.8), lineWidth: 1)
-      .frame(width: viewportWidth, height: viewportHeight)
-      .position(x: viewportX + viewportWidth / 2, y: viewportY + viewportHeight / 2)
+    
+    if !viewportWidth.isNaN && !viewportHeight.isNaN {
+      RoundedRectangle(cornerSize: .init(width: 2, height: 2), style: .continuous)
+        .strokeBorder(Color.white.opacity(0.8), lineWidth: 1)
+        .frame(width: viewportWidth, height: viewportHeight)
+        .position(x: viewportX + viewportWidth / 2, y: viewportY + viewportHeight / 2)
+    } else {
+      EmptyView()
+    }
   }
 
   private func throttledUpdateThumbnail() {
