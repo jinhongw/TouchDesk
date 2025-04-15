@@ -92,8 +92,8 @@ struct QuickDrawingSwitch: View {
     })
     .allowsHitTesting(true)
     .onTapGesture {
-      appModel.selectDrawingId(drawing.id)
       appModel.updateDrawing(drawing.id)
+      appModel.selectDrawingId(drawing.id)
     }
   }
 }
