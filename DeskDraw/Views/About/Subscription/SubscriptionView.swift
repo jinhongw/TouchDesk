@@ -533,7 +533,7 @@ struct PurchaseButtonView: View {
       .environment(SubscriptionViewModel())
       .padding(.top, 64)
   }
-  .frame(width: 480, height: 740)
+  .frame(width: 480, height: 680)
 })
 
 extension String {

@@ -78,7 +78,7 @@ struct QuickDrawingSwitch: View {
       }
       if drawing.id == appModel.drawingId {
         RoundedRectangle(cornerRadius: 8)
-          .stroke(Color.white, lineWidth: 2)
+          .stroke(Color.white, lineWidth: 1)
       }
     }
     .frame(width: size, height: size)
@@ -91,6 +91,7 @@ struct QuickDrawingSwitch: View {
       }
     })
     .allowsHitTesting(true)
+    .hoverEffect(.highlight)
     .onTapGesture {
       appModel.updateDrawing(drawing.id)
       appModel.selectDrawingId(drawing.id)

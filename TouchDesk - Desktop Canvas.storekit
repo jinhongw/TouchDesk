@@ -22,14 +22,9 @@
           "locale" : "fr"
         },
         {
-          "description" : "終身",
-          "displayName" : "終身",
-          "locale" : "zh_CN"
-        },
-        {
-          "description" : "평생",
-          "displayName" : "평생",
-          "locale" : "ko"
+          "description" : "终身",
+          "displayName" : "终身",
+          "locale" : "zh_Hans"
         },
         {
           "description" : "Lebenslang",
@@ -37,14 +32,24 @@
           "locale" : "de"
         },
         {
+          "description" : "Lifetime Subscription",
+          "displayName" : "Lifetime",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "평생",
+          "displayName" : "평생",
+          "locale" : "ko"
+        },
+        {
           "description" : "生涯",
           "displayName" : "生涯",
           "locale" : "ja"
         },
         {
-          "description" : "Lifetime Subscription",
-          "displayName" : "Lifetime",
-          "locale" : "en_US"
+          "description" : "終身",
+          "displayName" : "終身",
+          "locale" : "zh_Hant"
         }
       ],
       "productID" : "com.easybreezy.touchdesk.lifetime",
@@ -59,7 +64,7 @@
     "_applicationInternalID" : "6740164313",
     "_developerTeamID" : "235WS33SGP",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 762399585.04340506,
+    "_lastSynchronizedDate" : 766380155.640288,
     "_locale" : "en_US",
     "_storefront" : "USA",
     "_storeKitErrors" : [
@@ -149,7 +154,7 @@
             {
               "description" : "年度",
               "displayName" : "年度",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hant"
             },
             {
               "description" : "Annuel",
@@ -174,7 +179,7 @@
             {
               "description" : "年度",
               "displayName" : "年度",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hans"
             }
           ],
           "productID" : "com.easybreezy.touchdesk.yearly.subscription",
@@ -217,7 +222,7 @@
             {
               "description" : "月度",
               "displayName" : "月度",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hans"
             },
             {
               "description" : "Monthly Subscription",
@@ -232,7 +237,7 @@
             {
               "description" : "月度",
               "displayName" : "月度",
-              "locale" : "zh_CN"
+              "locale" : "zh_Hant"
             }
           ],
           "productID" : "com.easybreezy.touchdesk.monthly.subscription",

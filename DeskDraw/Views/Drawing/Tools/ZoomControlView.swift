@@ -43,8 +43,8 @@ struct ZoomControlView: View {
           }
         }, label: {
           Text("\(Int(value))%")
-            .font(.system(size: 10, weight: .medium))
-            .frame(width: 46)
+            .font(.system(size: 10, weight: .bold))
+            .frame(width: 86)
         })
         .controlSize(.mini)
         .buttonBorderShape(.roundedRectangle)
@@ -62,7 +62,7 @@ struct ZoomControlView: View {
         // 减小缩放按钮
         Image(systemName: "minus")
           .foregroundStyle(zoomFactor <= minZoomFactor ? .primary.opacity(0.3) : Color.primary)
-          .font(.system(size: 8, weight: .medium))
+          .font(.system(size: 8, weight: .bold))
           .frame(width: 12, height: 12)
           .disabled(zoomFactor <= minZoomFactor)
           .padding(4)
@@ -75,7 +75,7 @@ struct ZoomControlView: View {
           }
 
         Text("\(Int(zoomFactor))%")
-          .font(.system(size: 8, weight: .medium))
+          .font(.system(size: 8, weight: .bold))
           .fixedSize()
           .frame(width: 24, height: 12)
           .padding(4)
@@ -87,10 +87,25 @@ struct ZoomControlView: View {
             }
             AudioServicesPlaySystemSound(1104)
           }
+          .simultaneousGesture(
+            TapGesture(count: 2)
+              .onEnded { _ in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                  zoomFactor = 100
+                }
+                Task {
+                  try? await Task.sleep(for: .seconds(0.1))
+                  withAnimation(.spring.speed(2)) {
+                    showQuickZoomMenu = false
+                  }
+                }
+                AudioServicesPlaySystemSound(1104)
+              }
+          )
 
         Image(systemName: "plus")
           .foregroundStyle(zoomFactor >= maxZoomFactor ? .primary.opacity(0.3) : Color.primary)
-          .font(.system(size: 8, weight: .medium))
+          .font(.system(size: 8, weight: .bold))
           .frame(width: 12, height: 12)
           .disabled(zoomFactor >= maxZoomFactor)
           .padding(4)
@@ -104,7 +119,7 @@ struct ZoomControlView: View {
         
         Image(systemName: onlyShowZoomControl ? "chevron.up.2" : "chevron.down.2" )
           .foregroundStyle(.primary)
-          .font(.system(size: 8, weight: .medium))
+          .font(.system(size: 8, weight: .bold))
           .frame(width: 12, height: 12)
           .padding(4)
           .contentShape(Circle())

@@ -193,8 +193,8 @@ struct MiniMapView: View {
     let viewportY = contentY + contentOffset.y * contentScale / zoomFactor
     
     if !viewportWidth.isNaN && !viewportHeight.isNaN {
-      RoundedRectangle(cornerSize: .init(width: 2, height: 2), style: .continuous)
-        .strokeBorder(Color.white.opacity(0.8), lineWidth: 1)
+      RoundedRectangle(cornerSize: .init(width: 4, height: 4), style: .continuous)
+        .foregroundStyle(.black.opacity(0.1))
         .frame(width: viewportWidth, height: viewportHeight)
         .position(x: viewportX + viewportWidth / 2, y: viewportY + viewportHeight / 2)
     } else {
