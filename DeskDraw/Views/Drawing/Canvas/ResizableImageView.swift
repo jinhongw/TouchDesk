@@ -59,12 +59,13 @@ class ResizableImageView: UIView {
   init(image: UIImage?, size: CGSize) {
     // 先初始化 imageContentView
     imageContentView = UIImageView(image: image)
+    imageContentView.backgroundColor = .clear
     imageContentView.contentMode = .scaleAspectFit
-    
+
     // 初始化删除按钮
     deleteButton = UIButton(type: .system)
     deleteButton.isHidden = true
-    
+
     super.init(frame: .zero)
     backgroundColor = .clear // 确保背景透明
 
@@ -76,10 +77,10 @@ class ResizableImageView: UIView {
     )
     // 添加 imageContentView 作为子视图
     addSubview(imageContentView)
-    
+
     // 添加删除按钮
     deleteButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
-    
+
     // 创建并配置毛玻璃效果
     let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
     let blurView = UIVisualEffectView(effect: blurEffect)
@@ -88,7 +89,7 @@ class ResizableImageView: UIView {
     blurView.clipsToBounds = true
     blurView.isUserInteractionEnabled = false
     deleteButton.insertSubview(blurView, at: 0)
-    
+
     // 配置按钮样式
     var config = UIButton.Configuration.plain()
     config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
@@ -96,17 +97,18 @@ class ResizableImageView: UIView {
     config.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
     config.baseForegroundColor = .white
     deleteButton.configuration = config
-    
+
     // 确保按钮内容居中
     deleteButton.contentVerticalAlignment = .center
     deleteButton.contentHorizontalAlignment = .center
     deleteButton.imageView?.contentMode = .center
     deleteButton.tintColor = .white
-    deleteButton.hoverStyle = .init(effect: .automatic, shape: .circle)
-    
+    deleteButton.layer.cornerRadius = toolButtonSize / 2
+    deleteButton.clipsToBounds = true
+
     addSubview(deleteButton)
     deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
-    
+
     setupControlPoints()
     setupDragGesture()
     setupTapGesture()
@@ -209,7 +211,7 @@ class ResizableImageView: UIView {
   @objc private func handleControlPointPan(_ gesture: UIPanGestureRecognizer) {
     if isLocked { return }
     guard let controlPoint = gesture.view else { return }
-    
+
     switch gesture.state {
     case .began:
       alpha = 0.5
@@ -242,12 +244,12 @@ class ResizableImageView: UIView {
 
       // 限制最小尺寸
       let minSize: CGFloat = 50
-      if newSize.width >= minSize && newSize.height >= minSize {
+      if newSize.width >= minSize, newSize.height >= minSize {
         frame.size = newSize
       }
-      
+
       gesture.setTranslation(.zero, in: self)
-      
+
     case .ended, .cancelled:
       alpha = 1.0
       // 只在手势结束时才触发回调更新数据
@@ -266,18 +268,18 @@ class ResizableImageView: UIView {
       guard let startPoint = dragStartPoint else { return }
       let currentPoint = gesture.location(in: superview)
       let distance = hypot(currentPoint.x - startPoint.x, currentPoint.y - startPoint.y)
-      
+
       // 如果还没开始拖动且距离小于最小触发距离，则不处理
-      if alpha == 1.0 && distance < minimumDragDistance {
+      if alpha == 1.0, distance < minimumDragDistance {
         return
       }
-      
+
       // 开始拖动时的视觉反馈
       if alpha == 1.0 {
         alpha = 0.5
         deleteButton.isHidden = true
       }
-      
+
       let translation = gesture.translation(in: superview)
       center = CGPoint(
         x: center.x + translation.x,

@@ -80,31 +80,33 @@ struct PlaceAssistView: View {
     VStack {
       if isHorizontal {
         HStack(spacing: 12) {
-          Image(systemName: "arrowshape.up")
+          Image(systemName: "arrowshape.up.fill")
             .frame(width: 20)
             .rotation3DEffect(.init(radians: -.pi / 2), axis: (1, 0, 0), anchor: .center)
             .scaleEffect(0.5)
-          Slider(value: $horizontalYOffest, in: 0 ... 20, step: 1, onEditingChanged: { _ in
+            Slider(value: $horizontalYOffest, in: 0 ... 10, step: 0.5, onEditingChanged: { _ in
             AudioServicesPlaySystemSound(1104)
           })
           .backgroundStyle(.white)
           .controlSize(.mini)
-          Image(systemName: "arrowshape.up")
+          .opacity(0.8)
+          Image(systemName: "arrowshape.up.fill")
             .frame(width: 20)
             .rotation3DEffect(.init(radians: -.pi / 2), axis: (1, 0, 0), anchor: .center)
         }
       } else {
         VStack(spacing: 16) {
           HStack(spacing: 12) {
-            Image(systemName: "trapezoid.and.line.horizontal")
+            Image(systemName: "trapezoid.and.line.horizontal.fill")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: -.pi / 12), axis: (0, 1, 0), anchor: .center)
-            Slider(value: $zRotation, in: -2 ... 2, step: 0.2, onEditingChanged: { _ in
+            Slider(value: $zRotation, in: -2 ... 2, step: 0.1, onEditingChanged: { _ in
               AudioServicesPlaySystemSound(1104)
             })
             .backgroundStyle(.white)
             .controlSize(.mini)
-            Image(systemName: "trapezoid.and.line.horizontal")
+            .opacity(0.8)
+            Image(systemName: "trapezoid.and.line.horizontal.fill")
               .scaleEffect(x: -1, y: 1)
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 12), axis: (0, 1, 0), anchor: .center)
@@ -114,11 +116,12 @@ struct PlaceAssistView: View {
             Image(systemName: "arrow.up.to.line.compact")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 5), axis: (1, 0, 0), anchor: .center)
-            Slider(value: $verticalZOffest, in: -10 ... 10, step: 1, onEditingChanged: { _ in
+              Slider(value: $verticalZOffest, in: -10 ... 10, step: 0.5, onEditingChanged: { _ in
               AudioServicesPlaySystemSound(1104)
             })
             .backgroundStyle(.white)
             .controlSize(.mini)
+            .opacity(0.8)
             Image(systemName: "arrow.down.to.line.compact")
               .frame(width: 20)
               .rotation3DEffect(.init(radians: .pi / 5), axis: (1, 0, 0), anchor: .center)
