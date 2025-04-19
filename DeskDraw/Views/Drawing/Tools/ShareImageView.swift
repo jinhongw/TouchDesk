@@ -8,36 +8,52 @@
 import SwiftUI
 
 struct ShareImageView: View {
-  @AppStorage("exportImageBackgroundColor") var exportImageBackgroundColor: Color = .init(uiColor: .systemGray3)
+  @AppStorage("exportImageBackgroundColor") private var exportImageBackgroundColor: Color = .init(uiColor: .systemGray3)
   @AppStorage("exportImagePadding") private var exportImagePadding: Double = 36
-  @AppStorage("exportImageCornerRaius") var exportImageCornerRaius: Double = 36
+  @AppStorage("exportImageCornerRaius") private var exportImageCornerRaius: Double = 36
+  @State private var editingExportImagePadding: Double = 0
+  @State private var editingExportImageCornerRaius: Double = 0
+  @State private var processedImage: UIImage?
+
   let image: UIImage?
   let bounds: CGSize
-  var newImage: Image {
-    if let image {
-      return Image(
-        uiImage: image
-          .padding(exportImagePadding)
-          .withBackground(color: UIColor(exportImageBackgroundColor))
-          .roundedCorner(with: exportImageCornerRaius)
-      )
-    } else {
-      return Image(systemName: "photo.badge.exclamationmark")
-    }
+
+  // 获取处理后的图像用于分享
+  private func getProcessedImageForSharing() -> UIImage? {
+    print(#function, "getProcessedImageForSharing")
+    guard let image = image else { return nil }
+
+    // 创建处理图像的容器视图
+    let containerSize = CGSize(
+      width: image.size.width + exportImagePadding * 2,
+      height: image.size.height + exportImagePadding * 2
+    )
+    let containerView = UIView(frame: CGRect(origin: .zero, size: containerSize))
+    containerView.backgroundColor = UIColor(exportImageBackgroundColor)
+    containerView.layer.cornerRadius = exportImageCornerRaius
+    containerView.clipsToBounds = true
+
+    // 添加原始图像
+    let imageView = UIImageView(image: image)
+    imageView.contentMode = .scaleAspectFit
+    imageView.frame = containerView.bounds.insetBy(dx: exportImagePadding, dy: exportImagePadding)
+    containerView.addSubview(imageView)
+
+    // 渲染为新图像
+    UIGraphicsBeginImageContextWithOptions(containerSize, false, 0)
+    containerView.layer.render(in: UIGraphicsGetCurrentContext()!)
+    let processedImage = UIGraphicsGetImageFromCurrentImageContext()
+    UIGraphicsEndImageContext()
+
+    return processedImage
   }
 
   var body: some View {
-    if let image {
-      let newImage = Image(
-        uiImage: image
-          .padding(exportImagePadding)
-          .withBackground(color: UIColor(exportImageBackgroundColor))
-          .roundedCorner(with: exportImageCornerRaius)
-      )
+    if let image = image {
       NavigationStack {
         List {
           Section {
-            newImage
+            Image(uiImage: processedImage ?? image)
               .resizable()
               .scaledToFit()
           }
@@ -53,18 +69,32 @@ struct ShareImageView: View {
             HStack {
               Text("Padding")
               Spacer(minLength: 12)
-              Slider(value: $exportImagePadding, in: 0 ... min(image.size.width, image.size.height) / 2)
-                .frame(maxWidth: 320)
+              Slider(value: $editingExportImagePadding, in: 0 ... min(image.size.width, image.size.height) / 2, onEditingChanged: { isEditing in
+                if !isEditing {
+                  exportImagePadding = editingExportImagePadding
+                  // 更新处理后的图像
+                  processedImage = getProcessedImageForSharing()
+                }
+              })
+              .frame(maxWidth: 320)
             }
             HStack {
               Text("Corner radius")
               Spacer(minLength: 12)
-              Slider(value: $exportImageCornerRaius, in: 0 ... min(image.size.width, image.size.height) / 2)
-                .frame(maxWidth: 320)
+              Slider(value: $editingExportImageCornerRaius, in: 0 ... min(image.size.width, image.size.height) / 2, onEditingChanged: { isEditing in
+                if !isEditing {
+                  exportImageCornerRaius = editingExportImageCornerRaius
+                  // 更新处理后的图像
+                  processedImage = getProcessedImageForSharing()
+                }
+              })
+              .frame(maxWidth: 320)
             }
           }
+
           Section {
-            ShareLink(item: newImage, preview: SharePreview("Drawing", image: newImage)) {
+            ShareLink(item: Image(uiImage: processedImage ?? image),
+                      preview: SharePreview("Drawing", image: Image(uiImage: processedImage ?? image))) {
               HStack(spacing: 12) {
                 Image(systemName: "square.and.arrow.up")
                   .frame(width: 8)
@@ -75,11 +105,81 @@ struct ShareImageView: View {
         }
         .navigationTitle("Export setting")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+          editingExportImagePadding = exportImagePadding
+          editingExportImageCornerRaius = exportImageCornerRaius
+          // 初始化处理后的图像
+          processedImage = getProcessedImageForSharing()
+        }
+        .onChange(of: exportImageBackgroundColor) { _, _ in
+          // 背景色改变时更新处理后的图像
+          processedImage = getProcessedImageForSharing()
+        }
       }
     } else {
       ProgressView()
         .frame(width: 480, height: 460 + 480 * bounds.height / bounds.width)
     }
+  }
+
+  // 计算相对于容器大小的padding
+  private func calculateRelativePadding(containerSize: CGSize) -> CGFloat {
+    guard let image = image else { return exportImagePadding }
+
+    // 计算图像在容器中的实际显示尺寸
+    let imageAspectRatio = image.size.width / image.size.height
+    let containerAspectRatio = containerSize.width / containerSize.height
+
+    var displayedImageSize: CGSize
+    if imageAspectRatio > containerAspectRatio {
+      // 图像按宽度适应
+      displayedImageSize = CGSize(
+        width: containerSize.width,
+        height: containerSize.width / imageAspectRatio
+      )
+    } else {
+      // 图像按高度适应
+      displayedImageSize = CGSize(
+        width: containerSize.height * imageAspectRatio,
+        height: containerSize.height
+      )
+    }
+
+    // 计算padding相对于原始图像尺寸的比例
+    let paddingRatio = exportImagePadding / max(image.size.width, image.size.height)
+
+    // 应用相同比例到显示尺寸
+    return paddingRatio * max(displayedImageSize.width, displayedImageSize.height)
+  }
+
+  // 计算相对于容器大小的圆角
+  private func calculateRelativeCornerRadius(containerSize: CGSize) -> CGFloat {
+    guard let image = image else { return exportImageCornerRaius }
+
+    // 计算图像在容器中的实际显示尺寸
+    let imageAspectRatio = image.size.width / image.size.height
+    let containerAspectRatio = containerSize.width / containerSize.height
+
+    var displayedImageSize: CGSize
+    if imageAspectRatio > containerAspectRatio {
+      // 图像按宽度适应
+      displayedImageSize = CGSize(
+        width: containerSize.width,
+        height: containerSize.width / imageAspectRatio
+      )
+    } else {
+      // 图像按高度适应
+      displayedImageSize = CGSize(
+        width: containerSize.height * imageAspectRatio,
+        height: containerSize.height
+      )
+    }
+
+    // 计算圆角相对于原始图像尺寸的比例
+    let cornerRadiusRatio = exportImageCornerRaius / max(image.size.width, image.size.height)
+
+    // 应用相同比例到显示尺寸
+    return cornerRadiusRatio * max(displayedImageSize.width, displayedImageSize.height)
   }
 }
 
@@ -105,63 +205,6 @@ extension Color: @retroactive RawRepresentable {
 
     } catch {
       return ""
-    }
-  }
-}
-
-extension UIImage {
-  func withBackground(color: UIColor, opaque: Bool = true) -> UIImage {
-    UIGraphicsBeginImageContextWithOptions(size, opaque, scale)
-
-    guard let context = UIGraphicsGetCurrentContext(),
-          let image = cgImage else { return self }
-
-    let rect = CGRect(origin: .zero, size: size)
-    context.setFillColor(color.cgColor)
-    context.fill(rect)
-    context.concatenate(CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: size.height))
-    context.draw(image, in: rect)
-
-    return UIGraphicsGetImageFromCurrentImageContext() ?? self
-  }
-}
-
-extension UIImage {
-  func padding(_ insets: CGFloat) -> UIImage {
-    withEdgeInsets(UIEdgeInsets(top: insets, left: insets, bottom: insets, right: insets))
-  }
-
-  func withEdgeInsets(_ insets: UIEdgeInsets) -> UIImage {
-    let targetWidth = size.width + insets.left + insets.right
-    let targetHeight = size.height + insets.top + insets.bottom
-    let targetSize = CGSize(width: targetWidth, height: targetHeight)
-    let targetOrigin = CGPoint(x: insets.left, y: insets.top)
-    let format = UIGraphicsImageRendererFormat()
-    format.scale = scale
-    let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
-    return renderer.image { _ in
-      draw(in: CGRect(origin: targetOrigin, size: size))
-    }.withRenderingMode(renderingMode)
-  }
-}
-
-extension UIImage {
-  func roundedCorner(with radius: CGFloat) -> UIImage {
-    let format = UIGraphicsImageRendererFormat()
-    format.scale = scale
-    let renderer = UIGraphicsImageRenderer(size: size, format: format)
-    return renderer.image { rendererContext in
-      let rect = CGRect(origin: .zero, size: size)
-      let path = UIBezierPath(roundedRect: rect,
-                              byRoundingCorners: .allCorners,
-                              cornerRadii: CGSize(width: radius, height: radius))
-      path.close()
-
-      let cgContext = rendererContext.cgContext
-      cgContext.saveGState()
-      path.addClip()
-      draw(in: rect)
-      cgContext.restoreGState()
     }
   }
 }
