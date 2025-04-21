@@ -90,6 +90,7 @@ struct ZoomControlView: View {
     .simultaneousGesture(
       DragGesture(minimumDistance: 5)
         .onChanged { value in
+          if !draging { draging = true }
           let currentPosition = value.translation.width
           let dragDistance = currentPosition - lastDragPosition
           guard abs(dragDistance) < 20 else {
@@ -97,7 +98,6 @@ struct ZoomControlView: View {
             return
           }
           if abs(dragDistance) >= 8 {
-            if !draging { draging = true }
             let step = dragDistance > 0 ? 1 : -1
             let newValue = Int(currentValue) + step
             let clampedValue = min(max(newValue, 0), 15)
