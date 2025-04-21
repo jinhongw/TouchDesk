@@ -202,6 +202,9 @@
       },
       "shouldTranslate" : false
     },
+    "%lld" : {
+
+    },
     "%lld%%" : {
 
     },
@@ -2952,6 +2955,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示最近使用顏色"
+          }
+        }
+      }
+    },
+    "Show Zoom Control" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoom-Werkzeug anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Zoom Tool"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher l’outil de zoom"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ズームツールを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확대/축소 도구 표시"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示缩放工具"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示縮放工具"
           }
         }
       }

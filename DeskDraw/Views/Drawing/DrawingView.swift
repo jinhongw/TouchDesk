@@ -30,6 +30,7 @@ struct DrawingView: View {
   @AppStorage("placementAssistance") private var placementAssistance = true
   @AppStorage("drawColor") private var drawColor: Color = .white
   @AppStorage("showMiniMap") private var showMiniMap = true
+  @AppStorage("showZoomControlView") private var showZoomControlView = true
   @AppStorage("showQuickDrawingSwitch") private var showQuickDrawingSwitch = true
 
   @State private var canvas = PKCanvasView()
@@ -147,7 +148,7 @@ struct DrawingView: View {
           .frame(width: width, height: depth)
           .colorScheme(.light)
           .overlay(alignment: isHorizontal ? .bottomTrailing : .topTrailing) {
-            if showMiniMap {
+            if showMiniMap || showZoomControlView {
               MiniMapView(canvas: canvas, contentOffset: $contentOffset)
                 .padding(16)
                 .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)

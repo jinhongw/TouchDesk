@@ -6,20 +6,24 @@
 //
 
 import AVFoundation
+import PencilKit
 import SwiftUI
 
 struct ZoomControlView: View {
+  @AppStorage("showMiniMap") private var showMiniMap = true
   @Binding var zoomFactor: Double
   @State private var showQuickZoomMenu: Bool = false
-  @AppStorage("onlyShowZoomControl") private var onlyShowZoomControl: Bool = false
-  
-  private let stepSize: Double = 25 // 25% 的缩放步长
+  @State private var lastDragPosition: CGFloat = 0 // 添加状态变量记录上一次拖动位置
+  @State private var draging: Bool = false
+
   private let minZoomFactor: Double = 25
   private let maxZoomFactor: Double = 400
-  private let quickZoomValues: [Double] = [25, 50, 100, 150, 200, 300, 400]
+  private let quickZoomValues: [Double] = [25, 50, 100, 150, 175, 200, 300, 400]
+  private let sliderValues: [Double] = (0 ... 15).map { Double($0) }
+  private let sliderZoomValues: [Double] = (0 ... 15).map { Double(25  + ($0 * 25)) }
 
   var body: some View {
-    mainZoomControl
+    devZoomControl
       .overlay(alignment: .bottom) {
         quickZoomMenu
           .opacity(showQuickZoomMenu ? 1 : 0)
@@ -29,13 +33,132 @@ struct ZoomControlView: View {
       .padding(4)
   }
 
+  var currentValue: Double {
+    (zoomFactor - 25) / 25
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var devZoomControl: some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .fill(.ultraThinMaterial)
+      HStack(spacing: 4) {
+        HStack(alignment: .bottom, spacing: 1) {
+          ForEach(sliderValues, id: \.self) { value in
+            Capsule()
+              .frame(width: value == currentValue ? 2 : 1, height: value == currentValue ? 8 : pow((value + 1) * 1.5, 1.0 / 1.6))
+              .foregroundColor(value == currentValue ? .white : .secondary)
+              .overlay {
+                Text("\(Int(25 + value * 25))")
+                  .font(.headline)
+                  .padding(4)
+                  .background(content: {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                      .fill(.ultraThinMaterial)
+                  })
+                  .fixedSize()
+                  .opacity(value == currentValue && draging ? 1 : 0)
+                  .offset(y: -32)
+                  .animation(nil, value: currentValue)
+                  .animation(nil, value: draging)
+              }
+              .padding(.horizontal, 1)
+              .overlay {
+                Rectangle()
+                  .frame(width: 4, height: 28)
+                  .foregroundColor(.white.opacity(0.01))
+                  .opacity(0.01)
+                  .onTapGesture(perform: {
+                    withAnimation(.spring.speed(2)) {
+                      zoomFactor = Double(25 + (value * 25))
+                    }
+                    AudioServicesPlaySystemSound(1104)
+                  })
+              }
+          }
+        }
+        quickSwitchButton
+        if !showMiniMap {
+          FoldMiniMapButton()
+        }
+      }
+      .padding(4)
+      .padding(.leading, 4)
+    }
+    .frame(height: 20)
+    .simultaneousGesture(
+      DragGesture(minimumDistance: 5)
+        .onChanged { value in
+          let currentPosition = value.translation.width
+          let dragDistance = currentPosition - lastDragPosition
+          guard abs(dragDistance) < 20 else {
+            lastDragPosition = currentPosition
+            return
+          }
+          if abs(dragDistance) >= 8 {
+            if !draging { draging = true }
+            let step = dragDistance > 0 ? 1 : -1
+            let newValue = Int(currentValue) + step
+            let clampedValue = min(max(newValue, 0), 15)
+            if clampedValue != Int(currentValue) {
+              withAnimation(.spring.speed(2)) {
+                zoomFactor = Double(25 + (clampedValue * 25))
+              }
+              AudioServicesPlaySystemSound(1104)
+              lastDragPosition = currentPosition
+            }
+          }
+        }
+        .onEnded { _ in
+          lastDragPosition = 0
+          draging = false
+        }
+    )
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var quickSwitchButton: some View {
+    Text("\(Int(zoomFactor))%")
+      .font(.system(size: 8, weight: .bold))
+      .fixedSize()
+      .frame(width: 24, height: 12)
+      .padding(4)
+      .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+      .hoverEffect(.highlight)
+      .onTapGesture {
+        withAnimation(.spring.speed(2)) {
+          showQuickZoomMenu.toggle()
+        }
+        AudioServicesPlaySystemSound(1104)
+      }
+      .simultaneousGesture(
+        TapGesture(count: 2)
+          .onEnded { _ in
+            withAnimation(.spring.speed(2)) {
+              zoomFactor = 100
+            }
+            Task {
+              try? await Task.sleep(for: .seconds(0.1))
+              withAnimation(.spring.speed(2)) {
+                showQuickZoomMenu = false
+              }
+            }
+            AudioServicesPlaySystemSound(1104)
+          }
+      )
+  }
+
   @MainActor
   @ViewBuilder
   private var quickZoomMenu: some View {
-    VStack(spacing: 4) {
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 2)
+    
+    LazyVGrid(columns: columns, spacing: 4) {
       ForEach(quickZoomValues, id: \.self) { value in
         Button(action: {
-          withAnimation(.easeInOut(duration: 0.2)) {
+          withAnimation(.spring.speed(2)) {
             zoomFactor = value
           }
           withAnimation(.spring.speed(2)) {
@@ -44,111 +167,34 @@ struct ZoomControlView: View {
         }, label: {
           Text("\(Int(value))%")
             .font(.system(size: 10, weight: .bold))
-            .frame(width: 86)
+            .frame(maxWidth: .infinity)
         })
         .controlSize(.mini)
         .buttonBorderShape(.roundedRectangle)
       }
     }
+    .frame(width: 138)
   }
+}
 
-  @MainActor
-  @ViewBuilder
-  private var mainZoomControl: some View {
-    ZStack {
-      RoundedRectangle(cornerSize: .init(width: 12, height: 12), style: .continuous)
-        .fill(.ultraThinMaterial)
-      HStack(spacing: 4) {
-        // 减小缩放按钮
-        Image(systemName: "minus")
-          .foregroundStyle(zoomFactor <= minZoomFactor ? .primary.opacity(0.3) : Color.primary)
-          .font(.system(size: 8, weight: .bold))
-          .frame(width: 12, height: 12)
-          .disabled(zoomFactor <= minZoomFactor)
-          .padding(4)
-          .contentShape(Circle())
-          .hoverEffect(.highlight)
-          .onTapGesture {
-            guard zoomFactor > minZoomFactor else { return }
-            decreaseZoom()
-            AudioServicesPlaySystemSound(1104)
-          }
-
-        Text("\(Int(zoomFactor))%")
-          .font(.system(size: 8, weight: .bold))
-          .fixedSize()
-          .frame(width: 24, height: 12)
-          .padding(4)
-          .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-          .hoverEffect(.highlight)
-          .onTapGesture {
-            withAnimation(.spring.speed(2)) {
-              showQuickZoomMenu.toggle()
-            }
-            AudioServicesPlaySystemSound(1104)
-          }
-          .simultaneousGesture(
-            TapGesture(count: 2)
-              .onEnded { _ in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                  zoomFactor = 100
-                }
-                Task {
-                  try? await Task.sleep(for: .seconds(0.1))
-                  withAnimation(.spring.speed(2)) {
-                    showQuickZoomMenu = false
-                  }
-                }
-                AudioServicesPlaySystemSound(1104)
-              }
-          )
-
-        Image(systemName: "plus")
-          .foregroundStyle(zoomFactor >= maxZoomFactor ? .primary.opacity(0.3) : Color.primary)
-          .font(.system(size: 8, weight: .bold))
-          .frame(width: 12, height: 12)
-          .disabled(zoomFactor >= maxZoomFactor)
-          .padding(4)
-          .contentShape(Circle())
-          .hoverEffect(.highlight)
-          .onTapGesture {
-            guard zoomFactor < maxZoomFactor else { return }
-            increaseZoom()
-            AudioServicesPlaySystemSound(1104)
-          }
-        
-        Image(systemName: onlyShowZoomControl ? "chevron.up.2" : "chevron.down.2" )
-          .foregroundStyle(.primary)
-          .font(.system(size: 8, weight: .bold))
-          .frame(width: 12, height: 12)
-          .padding(4)
-          .contentShape(Circle())
-          .hoverEffect(.highlight)
-          .onTapGesture {
-            onlyShowZoomControl.toggle()
-            AudioServicesPlaySystemSound(1104)
-          }
-      }
+struct FoldMiniMapButton: View {
+  @AppStorage("showMiniMap") private var showMiniMap = true
+  var body: some View {
+    Image(systemName: showMiniMap ? "chevron.compact.down" : "chevron.compact.up")
+      .foregroundStyle(.primary)
+      .font(.system(size: 8, weight: .bold))
+      .frame(width: 12, height: 12)
       .padding(4)
-    }
-    .frame(height: 20)
-  }
-
-  private func decreaseZoom() {
-    withAnimation(.easeInOut(duration: 0.2)) {
-      zoomFactor = max(minZoomFactor, zoomFactor - stepSize)
-    }
-  }
-
-  private func increaseZoom() {
-    withAnimation(.easeInOut(duration: 0.2)) {
-      zoomFactor = min(maxZoomFactor, zoomFactor + stepSize)
-    }
+      .contentShape(Circle())
+      .hoverEffect(.highlight)
+      .onTapGesture {
+        showMiniMap.toggle()
+        AudioServicesPlaySystemSound(1104)
+      }
   }
 }
 
 #Preview {
-  @Previewable @State var zoomFactor: Double = 100
-  ZoomControlView(zoomFactor: $zoomFactor)
-    .frame(width: 88)
+  MiniMapView(canvas: PKCanvasView(), contentOffset: .constant(.init(x: 100, y: 100)))
+    .environment(AppModel())
 }

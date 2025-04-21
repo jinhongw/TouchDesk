@@ -1,3 +1,4 @@
+import AVFoundation
 import Combine
 import PencilKit
 import SwiftUI
@@ -6,7 +7,8 @@ struct MiniMapView: View {
   @Environment(AppModel.self) private var appModel
   let canvas: PKCanvasView
   let size: CGSize = .init(width: 112, height: 88)
-  @AppStorage("onlyShowZoomControl") private var onlyShowZoomControl: Bool = false
+  @AppStorage("showMiniMap") private var showMiniMap = true
+  @AppStorage("showZoomControlView") private var showZoomControlView = true
   @Binding var contentOffset: CGPoint
 
   // 用于节流的状态
@@ -15,10 +17,11 @@ struct MiniMapView: View {
 
   var body: some View {
     VStack(spacing: 8) {
-      ZoomControlView(zoomFactor: zoomFactorBinding)
-        .frame(width: size.width)
-
-      if !onlyShowZoomControl {
+      if showZoomControlView {
+        ZoomControlView(zoomFactor: zoomFactorBinding)
+          .frame(width: size.width)
+      }
+      if showMiniMap {
         GeometryReader { geometry in
           ZStack {
             RoundedRectangle(cornerSize: .init(width: 12, height: 12), style: .continuous)
@@ -42,9 +45,13 @@ struct MiniMapView: View {
               }
             )
         )
+        .overlay(alignment: .topTrailing) {
+          FoldMiniMapButton()
+            .padding(4)
+        }
       }
     }
-    .animation(.spring.speed(2), value: onlyShowZoomControl)
+    .offset(x: showMiniMap ? 0 : -12)
     .onChange(of: canvas.contentOffset) { _, _ in
       throttledUpdateThumbnail()
     }
@@ -191,7 +198,7 @@ struct MiniMapView: View {
     // 考虑缩放因子调整偏移量
     let viewportX = contentX + contentOffset.x * contentScale / zoomFactor
     let viewportY = contentY + contentOffset.y * contentScale / zoomFactor
-    
+
     if !viewportWidth.isNaN && !viewportHeight.isNaN {
       RoundedRectangle(cornerSize: .init(width: 4, height: 4), style: .continuous)
         .foregroundStyle(.black.opacity(0.1))
@@ -222,26 +229,26 @@ struct MiniMapView: View {
     let contentScale = calculateContentScale(contentBounds: getContentBounds())
     let visibleSize = canvas.frame.size
     let zoomFactor = CGFloat(appModel.canvasZoomFactor / 100)
-    
+
     // 计算画布在小地图中的总尺寸和位置
     let scaledCanvasWidth = canvasContentSize.width * contentScale
     let scaledCanvasHeight = canvasContentSize.height * contentScale
     let contentX = (size.width - scaledCanvasWidth) / 2
     let contentY = (size.height - scaledCanvasHeight) / 2
-    
+
     // 计算新的偏移量，考虑缩放因子
     let newX = (location.x - contentX) / contentScale * zoomFactor - visibleSize.width / 2
     let newY = (location.y - contentY) / contentScale * zoomFactor - visibleSize.height / 2
-    
+
     // 确保偏移量不超出边界，考虑缩放因子
     let maxOffsetX = max(0, canvasContentSize.width * zoomFactor - visibleSize.width)
     let maxOffsetY = max(0, canvasContentSize.height * zoomFactor - visibleSize.height)
-    
+
     let newOffset = CGPoint(
       x: min(max(0, newX), maxOffsetX),
       y: min(max(0, newY), maxOffsetY)
     )
-    
+
     contentOffset = newOffset
     canvas.setContentOffset(contentOffset, animated: !isDragging)
   }

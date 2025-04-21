@@ -11,6 +11,7 @@ struct SettingView: View {
   @AppStorage("volumeBaseplateVisibility") private var volumeBaseplateVisibility = true
   @AppStorage("placementAssistance") private var placementAssistance = true
   @AppStorage("showMiniMap") private var showMiniMap = true
+  @AppStorage("showZoomControlView") private var showZoomControlView = true
   @AppStorage("showRecentColors") private var showRecentColors = true
   @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
   @AppStorage("showQuickDrawingSwitch") private var showQuickDrawingSwitch = true
@@ -22,6 +23,9 @@ struct SettingView: View {
         }
         Toggle(isOn: $showMiniMap) {
           Text("Show mini map")
+        }
+        Toggle(isOn: $showZoomControlView) {
+          Text("Show Zoom Control")
         }
         Toggle(isOn: $showQuickDrawingSwitch) {
           Text("Show Quick Draw Switch")
