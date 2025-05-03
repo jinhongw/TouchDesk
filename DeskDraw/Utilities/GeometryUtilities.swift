@@ -204,3 +204,14 @@ extension CGSize {
     return size * scalar
   }
 }
+
+
+extension Double {
+  func trimmedString(minimumFractionDigits: Int = 1, maximumFractionDigits: Int = 2) -> String {
+      let formatter = NumberFormatter()
+      formatter.minimumFractionDigits = minimumFractionDigits
+      formatter.maximumFractionDigits = maximumFractionDigits
+      formatter.numberStyle = .decimal
+      return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
+  }
+}

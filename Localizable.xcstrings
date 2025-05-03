@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+      "shouldTranslate" : false
+    },
     "/mo" : {
       "localizations" : {
         "de" : {
@@ -202,11 +205,22 @@
       },
       "shouldTranslate" : false
     },
-    "%lld" : {
-
+    "× %@" : {
+      "shouldTranslate" : false
     },
-    "%lld%%" : {
-
+    "×%@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "×%@"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "○ %lld" : {
+      "shouldTranslate" : false
     },
     "50% OFF" : {
       "localizations" : {
@@ -679,6 +693,52 @@
         }
       }
     },
+    "Control Size" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Werkzeuggröße"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tool Size"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taille de l'outil"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ツールサイズ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도구 크기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画布工具尺寸"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "畫布工具尺寸"
+          }
+        }
+      }
+    },
     "Corner radius" : {
       "localizations" : {
         "de" : {
@@ -874,7 +934,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Faites glisser le tableau sur n’importe quelle surface, \nil devient vert lorsqu’il est aligné"
+            "value" : "Faites glisser le tableau sur n'importe quelle surface, \nil devient vert lorsqu'il est aligné"
           }
         },
         "ja" : {
@@ -1089,7 +1149,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exporter l’image"
+            "value" : "Exporter l'image"
           }
         },
         "ja" : {
@@ -1129,7 +1189,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paramètres d’exportation"
+            "value" : "Paramètres d'exportation"
           }
         },
         "ja" : {
@@ -1175,7 +1235,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Retour d’information"
+            "value" : "Retour d'information"
           }
         },
         "ja" : {
@@ -1549,7 +1609,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "@Sajjad의 손으로 그린 도형"
+            "value" : "더 알아보기"
           }
         },
         "zh-Hans" : {
@@ -1942,7 +2002,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gérer l’abonnement"
+            "value" : "Gérer l'abonnement"
           }
         },
         "ja" : {
@@ -2017,6 +2077,52 @@
         }
       }
     },
+    "Mini Map and Zoom Control" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minikarte & Zoom"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mini Map & Zoom"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mini-carte et zoom"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミニマップとズーム"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "미니맵 및 확대"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小地图和缩放"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小地圖和縮放"
+          }
+        }
+      }
+    },
     "Monthly" : {
       "localizations" : {
         "de" : {
@@ -2080,7 +2186,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous devez d’abord annuler l’abonnement"
+            "value" : "Vous devez d'abord annuler l'abonnement"
           }
         },
         "ja" : {
@@ -2304,7 +2410,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activer l’assistance au démarrage"
+            "value" : "Activer l'assistance au démarrage"
           }
         },
         "ja" : {
@@ -2467,6 +2573,98 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "購買"
+          }
+        }
+      }
+    },
+    "Quick Draw Switch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schneller Zeichenwechsel"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Draw Switch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changement rapide de dessin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ドロー切替"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빠른 드로우 전환"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速图画切换"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速圖畫切換"
+          }
+        }
+      }
+    },
+    "Quick Zoom Values" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnellzoom-Wert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Zoom Value"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valeur de zoom rapide"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クイックズーム値"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빠른 확대 수치"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速缩放数值"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快速縮放數值"
           }
         }
       }
@@ -2913,6 +3111,52 @@
         }
       }
     },
+    "Show Quick Zoom Buttons" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schnellzoom-Werkzeug anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Quick Zoom Tool"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher l'outil de zoom rapide"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クイックズームツールを表示"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "빠른 확대 도구 표시"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示快速缩放工具"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示快速縮放工具"
+          }
+        }
+      }
+    },
     "Show Recent Colors" : {
       "localizations" : {
         "de" : {
@@ -2976,7 +3220,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Afficher l’outil de zoom"
+            "value" : "Afficher l'outil de zoom"
           }
         },
         "ja" : {
@@ -3016,7 +3260,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conditions d’Utilisation"
+            "value" : "Conditions d'Utilisation"
           }
         },
         "ja" : {
@@ -3281,7 +3525,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Débloquez l’accès Pro"
+            "value" : "Débloquez l'accès Pro"
           }
         },
         "ja" : {
@@ -3327,7 +3571,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jusqu’à %@"
+            "value" : "Jusqu'à %@"
           }
         },
         "ja" : {
@@ -3713,13 +3957,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "切换垂直画板"
+            "value" : "切换垂直画布"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "切換垂直畫板"
+            "value" : "切換垂直畫布"
           }
         }
       }
@@ -3759,13 +4003,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "切换水平画板"
+            "value" : "切换水平画布"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "切換水平畫板"
+            "value" : "切換水平畫布"
           }
         }
       }
@@ -3787,7 +4031,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gomme d’objet"
+            "value" : "Gomme d'objet"
           }
         },
         "ja" : {
@@ -3812,6 +4056,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "對象橡皮擦"
+          }
+        }
+      }
+    },
+    "恢复默认设定" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurücksetzen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset to Default"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réinitialiser"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "初期設定に戻す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기본값으로 재설정"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复默认设定"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢復預設設定"
           }
         }
       }
@@ -4000,7 +4290,7 @@
         }
       }
     },
-    "解锁无限图画、iCloud 储存" : {
+    "解锁无限图画、iCloud 同步" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {

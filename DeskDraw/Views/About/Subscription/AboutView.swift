@@ -105,23 +105,12 @@ struct AboutView: View {
           .font(.system(size: 20, weight: .bold, design: .rounded))
           .padding(.horizontal, 5)
           .padding(.vertical, 2)
-          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.white.opacity(0.8)))
-          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
-            gradient: Gradient(colors: [Color.white, Color.purple, Color.orange]),
-            startPoint: .leading,
-            endPoint: .trailing
-          )))
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
           .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
           .overlay(sparklesOverlay())
           .rotationEffect(.degrees(16))
           .offset(z: 8)
           .offset(x: 36, y: -20)
-          .foregroundStyle(LinearGradient(
-            gradient: Gradient(colors: [Color.orange, Color.purple]),
-            startPoint: .leading,
-            endPoint: .trailing
-          ))
           .opacity(appModel.subscriptionViewModel.hasPro ? 1 : 0)
       }
       Spacer(minLength: 0)
@@ -242,7 +231,7 @@ struct AboutView: View {
             Text("Lifetime plan")
               .font(.caption)
           } else {
-            Text("解锁无限图画、iCloud 储存")
+            Text("解锁无限图画、iCloud 同步")
               .font(.caption)
           }
         }

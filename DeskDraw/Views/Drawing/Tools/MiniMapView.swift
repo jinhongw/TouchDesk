@@ -9,6 +9,8 @@ struct MiniMapView: View {
   let size: CGSize = .init(width: 112, height: 88)
   @AppStorage("showMiniMap") private var showMiniMap = true
   @AppStorage("showZoomControlView") private var showZoomControlView = true
+  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
+  @AppStorage("miniMapSize") private var miniMapSize: Double = 1
   @Binding var contentOffset: CGPoint
 
   // 用于节流的状态
@@ -17,7 +19,7 @@ struct MiniMapView: View {
 
   var body: some View {
     VStack(spacing: 8) {
-      if showZoomControlView {
+      if showZoomControlView && isHorizontal {
         ZoomControlView(zoomFactor: zoomFactorBinding)
           .frame(width: size.width)
       }
@@ -50,7 +52,12 @@ struct MiniMapView: View {
             .padding(4)
         }
       }
+      if showZoomControlView && !isHorizontal {
+        ZoomControlView(zoomFactor: zoomFactorBinding)
+          .frame(width: size.width)
+      }
     }
+    .scaleEffect(miniMapSize, anchor: isHorizontal ? .bottomTrailingBack : .topTrailingBack)
     .offset(x: showMiniMap ? 0 : -12)
     .onChange(of: canvas.contentOffset) { _, _ in
       throttledUpdateThumbnail()

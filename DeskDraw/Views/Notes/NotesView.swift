@@ -128,6 +128,7 @@ struct NotesView: View {
       appModel.favoriteDrawing(id: id)
     }, label: {
       Image(systemName: (appModel.drawings[id]?.isFavorite ?? false) ? "star.fill" : "star")
+        .foregroundStyle(.white)
         .font(.footnote)
     })
     .buttonStyle(.plain)

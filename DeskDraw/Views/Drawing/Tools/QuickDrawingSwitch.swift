@@ -1,15 +1,18 @@
-import SwiftUI
+import AVFoundation
 import PencilKit
+import SwiftUI
 
 struct QuickDrawingSwitch: View {
   @Environment(AppModel.self) private var appModel
-  
+  @AppStorage("quickDrawingSwitchSize") private var quickDrawingSwitchSize: Double = 1
+  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
+
   let size: CGFloat = 50
   let gap: CGFloat = 8
   var scrollViewWidth: CGFloat {
     size * 3 + gap * 3
   }
-  
+
   var body: some View {
     ScrollViewReader { proxy in
       ScrollView(.horizontal, showsIndicators: false) {
@@ -17,10 +20,10 @@ struct QuickDrawingSwitch: View {
           ForEach(appModel.ids.sorted { id1, id2 in
             let drawing1 = appModel.drawings[id1]
             let drawing2 = appModel.drawings[id2]
-            if drawing1?.isFavorite == true && drawing2?.isFavorite == false {
+            if drawing1?.isFavorite == true, drawing2?.isFavorite == false {
               return true
             }
-            if drawing1?.isFavorite == false && drawing2?.isFavorite == true {
+            if drawing1?.isFavorite == false, drawing2?.isFavorite == true {
               return false
             }
             return false
@@ -31,7 +34,7 @@ struct QuickDrawingSwitch: View {
             }
           }
         }
-        .padding(.horizontal, size * 1/4)
+        .padding(.horizontal, size * 1 / 4)
         .padding(.vertical, 4)
       }
       .frame(width: scrollViewWidth)
@@ -60,13 +63,14 @@ struct QuickDrawingSwitch: View {
         }
       }
     }
+    .scaleEffect(quickDrawingSwitchSize, anchor: isHorizontal ? .bottomLeadingBack : .topLeadingBack)
   }
-  
+
   @MainActor
   @ViewBuilder
   private func drawingThumbnail(_ drawing: DrawingModel, isFavorite: Bool) -> some View {
     ZStack {
-      RoundedRectangle(cornerSize: .init(width: 8, height: 8), style: .continuous)
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
         .fill(.ultraThinMaterial)
       if let thumbnail = appModel.thumbnails[drawing.id] {
         Image(uiImage: thumbnail)
@@ -77,15 +81,16 @@ struct QuickDrawingSwitch: View {
         Image(systemName: "questionmark.app.dashed")
       }
       if drawing.id == appModel.drawingId {
-        RoundedRectangle(cornerRadius: 8)
-          .stroke(Color.white, lineWidth: 1)
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+          .stroke(Color.white, lineWidth: 1.5)
       }
     }
     .frame(width: size, height: size)
-    .contentShape(RoundedRectangle(cornerSize: .init(width: 8, height: 8), style: .continuous))
+    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     .overlay(alignment: .topTrailing, content: {
       if isFavorite {
         Image(systemName: "star.fill")
+          .foregroundStyle(.white)
           .font(.system(size: 6))
           .padding(4)
       }
@@ -93,6 +98,7 @@ struct QuickDrawingSwitch: View {
     .allowsHitTesting(true)
     .hoverEffect(.highlight)
     .onTapGesture {
+      AudioServicesPlaySystemSound(1104)
       appModel.updateDrawing(drawing.id)
       appModel.selectDrawingId(drawing.id)
     }
@@ -102,4 +108,6 @@ struct QuickDrawingSwitch: View {
 #Preview {
   QuickDrawingSwitch()
     .environment(AppModel())
-} 
+    .background(.gray.opacity(0.3), in: .rect)
+    .background(.white, in: .rect)
+}

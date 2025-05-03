@@ -11,6 +11,9 @@ import SwiftUI
 
 struct ZoomControlView: View {
   @AppStorage("showMiniMap") private var showMiniMap = true
+  @AppStorage("showQuickZoomButtons") private var showQuickZoomButtons = true
+  @AppStorage("commonZoomFactors") private var commonZoomFactors: DoubleArrayStorageModel = .init(array: [100, 150, 200])
+  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @Binding var zoomFactor: Double
   @State private var showQuickZoomMenu: Bool = false
   @State private var lastDragPosition: CGFloat = 0 // 添加状态变量记录上一次拖动位置
@@ -18,68 +21,69 @@ struct ZoomControlView: View {
 
   private let minZoomFactor: Double = 25
   private let maxZoomFactor: Double = 400
-  private let quickZoomValues: [Double] = [25, 50, 100, 150, 175, 200, 300, 400]
+  private let quickZoomValues: [Double] = [25, 50, 100, 150, 175, 200, 250, 300, 350, 400]
   private let sliderValues: [Double] = (0 ... 15).map { Double($0) }
-  private let sliderZoomValues: [Double] = (0 ... 15).map { Double(25  + ($0 * 25)) }
-
-  var body: some View {
-    devZoomControl
-      .overlay(alignment: .bottom) {
-        quickZoomMenu
-          .opacity(showQuickZoomMenu ? 1 : 0)
-          .scaleEffect(showQuickZoomMenu ? 0.8 : 0, anchor: .bottom)
-          .offset(y: -28)
-      }
-      .padding(4)
-  }
+  private let sliderZoomValues: [Double] = (0 ... 15).map { Double(25 + ($0 * 25)) }
+  
 
   var currentValue: Double {
     (zoomFactor - 25) / 25
   }
 
+  var body: some View {
+    VStack {
+      if !isHorizontal && showQuickZoomButtons { zoomControlButtons }
+      zoomControlSlider
+        .overlay(alignment: isHorizontal ? .bottom : .top) {
+          quickZoomMenu
+            .opacity(showQuickZoomMenu ? 1 : 0)
+            .scaleEffect(showQuickZoomMenu ? 0.8 : 0, anchor: isHorizontal ? .bottom : .top)
+            .offset(y: isHorizontal ? -28 : 28)
+        }
+      if isHorizontal && showQuickZoomButtons { zoomControlButtons }
+    }
+  }
+
   @MainActor
   @ViewBuilder
-  private var devZoomControl: some View {
+  private var zoomControlButtons: some View {
+    HStack(spacing: 4) {
+      ForEach(commonZoomFactors.array, id: \.self) { commonZoomFactor in
+        Button(action: {
+          withAnimation(.spring.speed(2)) {
+            zoomFactor = commonZoomFactor
+          }
+        }, label: {
+          Text("×\((commonZoomFactor / 100).trimmedString())")
+            .fixedSize()
+            .font(.system(size: 8, weight: .bold))
+            .frame(maxWidth: .infinity)
+        })
+        .controlSize(.mini)
+        .buttonBorderShape(.roundedRectangle)
+        .background {
+          if zoomFactor == commonZoomFactor {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+              .foregroundColor(.white.opacity(0.6))
+          }
+        }
+      }
+      if !showMiniMap {
+        FoldMiniMapButton()
+      }
+    }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var zoomControlSlider: some View {
     ZStack {
       RoundedRectangle(cornerRadius: 12, style: .continuous)
         .fill(.ultraThinMaterial)
       HStack(spacing: 4) {
-        HStack(alignment: .bottom, spacing: 1) {
-          ForEach(sliderValues, id: \.self) { value in
-            Capsule()
-              .frame(width: value == currentValue ? 2 : 1, height: value == currentValue ? 8 : pow((value + 1) * 1.5, 1.0 / 1.6))
-              .foregroundColor(value == currentValue ? .white : .secondary)
-              .overlay {
-                Text("\(Int(25 + value * 25))")
-                  .font(.headline)
-                  .padding(4)
-                  .background(content: {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                      .fill(.ultraThinMaterial)
-                  })
-                  .fixedSize()
-                  .opacity(value == currentValue && draging ? 1 : 0)
-                  .offset(y: -32)
-                  .animation(nil, value: currentValue)
-                  .animation(nil, value: draging)
-              }
-              .padding(.horizontal, 1)
-              .overlay {
-                Rectangle()
-                  .frame(width: 4, height: 28)
-                  .foregroundColor(.white.opacity(0.01))
-                  .opacity(0.01)
-                  .onTapGesture(perform: {
-                    withAnimation(.spring.speed(2)) {
-                      zoomFactor = Double(25 + (value * 25))
-                    }
-                    AudioServicesPlaySystemSound(1104)
-                  })
-              }
-          }
-        }
+        zoomSlider
         quickSwitchButton
-        if !showMiniMap {
+        if !showMiniMap && !showQuickZoomButtons {
           FoldMiniMapButton()
         }
       }
@@ -88,16 +92,16 @@ struct ZoomControlView: View {
     }
     .frame(height: 20)
     .simultaneousGesture(
-      DragGesture(minimumDistance: 5)
+      DragGesture(minimumDistance: 8)
         .onChanged { value in
-          if !draging { draging = true }
           let currentPosition = value.translation.width
           let dragDistance = currentPosition - lastDragPosition
           guard abs(dragDistance) < 20 else {
             lastDragPosition = currentPosition
             return
           }
-          if abs(dragDistance) >= 8 {
+          if abs(dragDistance) >= 10 {
+            if !draging { draging = true }
             let step = dragDistance > 0 ? 1 : -1
             let newValue = Int(currentValue) + step
             let clampedValue = min(max(newValue, 0), 15)
@@ -116,11 +120,50 @@ struct ZoomControlView: View {
         }
     )
   }
+  
+  @MainActor
+  @ViewBuilder
+  private var zoomSlider: some View {
+    HStack(alignment: .bottom, spacing: 1) {
+      ForEach(sliderValues, id: \.self) { value in
+        Capsule()
+          .frame(width: value == currentValue ? 2 : 1, height: value == currentValue ? 8 : pow((value + 1) * 1.5, 1.0 / 1.6))
+          .foregroundColor(value == currentValue ? .white : .secondary)
+          .overlay {
+            Text("×\(((25 + value * 25) / 100).trimmedString())")
+              .font(.headline)
+              .padding(4)
+              .background(content: {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                  .fill(.ultraThinMaterial)
+              })
+              .fixedSize()
+              .opacity(value == currentValue && draging ? 1 : 0)
+              .offset(y: -32)
+              .animation(nil, value: currentValue)
+              .animation(nil, value: draging)
+          }
+          .padding(.horizontal, 1)
+          .overlay {
+            Rectangle()
+              .frame(width: 4, height: 28)
+              .foregroundColor(.white.opacity(0.01))
+              .opacity(0.01)
+              .onTapGesture(perform: {
+                withAnimation(.spring.speed(2)) {
+                  zoomFactor = Double(25 + (value * 25))
+                }
+                AudioServicesPlaySystemSound(1104)
+              })
+          }
+      }
+    }
+  }
 
   @MainActor
   @ViewBuilder
   private var quickSwitchButton: some View {
-    Text("\(Int(zoomFactor))%")
+    Text("×\((zoomFactor / 100).trimmedString())")
       .font(.system(size: 8, weight: .bold))
       .fixedSize()
       .frame(width: 24, height: 12)
@@ -154,7 +197,7 @@ struct ZoomControlView: View {
   @ViewBuilder
   private var quickZoomMenu: some View {
     let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 2)
-    
+
     LazyVGrid(columns: columns, spacing: 4) {
       ForEach(quickZoomValues, id: \.self) { value in
         Button(action: {
@@ -165,12 +208,19 @@ struct ZoomControlView: View {
             showQuickZoomMenu.toggle()
           }
         }, label: {
-          Text("\(Int(value))%")
+          Text("×\((value / 100).trimmedString())")
+            .fixedSize()
             .font(.system(size: 10, weight: .bold))
             .frame(maxWidth: .infinity)
         })
         .controlSize(.mini)
         .buttonBorderShape(.roundedRectangle)
+        .background {
+          if zoomFactor == value {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+              .foregroundColor(.white.opacity(0.6))
+          }
+        }
       }
     }
     .frame(width: 138)

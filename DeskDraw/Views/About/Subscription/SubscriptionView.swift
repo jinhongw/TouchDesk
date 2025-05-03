@@ -247,23 +247,12 @@ struct SubscriptionView: View {
           .font(.system(size: 20, weight: .bold, design: .rounded))
           .padding(.horizontal, 5)
           .padding(.vertical, 2)
-          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.white.opacity(0.8)))
-          .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
-            gradient: Gradient(colors: [Color.white, Color.purple, Color.orange]),
-            startPoint: .leading,
-            endPoint: .trailing
-          )))
           .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
           .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
           .overlay(sparklesOverlay())
           .rotationEffect(.degrees(16))
           .offset(z: 8)
           .offset(x: 36, y: -20)
-          .foregroundStyle(LinearGradient(
-            gradient: Gradient(colors: [Color.orange, Color.purple]),
-            startPoint: .leading,
-            endPoint: .trailing
-          ))
           .opacity(subscriptionViewModel.hasPro ? 1 : 0)
       }
       Spacer(minLength: 0)
@@ -290,7 +279,7 @@ struct SubscriptionView: View {
             .foregroundStyle(.purple)
             .offset(x: 68)
         }
-        .opacity(0.3)
+        .opacity(0.25)
         .blur(radius: 100)
         .offset(y: -88)
       } else if selectedProduct?.id == yearlyPlanId {
@@ -302,7 +291,7 @@ struct SubscriptionView: View {
             .foregroundStyle(.white)
             .offset(x: 32)
         }
-        .opacity(0.3)
+        .opacity(0.25)
         .blur(radius: 100)
       }
     }
@@ -398,27 +387,12 @@ struct SubscriptionItemView: View {
       VStack(alignment: .leading, spacing: 8) {
         HStack(alignment: .bottom, spacing: 8) {
           Text("\(product.displayName)")
-            .font(.system(size: 16.0, weight: .semibold, design: .rounded))
+            .font(.system(size: 16.0, weight: .bold, design: .rounded))
             .multilineTextAlignment(.leading)
-//            .foregroundStyle(
-//              selectedProduct == product ?
-//                (isLifetime ? LinearGradient(
-//                  gradient: Gradient(colors: [Color.purple, Color.white.mix(with: .pink, by: 0.8), Color.white.mix(with: .orange, by: 0.3)]),
-//                  startPoint: .leading,
-//                  endPoint: .trailing
-//                ) : isYearlyPlan ? LinearGradient(
-//                  gradient: Gradient(colors: [Color.blue.mix(with: .white, by: 0.6), Color.white]),
-//                  startPoint: .leading,
-//                  endPoint: .trailing
-//                ) : LinearGradient(
-//                  gradient: Gradient(colors: [Color.secondary.mix(with: .white, by: 0.3), Color.white]),
-//                  startPoint: .leading,
-//                  endPoint: .trailing
-//                )) : LinearGradient(colors: [Color.primary], startPoint: .leading, endPoint: .trailing))
           if product.id == "com.easybreezy.touchdesk.lifetime" {
             HStack(spacing: 4) {
               Text("\(product.displayPrice)")
-                .font(.system(size: 16.0, weight: .semibold, design: .rounded))
+                .font(.system(size: 16.0, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
               Text("\(product.displayPrice.removePriceNumbers())\(String(format: "%.2f", Double(truncating: product.price as NSNumber) / 0.5))")
                 .font(.system(size: 12.0, weight: .regular, design: .rounded))
@@ -426,7 +400,7 @@ struct SubscriptionItemView: View {
             }
           } else {
             Text("\(product.displayPrice)\(planRenewCircle(product) ?? "")")
-              .font(.system(size: 16.0, weight: .semibold, design: .rounded))
+              .font(.system(size: 16.0, weight: .bold, design: .rounded))
               .multilineTextAlignment(.leading)
           }
         }

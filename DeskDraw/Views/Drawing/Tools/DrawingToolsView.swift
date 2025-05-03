@@ -25,7 +25,7 @@ struct DrawingToolsView: View {
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("drawColor") private var drawColor: Color = .white
   @AppStorage("showRecentColors") private var showRecentColors = true
-  @AppStorage("recentColors") private var recentColorsArray: ColorArray = .init(colors: [])
+  @AppStorage("recentColors") private var recentColorsArray: ColorArrayStorageModel = .init(colors: [])
   @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
 
   @State private var toolSettingType: ToolSettingType? = nil
@@ -61,7 +61,7 @@ struct DrawingToolsView: View {
     }
     colors = colors.filter { $0 != newColor }
     colors = Array(colors.prefix(6))
-    recentColorsArray = ColorArray(colors: colors)
+    recentColorsArray = ColorArrayStorageModel(colors: colors)
   }
 
   var body: some View {
@@ -910,34 +910,6 @@ class ImagePickerCoordinator: NSObject, UIImagePickerControllerDelegate, UINavig
 
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
     picker.dismiss(animated: true)
-  }
-}
-
-struct ColorArray: RawRepresentable {
-  var colors: [Color]
-
-  init(colors: [Color] = []) {
-    self.colors = colors
-  }
-
-  init?(rawValue: String) {
-    guard let data = rawValue.data(using: .utf8),
-          let colorStrings = try? JSONDecoder().decode([String].self, from: data),
-          let colors = colorStrings.map({ Color(rawValue: $0) }) as? [Color]
-    else {
-      return nil
-    }
-    self.colors = colors
-  }
-
-  var rawValue: String {
-    let colorStrings = colors.map { $0.rawValue }
-    guard let data = try? JSONEncoder().encode(colorStrings),
-          let string = String(data: data, encoding: .utf8)
-    else {
-      return "[]"
-    }
-    return string
   }
 }
 

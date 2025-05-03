@@ -18,15 +18,15 @@ struct ShimmerMask: View {
         startPoint: .leading,
         endPoint: .trailing
       )
-      .frame(width: viewWidth * 0.6)
+      .frame(width: viewWidth * 0.5)
       .offset(x: shimmerPosition)
       .onAppear {
         guard !appeared else { return }
         appeared = true
         shimmerPosition = -viewWidth
         withAnimation(
-          Animation.linear(duration: 2)
-            .delay(1)
+          Animation.linear(duration: 1.5)
+            .delay(5)
             .repeatForever(autoreverses: false)
         ) {
           print(#function, viewWidth)
@@ -40,6 +40,7 @@ struct ShimmerMask: View {
 struct sparklesOverlay: View {
   @State private var showStars: Bool = false
   @State private var appeared: Bool = false
+  @State private var timer: Timer? = nil
 
   var body: some View {
     GeometryReader { proxy in
@@ -54,33 +55,40 @@ struct sparklesOverlay: View {
         .onAppear {
           guard !appeared else { return }
           appeared = true
-          startAnimationLoop()
+          setupAnimationTimer()
         }
         .onDisappear {
           appeared = false
+          timer?.invalidate()
+          timer = nil
         }
     }
   }
 
-  private func startAnimationLoop() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-//      print(#function, true)
-      withAnimation(
-        Animation.spring(duration: 1)
-      ) {
-        showStars = true
+  private func setupAnimationTimer() {
+    // 延迟0.5秒开始整个动画
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      guard appeared else { return }
+      // 创建一个每7秒重复的定时器
+      timer = Timer.scheduledTimer(withTimeInterval: 6.5, repeats: true) { _ in
+        animateSparkle()
       }
+      // 立即执行第一次动画
+      animateSparkle()
     }
-
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-//      print(#function, false)
-      withAnimation(
-        Animation.spring(duration: 1)
-      ) {
+  }
+  
+  private func animateSparkle() {
+    // 显示星星
+    withAnimation(Animation.spring(duration: 1)) {
+      showStars = true
+    }
+    
+    // 1秒后隐藏星星
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+      guard appeared else { return }
+      withAnimation(Animation.spring(duration: 1)) {
         showStars = false
-      }
-      if appeared {
-        startAnimationLoop()
       }
     }
   }
@@ -93,23 +101,12 @@ struct sparklesOverlay: View {
       .font(.system(size: 20, weight: .bold, design: .rounded))
       .padding(.horizontal, 5)
       .padding(.vertical, 2)
-      .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(.white.opacity(0.8)))
-      .background(RoundedRectangle(cornerRadius: 12).foregroundStyle(LinearGradient(
-        gradient: Gradient(colors: [Color.white, Color.purple, Color.orange]),
-        startPoint: .leading,
-        endPoint: .trailing
-      )))
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 12))
       .overlay(ShimmerMask().clipShape(RoundedRectangle(cornerRadius: 12)))
       .overlay(sparklesOverlay())
       .rotationEffect(.degrees(16))
       .offset(z: 16)
       .offset(x: 36, y: -20)
-      .foregroundStyle(LinearGradient(
-        gradient: Gradient(colors: [Color.orange, Color.purple]),
-        startPoint: .leading,
-        endPoint: .trailing
-      ))
   }
   .frame(width: 240, height: 240)
 })
