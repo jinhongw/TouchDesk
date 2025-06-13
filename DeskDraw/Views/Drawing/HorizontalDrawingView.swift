@@ -1,6 +1,6 @@
 //
-//  ContentView.swift
-//  PKDraw
+//  HorizontalDrawingView.swift
+//  DeskDraw
 
 import AVFoundation
 import PencilKit
@@ -9,7 +9,7 @@ import RealityKitContent
 import SwiftUI
 import TipKit
 
-struct DrawingView: View {
+struct HorizontalDrawingView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.openImmersiveSpace) private var openImmersiveSpace
   @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
@@ -26,12 +26,13 @@ struct DrawingView: View {
   @AppStorage("toolStatus") private var toolStatus: CanvasToolStatus = .ink
   @AppStorage("isSelectorActive") private var isSelectorActive: Bool = false
   @AppStorage("pencilType") private var pencilType: PKInkingTool.InkType = .pen
-  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
-  @AppStorage("placementAssistance") private var placementAssistance = true
   @AppStorage("drawColor") private var drawColor: Color = .white
   @AppStorage("showMiniMap") private var showMiniMap = true
   @AppStorage("showZoomControlView") private var showZoomControlView = true
   @AppStorage("showQuickDrawingSwitch") private var showQuickDrawingSwitch = true
+  @AppStorage("horizontalWindowWidth") private var horizontalWindowWidth: Double = 884
+  @AppStorage("horizontalWindowHeight") private var horizontalWindowHeight: Double = 476
+  @AppStorage("horizontalWindowDepth") private var horizontalWindowDepth: Double = 476
 
   @State private var canvas = PKCanvasView()
   @State private var lastCanvasPosition: AffineTransform3D? = nil
@@ -42,66 +43,42 @@ struct DrawingView: View {
   @State private var horizontalYOffest: CGFloat = 0
   @State private var contentOffset: CGPoint = .zero
 
-  let zOffset: CGFloat = 72
-  let placeZOffset: CGFloat = 6
-
-  enum CanvasToolStatus: Int, Hashable {
-    case ink = 0
-    case eraser = 1
-  }
-
-  enum EraserType: Int, Hashable {
-    case bitmap = 0
-    case vector = 1
-  }
+  private let toolDepth: CGFloat = 72
 
   var body: some View {
+    let _ = debugPrint(#function, "\(appModel.showDrawing) \(appModel.showNotes) \(appModel.hideInMini)")
     GeometryReader3D { proxy in
       ZStack {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
             drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: appModel.hideInMini ? .leadingBack : .center)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
+              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
               .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : 200)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
-              .offset(y: proxy.size.height / 2)
+              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+              .offset(y: proxy.size.height / 2 + 1)
               .offset(z: -proxy.size.depth)
           }
           .overlay {
-            if !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isOpeningPlaceCanvasImmersive {
-              notesView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-                .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: appModel.hideInMini ? .leadingBack : .center)
-                .blur(radius: appModel.showNotes && !appModel.hideInMini ? 0 : 200)
-                .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-                .disabled(!appModel.showNotes || appModel.hideInMini)
-                .offset(y: proxy.size.height / 2)
-                .offset(z: -proxy.size.depth)
-            }
-          }
-          .overlay {
-            if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
-              PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
-                .environment(appModel)
-                .onAppear {
-                  onPlaceAssistViewAppear(proxy: proxy)
-                }
-                .onDisappear {
-                  placeCanvasTimer?.invalidate()
-                }
-            }
+            notesView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+              .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .blur(radius: appModel.showNotes && !appModel.hideInMini ? 0 : 200)
+              .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+              .disabled(!appModel.showNotes || appModel.hideInMini)
+              .offset(y: proxy.size.height / 2 + 1)
+              .offset(z: -proxy.size.depth)
           }
       }
       .frame(width: proxy.size.width, height: proxy.size.height)
       .frame(depth: proxy.size.depth)
-      .rotation3DEffect(.init(degrees: isHorizontal ? 0 : zRotation), axis: (x: 0, y: 0, z: 1), anchor: .center)
-      .rotation3DEffect(.init(radians: isHorizontal ? 0 : -.pi / 2), axis: (x: 1, y: 0, z: 0), anchor: .center)
-      .offset(z: isHorizontal ? 0 : proxy.size.depth - zOffset * 1.5 + verticalZOffest)
-      .offset(y: isHorizontal ? -horizontalYOffest : 0)
       .animation(.spring, value: appModel.showDrawing)
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
-      .animation(.spring, value: isHorizontal)
+      .onChange(of: proxy.size) { _, size in
+        horizontalWindowWidth = size.width
+        horizontalWindowHeight = size.height
+        horizontalWindowDepth = size.depth
+      }
     }
   }
 
@@ -117,17 +94,14 @@ struct DrawingView: View {
     .scaleEffect(appModel.hideInMini ? 1.2 : 0.8)
     .scaleEffect(!appModel.showNotes ? 1 : 0, anchor: .center)
     .blur(radius: !appModel.showNotes ? 0 : 200)
-    .offset(x: -width / 2 + zOffset / 2, y: height / 2)
-    .offset(z: -depth / 2 + zOffset / 2.7)
-    .opacity(isHorizontal && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.showNotes ? 1 : 0)
+    .offset(x: -width / 2 + toolDepth / 2, y: height / 2)
+    .offset(z: -depth / 2 + toolDepth / 2.7)
     .gesture(
       TapGesture().targetedToAnyEntity().onEnded { _ in
-        print(#function, "onTapGesture")
         AudioServicesPlaySystemSound(1104)
         appModel.hideInMini.toggle()
       }
     )
-    .disabled(!isHorizontal || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
     .animation(.spring.speed(2), value: appModel.showNotes)
   }
 
@@ -142,30 +116,30 @@ struct DrawingView: View {
       }
     } attachments: {
       Attachment(id: "drawingView") {
-        let _ = print(#function, "drawingRealityView width \(width) height \(depth - zOffset)")
+        let _ = print(#function, "drawingRealityView width \(width) height \(depth - toolDepth)")
         drawingView(width: width, height: height, depth: depth)
           .cornerRadius(20)
           .frame(width: width, height: depth)
           .colorScheme(.light)
-          .overlay(alignment: isHorizontal ? .bottomTrailing : .topTrailing) {
+          .overlay(alignment: .bottomTrailing) {
             if showMiniMap || showZoomControlView {
-              MiniMapView(canvas: canvas, contentOffset: $contentOffset)
+              MiniMapView(canvas: canvas, isHorizontal: true, contentOffset: $contentOffset)
                 .padding(16)
                 .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
             }
           }
-          .overlay(alignment: isHorizontal ? .bottomLeading : .topLeading) {
+          .overlay(alignment: .bottomLeading) {
             if showQuickDrawingSwitch {
-              QuickDrawingSwitch()
+              QuickDrawingSwitch(isHorizontal: true)
                 .environment(appModel)
                 .padding(16)
                 .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
             }
           }
-          .overlay(alignment: isHorizontal ? .topLeading : .bottomLeading) {
+          .overlay(alignment: .topLeading) {
             topToolbarView(width: width, height: height, depth: depth)
-              .offset(z: isHorizontal ? zOffset * 1.3 : zOffset * 1)
-              .offset(y: isHorizontal ? -20 : 0)
+              .offset(z: toolDepth * 1.3 )
+              .offset(y: -20)
           }
       }
     }
@@ -181,7 +155,6 @@ struct DrawingView: View {
       ProgressView()
     } else {
       DrawingUIViewRepresentable(
-        canvas: canvas,
         model: Binding(
           get: {
             if let drawing = appModel.currentDrawing {
@@ -222,8 +195,9 @@ struct DrawingView: View {
         imageEditingId: $appModel.imageEditingId,
         contentOffset: $contentOffset,
         zoomFactor: $appModel.canvasZoomFactor,
+        canvas: canvas,
         canvasWidth: width,
-        canvasHeight: depth - zOffset,
+        canvasHeight: depth - toolDepth,
         saveDrawing: {
           appModel.updateDrawing(appModel.drawingId)
         },
@@ -266,53 +240,16 @@ struct DrawingView: View {
       pencilType: $pencilType,
       eraserType: $eraserType,
       isSelectorActive: $isSelectorActive,
-      canvas: canvas
+      canvas: canvas,
+      isHorizontal: true
     )
     .environment(appModel)
     .frame(width: width, height: 120)
     .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
   }
-
-  private func onPlaceAssistViewAppear(proxy: GeometryProxy3D) {
-    guard appModel.isBeginingPlacement else { return }
-    Task {
-      appModel.isOpeningPlaceCanvasImmersive = true
-      switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
-      case .opened:
-        try await Task.sleep(for: .seconds(0.1))
-        appModel.isInPlaceCanvasImmersive = true
-        appModel.isBeginingPlacement = false
-        appModel.isOpeningPlaceCanvasImmersive = false
-      case .userCancelled, .error:
-        fallthrough
-      @unknown default: break
-      }
-    }
-
-    lastCanvasPosition = proxy.transform(in: .immersiveSpace)
-    placeCanvasTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-      print("Position check: \(String(describing: proxy.transform(in: .immersiveSpace)))")
-      guard canvasPositionHasChangedCount <= 5 else {
-        placeCanvasTimer?.invalidate()
-        return
-      }
-      let position = proxy.transform(in: .immersiveSpace)
-      if let last = lastCanvasPosition, last != position {
-        print("Position changed: \(String(describing: position))")
-        canvasPositionHasChangedCount += 1
-        if canvasPositionHasChangedCount == 5 {
-          Task {
-            await appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.moveCanvas()
-          }
-          placeCanvasTimer?.invalidate()
-        }
-      }
-      lastCanvasPosition = position
-    }
-  }
 }
 
 #Preview {
-  DrawingView()
+  HorizontalDrawingView()
     .environment(AppModel())
 }

@@ -9,14 +9,24 @@ import ObjectiveC
 import PencilKit
 import SwiftUI
 
+enum CanvasToolStatus: Int, Hashable {
+  case ink = 0
+  case eraser = 1
+}
+
+enum EraserType: Int, Hashable {
+  case bitmap = 0
+  case vector = 1
+}
+
 struct DrawingUIViewRepresentable: UIViewRepresentable {
   private let canvasOverscrollDistance: CGFloat = 600
   private let canvasOverscrollMiniDistance: CGFloat = 300
-  let canvas: PKCanvasView
+
   @Binding var model: DrawingModel
-  @Binding var toolStatus: DrawingView.CanvasToolStatus
+  @Binding var toolStatus: CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
-  @Binding var eraserType: DrawingView.EraserType
+  @Binding var eraserType: EraserType
   @Binding var isSelectorActive: Bool
   @Binding var penWidth: Double
   @Binding var monolineWidth: Double
@@ -30,6 +40,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   @Binding var imageEditingId: UUID?
   @Binding var contentOffset: CGPoint
   @Binding var zoomFactor: Double
+  
+  let canvas: PKCanvasView
   let canvasWidth: CGFloat
   let canvasHeight: CGFloat
   let saveDrawing: () -> Void

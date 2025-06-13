@@ -13,8 +13,9 @@ struct ZoomControlView: View {
   @AppStorage("showMiniMap") private var showMiniMap = true
   @AppStorage("showQuickZoomButtons") private var showQuickZoomButtons = true
   @AppStorage("commonZoomFactors") private var commonZoomFactors: DoubleArrayStorageModel = .init(array: [100, 150, 200])
-  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
+  
   @Binding var zoomFactor: Double
+  
   @State private var showQuickZoomMenu: Bool = false
   @State private var lastDragPosition: CGFloat = 0 // 添加状态变量记录上一次拖动位置
   @State private var draging: Bool = false
@@ -26,21 +27,22 @@ struct ZoomControlView: View {
   private let sliderZoomValues: [Double] = (0 ... 15).map { Double(25 + ($0 * 25)) }
   
 
-  var currentValue: Double {
+  private var currentValue: Double {
     (zoomFactor - 25) / 25
   }
 
   var body: some View {
     VStack {
-      if !isHorizontal && showQuickZoomButtons { zoomControlButtons }
+      if showQuickZoomButtons {
+        zoomControlButtons
+      }
       zoomControlSlider
-        .overlay(alignment: isHorizontal ? .bottom : .top) {
+        .overlay(alignment: .bottom) {
           quickZoomMenu
             .opacity(showQuickZoomMenu ? 1 : 0)
-            .scaleEffect(showQuickZoomMenu ? 0.8 : 0, anchor: isHorizontal ? .bottom : .top)
-            .offset(y: isHorizontal ? -28 : 28)
+            .scaleEffect(showQuickZoomMenu ? 0.8 : 0, anchor: .bottom)
+            .offset(y: -28)
         }
-      if isHorizontal && showQuickZoomButtons { zoomControlButtons }
     }
   }
 
@@ -121,6 +123,11 @@ struct ZoomControlView: View {
     )
   }
   
+  func getZoomSliderValue(_ value: Double) -> String {
+    let reslut = (25 + value * 25) / 100
+    return "×\(reslut.trimmedString())"
+  }
+  
   @MainActor
   @ViewBuilder
   private var zoomSlider: some View {
@@ -130,7 +137,7 @@ struct ZoomControlView: View {
           .frame(width: value == currentValue ? 2 : 1, height: value == currentValue ? 8 : pow((value + 1) * 1.5, 1.0 / 1.6))
           .foregroundColor(value == currentValue ? .white : .secondary)
           .overlay {
-            Text("×\(((25 + value * 25) / 100).trimmedString())")
+            Text(getZoomSliderValue(value))
               .font(.headline)
               .padding(4)
               .background(content: {
@@ -245,6 +252,6 @@ struct FoldMiniMapButton: View {
 }
 
 #Preview {
-  MiniMapView(canvas: PKCanvasView(), contentOffset: .constant(.init(x: 100, y: 100)))
+  MiniMapView(canvas: PKCanvasView(), isHorizontal: true, contentOffset: .constant(.init(x: 100, y: 100)))
     .environment(AppModel())
 }

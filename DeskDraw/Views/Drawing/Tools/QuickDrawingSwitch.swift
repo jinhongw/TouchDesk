@@ -4,12 +4,16 @@ import SwiftUI
 
 struct QuickDrawingSwitch: View {
   @Environment(AppModel.self) private var appModel
+  
   @AppStorage("quickDrawingSwitchSize") private var quickDrawingSwitchSize: Double = 1
-  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
+  @AppStorage("quickDrawingSwitchSizeInVertical") private var quickDrawingSwitchSizeInVertical: Double = 1.5
+  
+  let isHorizontal: Bool
 
-  let size: CGFloat = 50
-  let gap: CGFloat = 8
-  var scrollViewWidth: CGFloat {
+  private let size: CGFloat = 50
+  private let gap: CGFloat = 8
+  
+  private var scrollViewWidth: CGFloat {
     size * 3 + gap * 3
   }
 
@@ -63,7 +67,7 @@ struct QuickDrawingSwitch: View {
         }
       }
     }
-    .scaleEffect(quickDrawingSwitchSize, anchor: isHorizontal ? .bottomLeadingBack : .topLeadingBack)
+    .scaleEffect(isHorizontal ? quickDrawingSwitchSize : quickDrawingSwitchSizeInVertical, anchor: .bottomLeadingBack)
   }
 
   @MainActor
@@ -106,7 +110,7 @@ struct QuickDrawingSwitch: View {
 }
 
 #Preview {
-  QuickDrawingSwitch()
+  QuickDrawingSwitch(isHorizontal: true)
     .environment(AppModel())
     .background(.gray.opacity(0.3), in: .rect)
     .background(.white, in: .rect)

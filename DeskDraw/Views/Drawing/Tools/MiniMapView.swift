@@ -5,21 +5,24 @@ import SwiftUI
 
 struct MiniMapView: View {
   @Environment(AppModel.self) private var appModel
-  let canvas: PKCanvasView
-  let size: CGSize = .init(width: 112, height: 88)
+
   @AppStorage("showMiniMap") private var showMiniMap = true
   @AppStorage("showZoomControlView") private var showZoomControlView = true
-  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("miniMapSize") private var miniMapSize: Double = 1
-  @Binding var contentOffset: CGPoint
+  @AppStorage("miniMapSizeInVertical") private var miniMapSizeInVertical: Double = 1.5
 
-  // 用于节流的状态
-  @State private var lastUpdateTime: Date = .now
+  let canvas: PKCanvasView
+  let isHorizontal: Bool
+  
+  private let size: CGSize = .init(width: 112, height: 88)
   private let canvasOverscrollDistance: CGFloat = 600
+
+  @Binding var contentOffset: CGPoint
+  @State private var lastUpdateTime: Date = .now
 
   var body: some View {
     VStack(spacing: 8) {
-      if showZoomControlView && isHorizontal {
+      if showZoomControlView {
         ZoomControlView(zoomFactor: zoomFactorBinding)
           .frame(width: size.width)
       }
@@ -52,12 +55,8 @@ struct MiniMapView: View {
             .padding(4)
         }
       }
-      if showZoomControlView && !isHorizontal {
-        ZoomControlView(zoomFactor: zoomFactorBinding)
-          .frame(width: size.width)
-      }
     }
-    .scaleEffect(miniMapSize, anchor: isHorizontal ? .bottomTrailingBack : .topTrailingBack)
+    .scaleEffect(isHorizontal ? miniMapSize : miniMapSizeInVertical, anchor: .bottomTrailingBack)
     .offset(x: showMiniMap ? 0 : -12)
     .onChange(of: canvas.contentOffset) { _, _ in
       throttledUpdateThumbnail()
@@ -262,6 +261,6 @@ struct MiniMapView: View {
 }
 
 #Preview {
-  MiniMapView(canvas: PKCanvasView(), contentOffset: .constant(.init(x: 100, y: 100)))
+  MiniMapView(canvas: PKCanvasView(), isHorizontal: true, contentOffset: .constant(.init(x: 100, y: 100)))
     .environment(AppModel())
 }

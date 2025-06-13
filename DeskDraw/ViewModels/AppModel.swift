@@ -12,8 +12,7 @@ import SwiftUI
 @MainActor
 @Observable
 class AppModel {
-  let placeCanvasImmersiveViewModel = PlaceCanvasImmersiveViewModel()
-  var subscriptionViewModel = SubscriptionViewModel()
+  let subscriptionViewModel = SubscriptionViewModel()
   var drawings: [UUID: DrawingModel] = [:]
   private(set) var thumbnails: [UUID: UIImage] = [:]
   private(set) var ids = [UUID]()
@@ -24,10 +23,6 @@ class AppModel {
   var showDrawing = true
   var showNotes = false
   var isLocked = false
-  var isInPlaceCanvasImmersive = false
-  var isClosingPlaceCanvasImmersive = false
-  var isOpeningPlaceCanvasImmersive = false
-  var isBeginingPlacement = true
   var isShareImageViewShowing = false
   var exportImage: UIImage?
   var aboutNavigationPath = NavigationPath()
@@ -132,13 +127,9 @@ class AppModel {
         addNewDrawing()
       }
     }
-
-    if let placementAssistance = UserDefaults.standard.value(forKey: "placementAssistance") as? Bool {
-      isBeginingPlacement = placementAssistance
-    }
   }
 
-  func saveDrawing(_ id: UUID) {
+  private func saveDrawing(_ id: UUID) {
     guard let drawing = drawings[id] else { return }
     if !ids.contains(id) {
       ids.insert(id, at: 0)
@@ -300,11 +291,11 @@ class AppModel {
     thumbnails[id] = image
   }
 
-  func updateExportImage(_ image: UIImage) {
+  private func updateExportImage(_ image: UIImage) {
     exportImage = image
   }
 
-  func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {
+  private func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {
     if let cachedImage = imageCache[id] {
       return cachedImage
     }

@@ -315,6 +315,7 @@
       }
     },
     "Aligned with surface" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -544,6 +545,9 @@
         }
       }
     },
+    "Canvas Tools" : {
+
+    },
     "Celebrate" : {
       "localizations" : {
         "en" : {
@@ -739,6 +743,9 @@
         }
       }
     },
+    "Control Size - Vertical" : {
+
+    },
     "Corner radius" : {
       "localizations" : {
         "de" : {
@@ -824,6 +831,9 @@
           }
         }
       }
+    },
+    "Default Orientation" : {
+
     },
     "Dominant hand setting" : {
       "localizations" : {
@@ -918,6 +928,7 @@
       }
     },
     "Drag the board to any surface, \n it turns green when aligned." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1533,6 +1544,9 @@
           }
         }
       }
+    },
+    "Horizontal" : {
+
     },
     "How to Use" : {
       "localizations" : {
@@ -2394,6 +2408,7 @@
       }
     },
     "Placement assistance" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3738,6 +3753,9 @@
         }
       }
     },
+    "Vertical" : {
+
+    },
     "Welcome to TouchDesk" : {
       "localizations" : {
         "de" : {
@@ -3923,6 +3941,7 @@
       }
     },
     "切换垂直画板" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3969,6 +3988,7 @@
       }
     },
     "切换水平画板" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -4244,6 +4264,9 @@
         }
       }
     },
+    "新建画板" : {
+
+    },
     "查看画布" : {
       "localizations" : {
         "de" : {
@@ -4279,7 +4302,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在新窗口查看"
+            "value" : "打开查看窗口"
           }
         },
         "zh-Hant" : {
@@ -4337,6 +4360,7 @@
       }
     },
     "重新放置画板" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

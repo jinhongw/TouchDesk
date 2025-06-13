@@ -22,22 +22,24 @@ struct DrawingToolsView: View {
   @AppStorage("crayonWidth") private var crayonWidth: Double = 30
   @AppStorage("fountainPenWidth") var fountainPenWidth: Double = 4.625
   @AppStorage("eraserWidth") private var eraserWidth: Double = 16.4
-  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @AppStorage("drawColor") private var drawColor: Color = .white
   @AppStorage("showRecentColors") private var showRecentColors = true
   @AppStorage("recentColors") private var recentColorsArray: ColorArrayStorageModel = .init(colors: [])
   @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
+  @AppStorage("canvasToolSize") private var canvasToolSize: Double = 1
+  @AppStorage("canvasToolSizeInVertical") private var canvasToolSizeInVertical: Double = 1.5
 
   @State private var toolSettingType: ToolSettingType? = nil
   @State private var showColorPicker = false
   @State private var showMoreFuncsMenu = false
 
-  @Binding var toolStatus: DrawingView.CanvasToolStatus
+  @Binding var toolStatus: CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
-  @Binding var eraserType: DrawingView.EraserType
+  @Binding var eraserType: EraserType
   @Binding var isSelectorActive: Bool
 
   let canvas: PKCanvasView
+  let isHorizontal: Bool
 
   enum ToolSettingType {
     case pen
@@ -67,13 +69,14 @@ struct DrawingToolsView: View {
   var body: some View {
     HStack(spacing: 8) {
       leftTools
+        .scaleEffect(isHorizontal ? canvasToolSize : canvasToolSizeInVertical, anchor: .leading)
       Spacer(minLength: 20)
       rightTools
+        .scaleEffect(isHorizontal ? canvasToolSize : canvasToolSizeInVertical, anchor: .trailing)
     }
     .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, 28)
     .padding(.trailing, 28)
-    .animation(.spring, value: isHorizontal)
     .animation(.spring.speed(2), value: appModel.isLocked)
   }
 
@@ -106,7 +109,6 @@ struct DrawingToolsView: View {
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
-      .disabled(appModel.isInPlaceCanvasImmersive)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
@@ -121,15 +123,14 @@ struct DrawingToolsView: View {
         if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
           appModel.addNewDrawing()
         } else {
-          dismissWindow(id: "subscription")
-          openWindow(id: "subscription")
+          dismissWindow(id: WindowID.windowSubscriptionView.description)
+          openWindow(id: WindowID.windowSubscriptionView.description)
         }
       }, label: {
         Image(systemName: "plus")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
-      .disabled(appModel.isInPlaceCanvasImmersive)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
@@ -183,8 +184,7 @@ struct DrawingToolsView: View {
       setting
       exportImage
       inspectCanvas
-      toggleOrientation
-      placeAssist
+      addNewCanvas
       lockCanvas
     }
     .rotation3DEffect(.degrees(isHorizontal ? -43 : -25), axis: (1, 0, 0), anchor: .bottom)
@@ -200,54 +200,15 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         Task {
-          openWindow(id: "canvasInspectView")
+          openWindow(id: WindowID.windowCanvasInspectView.description)
         }
       }, label: {
         HStack {
-          Image(systemName: "plus.square.on.square")
+          Image(systemName: "arrow.up.backward.and.arrow.down.forward")
             .frame(width: 8)
           Text("查看画布")
         }
       })
-      .disabled(appModel.isClosingPlaceCanvasImmersive)
-      .padding(6)
-      .fixedSize()
-      .frame(height: 44)
-    }
-    .buttonStyle(.borderless)
-    .controlSize(.small)
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-  }
-
-  @MainActor
-  @ViewBuilder
-  private var placeAssist: some View {
-    HStack {
-      Button(action: {
-        Task {
-          appModel.isOpeningPlaceCanvasImmersive = true
-          switch await openImmersiveSpace(id: AppModel.ImmersiveSpaceID.drawingImmersiveSpace.description) {
-          case .opened:
-            try await Task.sleep(for: .seconds(0.01))
-            appModel.isInPlaceCanvasImmersive = true
-            appModel.isBeginingPlacement = false
-            appModel.isOpeningPlaceCanvasImmersive = false
-            showMoreFuncsMenu = false
-            appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.moveCanvas()
-            appModel.placeCanvasImmersiveViewModel.planeAnchorHandler.clearPlanes(isHorizontal: isHorizontal)
-          case .userCancelled, .error:
-            fallthrough
-          @unknown default: break
-          }
-        }
-      }, label: {
-        HStack {
-          Image(systemName: "circle.dotted.and.circle")
-            .frame(width: 8)
-          Text("重新放置画板")
-        }
-      })
-      .disabled(appModel.isClosingPlaceCanvasImmersive)
       .padding(6)
       .fixedSize()
       .frame(height: 44)
@@ -263,8 +224,8 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         Task {
-          dismissWindow(id: "shareView")
-          openWindow(id: "shareView")
+          dismissWindow(id: WindowID.windowExportImageView.description)
+          openWindow(id: WindowID.windowExportImageView.description)
         }
       }, label: {
         HStack {
@@ -273,7 +234,6 @@ struct DrawingToolsView: View {
           Text("Export Image")
         }
       })
-      .disabled(appModel.isClosingPlaceCanvasImmersive)
       .padding(6)
       .fixedSize()
       .frame(height: 44)
@@ -289,10 +249,10 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         Task {
-          dismissWindow(id: "about")
+          dismissWindow(id: WindowID.windowAboutView.description)
           appModel.aboutNavigationPath.removeLast(appModel.aboutNavigationPath.count)
           appModel.aboutNavigationPath.append(AppModel.AboutRoute.setting)
-          openWindow(id: "about")
+          openWindow(id: WindowID.windowAboutView.description)
         }
       }, label: {
         HStack {
@@ -301,7 +261,6 @@ struct DrawingToolsView: View {
           Text("Settings")
         }
       })
-      .disabled(appModel.isClosingPlaceCanvasImmersive)
       .padding(6)
       .fixedSize()
       .frame(height: 44)
@@ -337,24 +296,18 @@ struct DrawingToolsView: View {
 
   @MainActor
   @ViewBuilder
-  private var toggleOrientation: some View {
+  private var addNewCanvas: some View {
     HStack {
       Button(action: {
-        isHorizontal.toggle()
+        openWindow(id: WindowID.windowVerticalDrawingView.description)
       }, label: {
         HStack {
           HStack {
-            if isHorizontal {
-              Image(systemName: "square.3.layers.3d.down.left")
+              Image(systemName: "plus.rectangle.on.rectangle")
                 .frame(width: 8)
-            } else {
-              Image(systemName: "square.3.layers.3d")
-                .frame(width: 8)
-            }
           }
           .transition(.opacity)
-          .animation(.smooth, value: isHorizontal)
-          Text(isHorizontal ? "切换垂直画板" : "切换水平画板")
+          Text("新建画板")
         }
       })
       .padding(6)
@@ -460,8 +413,8 @@ struct DrawingToolsView: View {
           x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
           y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
         )
-        dismissWindow(id: "imagePicker")
-        openWindow(id: "imagePicker", value: visibleCenter)
+        dismissWindow(id: WindowID.windowImagePickerView.description)
+        openWindow(id: WindowID.windowImagePickerView.description, value: visibleCenter)
       }, label: {
         Image(systemName: "photo.on.rectangle.angled")
           .frame(width: 8)
@@ -592,9 +545,9 @@ struct DrawingToolsView: View {
       VStack {
         Picker(selection: $eraserType) {
           Text("像素橡皮擦")
-            .tag(DrawingView.EraserType.bitmap)
+            .tag(EraserType.bitmap)
           Text("对象橡皮擦")
-            .tag(DrawingView.EraserType.vector)
+            .tag(EraserType.vector)
         } label: {
           Text("Eraser Type")
         }
@@ -731,8 +684,8 @@ struct DrawingToolsView: View {
     .hoverEffect(.highlight)
     .onTapGesture {
       AudioServicesPlaySystemSound(1104)
-      dismissWindow(id: "colorPicker")
-      openWindow(id: "colorPicker")
+      dismissWindow(id: WindowID.windowColorPickerView.description)
+      openWindow(id: WindowID.windowColorPickerView.description)
     }
     .overlay {
       if showRecentColors {
@@ -760,7 +713,7 @@ struct InkToolView: View {
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var settingType: DrawingToolsView.ToolSettingType?
   @Binding var penWidth: Double
-  @Binding var toolStatus: DrawingView.CanvasToolStatus
+  @Binding var toolStatus: CanvasToolStatus
 
   @State var lastUpdateDragValue: CGFloat = 0
 
@@ -980,9 +933,9 @@ struct RecentColorButton: View {
 
 #Preview(body: {
   @Previewable @State var boradHeight: Float = 0
-  @Previewable @State var toolStatus: DrawingView.CanvasToolStatus = .ink
+  @Previewable @State var toolStatus: CanvasToolStatus = .ink
   @Previewable @State var pencilType: PKInkingTool.InkType = .pen
-  @Previewable @State var eraserType: DrawingView.EraserType = .bitmap
+  @Previewable @State var eraserType: EraserType = .bitmap
   @Previewable @State var isSelectorActive: Bool = false
   let canvas = PKCanvasView()
 
@@ -998,7 +951,8 @@ struct RecentColorButton: View {
         pencilType: $pencilType,
         eraserType: $eraserType,
         isSelectorActive: $isSelectorActive,
-        canvas: canvas
+        canvas: canvas,
+        isHorizontal: true
       )
       .environment(AppModel())
       .frame(width: 1024, height: 44)

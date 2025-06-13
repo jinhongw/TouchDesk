@@ -1,9 +1,3 @@
-/*
- See the LICENSE.txt file for this sample’s licensing information.
-
- Abstract:
- Extensions and utilities.
- */
 
 import ARKit
 import Foundation

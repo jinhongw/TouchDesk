@@ -12,7 +12,7 @@ import SwiftUI
 @Observable
 class SubscriptionViewModel {
   static let hasProIndexKey = "hasPro"
-  let productIDs: [String] = ["com.easybreezy.touchdesk.lifetime", "com.easybreezy.touchdesk.yearly.subscription", "com.easybreezy.touchdesk.monthly.subscription"] // TODO: Replace with your own product ids
+  let productIDs: [String] = ["com.easybreezy.touchdesk.lifetime", "com.easybreezy.touchdesk.yearly.subscription", "com.easybreezy.touchdesk.monthly.subscription"]
   var products: [Product] = []
   var purchasedTransactions: [StoreKit.Transaction] = []
   var hasPro: Bool = false

@@ -181,8 +181,8 @@ struct NotesView: View {
       if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
         addNewDrawing()
       } else {
-        dismissWindow(id: "subscription")
-        openWindow(id: "subscription")
+        dismissWindow(id: WindowID.windowSubscriptionView.description)
+        openWindow(id: WindowID.windowSubscriptionView.description)
       }
     }
     .onAppear {
@@ -201,8 +201,8 @@ struct NotesView: View {
       if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
         addNewDrawing()
       } else {
-        dismissWindow(id: "subscription")
-        openWindow(id: "subscription")
+        dismissWindow(id: WindowID.windowSubscriptionView.description)
+        openWindow(id: WindowID.windowSubscriptionView.description)
       }
     }, label: {
       Image(systemName: "plus")
@@ -248,9 +248,9 @@ struct NotesView: View {
   @ViewBuilder
   private var aboutButton: some View {
     Button(action: {
-      dismissWindow(id: "about")
+      dismissWindow(id: WindowID.windowAboutView.description)
       appModel.aboutNavigationPath.removeLast(appModel.aboutNavigationPath.count)
-      openWindow(id: "about")
+      openWindow(id: WindowID.windowAboutView.description)
     }, label: {
       Text("About")
     })
@@ -260,8 +260,8 @@ struct NotesView: View {
   @ViewBuilder
   private var subscriptionButton: some View {
     Button(action: {
-      dismissWindow(id: "subscription")
-      openWindow(id: "subscription")
+      dismissWindow(id: WindowID.windowSubscriptionView.description)
+      openWindow(id: WindowID.windowSubscriptionView.description)
     }, label: {
       Text("Get Pro")
     })

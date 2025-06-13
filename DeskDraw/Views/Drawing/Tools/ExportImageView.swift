@@ -7,10 +7,11 @@
 
 import SwiftUI
 
-struct ShareImageView: View {
+struct ExportImageView: View {
   @AppStorage("exportImageBackgroundColor") private var exportImageBackgroundColor: Color = .init(uiColor: .systemGray3)
   @AppStorage("exportImagePadding") private var exportImagePadding: Double = 36
   @AppStorage("exportImageCornerRaius") private var exportImageCornerRaius: Double = 36
+  
   @State private var editingExportImagePadding: Double = 0
   @State private var editingExportImageCornerRaius: Double = 0
   @State private var processedImage: UIImage?
@@ -185,6 +186,6 @@ struct ShareImageView: View {
 
 #Preview {
   NavigationStack {
-    ShareImageView(image: UIImage(imageLiteralResourceName: "HandDrawCover"), bounds: .init(width: 480, height: 480))
+    ExportImageView(image: UIImage(imageLiteralResourceName: "HandDrawCover"), bounds: .init(width: 480, height: 480))
   }.frame(width: 480)
 }
