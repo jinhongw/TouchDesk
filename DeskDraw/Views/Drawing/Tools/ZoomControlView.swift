@@ -121,6 +121,11 @@ struct ZoomControlView: View {
     )
   }
   
+  private func getZoomValue(_ value: Double) -> String {
+    let result = (25 + value * 25) / 100
+    return "×\(result.trimmedString())"
+  }
+  
   @MainActor
   @ViewBuilder
   private var zoomSlider: some View {
@@ -130,7 +135,7 @@ struct ZoomControlView: View {
           .frame(width: value == currentValue ? 2 : 1, height: value == currentValue ? 8 : pow((value + 1) * 1.5, 1.0 / 1.6))
           .foregroundColor(value == currentValue ? .white : .secondary)
           .overlay {
-            Text("×\(((25 + value * 25) / 100).trimmedString())")
+            Text(getZoomValue(value))
               .font(.headline)
               .padding(4)
               .background(content: {
