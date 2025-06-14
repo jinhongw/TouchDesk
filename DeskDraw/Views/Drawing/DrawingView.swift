@@ -65,7 +65,7 @@ struct DrawingView: View {
               .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
               .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : 200)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
-              .offset(y: proxy.size.height / 2 + 2)
+              .offset(y: proxy.size.height / 2)
               .offset(z: -proxy.size.depth)
           }
           .overlay {
@@ -75,14 +75,13 @@ struct DrawingView: View {
                 .blur(radius: appModel.showNotes && !appModel.hideInMini ? 0 : 200)
                 .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
                 .disabled(!appModel.showNotes || appModel.hideInMini)
-                .offset(y: proxy.size.height / 2 + 2)
+                .offset(y: proxy.size.height / 2)
                 .offset(z: -proxy.size.depth)
             }
           }
           .overlay {
             if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
               PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
-                .offset(y: 2)
                 .environment(appModel)
                 .onAppear {
                   onPlaceAssistViewAppear(proxy: proxy)
