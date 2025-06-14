@@ -37,8 +37,8 @@ class AppModel {
   static let thumbnailSize = CGSize(width: 512, height: 512)
   static let drawingIdKey = "drawingIdKey"
   /// Dispatch queues for the background operations done by this controller.
-  private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
-  private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .background)
+  private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .utility)
+  private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .utility)
 
   private var thumbnailTraitCollection = UITraitCollection() {
     didSet {
