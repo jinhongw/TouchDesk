@@ -17,16 +17,14 @@ class AppModel {
   private(set) var thumbnails: [UUID: UIImage] = [:]
   private(set) var ids = [UUID]()
   private(set) var deletedDrawings = [DrawingModel]()
-  var drawingId: UUID?
-  var imageEditingId: UUID?
-  var hideInMini = false
-  var showDrawing = true
-  var showNotes = false
-  var isLocked = false
+  var aboutNavigationPath = NavigationPath()
+
+  // 多画布状态管理
+  var canvasStates: [UUID: CanvasState] = [:]
+  
+  // 应用级别的状态
   var isShareImageViewShowing = false
   var exportImage: UIImage?
-  var aboutNavigationPath = NavigationPath()
-  var canvasZoomFactor: Double = 100
 
   /// The size to use for thumbnail images.
   static let thumbnailSize = CGSize(width: 512, height: 512)
@@ -48,9 +46,9 @@ class AppModel {
   private let thumbnailDebounceInterval: TimeInterval = 0.5
   private var imageCache: [UUID: UIImage] = [:]
   private var currentThumbnailId: UUID?
-  
-  var currentDrawing: DrawingModel? {
-    guard let drawingId else { return nil }
+
+  func getCurrentDrawing(for canvasId: UUID) -> DrawingModel? {
+    guard let drawingId = canvasStates[canvasId]?.drawingId else { return nil }
     return drawings[drawingId]
   }
 
@@ -58,7 +56,7 @@ class AppModel {
     case drawingImmersiveSpace
     var description: String { rawValue }
   }
-  
+
   enum AboutRoute: Hashable {
     case setting
     case subscription
@@ -114,19 +112,19 @@ class AppModel {
   }
 
   private func loadUserDefaults() {
-    if let lastDrawingIdString = UserDefaults.standard.value(forKey: AppModel.drawingIdKey) as? String,
-       let lastDrawingId = UUID(uuidString: lastDrawingIdString)
-    {
-      drawingId = lastDrawingId
-    } else {
-      if let id = ids.first {
-        print(#function, "id \(id)")
-        selectDrawingId(id)
-      } else {
-        print(#function, "addNewDrawing")
-        addNewDrawing()
-      }
-    }
+//    if let lastDrawingIdString = UserDefaults.standard.value(forKey: AppModel.drawingIdKey) as? String,
+//       let lastDrawingId = UUID(uuidString: lastDrawingIdString)
+//    {
+//      drawingId = lastDrawingId
+//    } else {
+//      if let id = ids.first {
+//        print(#function, "id \(id)")
+//        selectDrawingId(id)
+//      } else {
+//        print(#function, "addNewDrawing")
+//        addNewDrawing()
+//      }
+//    }
   }
 
   private func saveDrawing(_ id: UUID) {
@@ -277,7 +275,7 @@ class AppModel {
 
         DispatchQueue.main.async {
           if isFullScale {
-            self.updateExportImage(finalImage)
+            self.exportImage = finalImage
           } else {
             self.updateThumbnail(finalImage, at: id)
           }
@@ -291,9 +289,7 @@ class AppModel {
     thumbnails[id] = image
   }
 
-  private func updateExportImage(_ image: UIImage) {
-    exportImage = image
-  }
+
 
   private func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {
     if let cachedImage = imageCache[id] {
@@ -320,7 +316,7 @@ class AppModel {
 }
 
 extension AppModel {
-  func addNewDrawing() {
+  func addNewDrawing() -> UUID {
     print(#function, "addNewDrawing")
     var newDrawing = PKDrawing()
     let defaultStrokes = createDefaultStrokes()
@@ -333,10 +329,11 @@ extension AppModel {
 
     drawings[drawing.id] = drawing
     thumbnails[drawing.id] = UIImage()
-    selectDrawingId(drawing.id)
     saveDrawing(drawing.id)
+
+    return drawing.id
   }
-  
+
   func favoriteDrawing(id: UUID) {
     print(#function, "id \(id)")
     if let isStared = drawings[id]?.isFavorite {
@@ -344,9 +341,9 @@ extension AppModel {
       saveDrawing(id)
     }
   }
-  
-  func addDefulatDrawing() {
-    guard let data = NSDataAsset(name: "Notes")?.data else { return }
+
+  func addDefulatDrawing() -> UUID? {
+    guard let data = NSDataAsset(name: "Notes")?.data else { return nil }
     if let newDrawing = try? PKDrawing(data: data) {
       let drawing = DrawingModel(
         name: "Drawing \(drawings.count + 1)",
@@ -354,9 +351,10 @@ extension AppModel {
       )
       drawings[drawing.id] = drawing
       thumbnails[drawing.id] = UIImage()
-      selectDrawingId(drawing.id)
       saveDrawing(drawing.id)
+      return drawing.id
     }
+    return nil
   }
 
   private func createDefaultStrokes() -> [PKStroke] {
@@ -408,7 +406,7 @@ extension AppModel {
     thumbnails.removeValue(forKey: id)
 
     if drawings.isEmpty {
-      addNewDrawing()
+      let _ = addNewDrawing()
     }
   }
 
@@ -420,34 +418,8 @@ extension AppModel {
     }
   }
 
-  func selectDrawingId(_ id: UUID) {
-    drawingId = id
-    let idString = id.uuidString
-    UserDefaults.standard.set(idString, forKey: AppModel.drawingIdKey)
-  }
-
-  func addImage(_ imageData: Data, at position: CGPoint, size: CGSize, rotation: Double = 0) {
-    let imageElement = ImageElement(id: UUID(), imageData: imageData, position: position, size: size, rotation: rotation)
-    guard let drawingId else { return }
-    drawings[drawingId]?.images.append(imageElement)
-    updateDrawing(drawingId)
-    imageEditingId = imageElement.id
-  }
-
-  func addText(_ text: String, at position: CGPoint, fontSize: CGFloat = 16, fontWeight: Font.Weight = .regular, color: Color = .black, rotation: Double = 0) {
-    let textElement = TextElement(id: UUID(), text: text, position: position, fontSize: fontSize, fontWeight: fontWeight, color: color, rotation: rotation)
-    guard let drawingId else { return }
-    drawings[drawingId]?.texts.append(textElement)
-    updateDrawing(drawingId)
-  }
-
-  func deleteImage(_ imageId: UUID) {
-    guard let drawingId else { return }
-    drawings[drawingId]?.images.removeAll { $0.id == imageId }
-    // 清除编辑状态
-    imageEditingId = nil
-    // 保存更改
-    updateDrawing(drawingId)
+  func selectDrawingId(_ id: UUID, for canvasState: CanvasState) {
+    canvasState.setDrawingId(id)
   }
 }
 

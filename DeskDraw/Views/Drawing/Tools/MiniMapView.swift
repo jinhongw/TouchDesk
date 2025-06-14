@@ -13,12 +13,17 @@ struct MiniMapView: View {
 
   let canvas: PKCanvasView
   let isHorizontal: Bool
+  let canvasId: UUID
   
   private let size: CGSize = .init(width: 112, height: 88)
   private let canvasOverscrollDistance: CGFloat = 600
 
   @Binding var contentOffset: CGPoint
   @State private var lastUpdateTime: Date = .now
+  
+  private var canvasZoomFactor: Double {
+    appModel.canvasStates[canvasId]?.canvasZoomFactor ?? 100
+  }
 
   var body: some View {
     VStack(spacing: 8) {
@@ -61,7 +66,7 @@ struct MiniMapView: View {
     .onChange(of: canvas.contentOffset) { _, _ in
       throttledUpdateThumbnail()
     }
-    .onChange(of: appModel.drawingId) { _, _ in
+    .onChange(of: appModel.canvasStates[canvasId]?.drawingId) { _, _ in
       // 切换 drawing 时立即更新缩略图
       updateThumbnail()
     }
@@ -69,7 +74,7 @@ struct MiniMapView: View {
       // 绘制内容变化时更新缩略图
       updateThumbnail()
     }
-    .onChange(of: appModel.canvasZoomFactor) { _, _ in
+    .onChange(of: canvasZoomFactor) { _, _ in
       // 缩放比例变化时更新缩略图并调整内容
       updateCanvasForZoom()
     }
@@ -81,7 +86,7 @@ struct MiniMapView: View {
   @MainActor
   @ViewBuilder
   private var miniMapBackground: some View {
-    if let drawingId = appModel.drawingId,
+    if let drawingId = appModel.canvasStates[canvasId]?.drawingId,
        let thumbnail = appModel.thumbnails[drawingId]
     {
       let contentBounds = getContentBounds()
@@ -105,15 +110,15 @@ struct MiniMapView: View {
   // 创建缩放因子的绑定
   private var zoomFactorBinding: Binding<Double> {
     Binding(
-      get: { appModel.canvasZoomFactor },
-      set: { appModel.canvasZoomFactor = $0 }
+      get: { canvasZoomFactor },
+      set: { appModel.canvasStates[canvasId]?.setCanvasZoomFactor($0) }
     )
   }
 
   private var canvasContentSize: CGSize {
     .init(
-      width: canvas.contentSize.width / CGFloat(appModel.canvasZoomFactor / 100),
-      height: canvas.contentSize.height / CGFloat(appModel.canvasZoomFactor / 100)
+      width: canvas.contentSize.width / CGFloat(canvasZoomFactor / 100),
+      height: canvas.contentSize.height / CGFloat(canvasZoomFactor / 100)
     )
   }
 
@@ -125,7 +130,7 @@ struct MiniMapView: View {
   }
 
   private func getContentBounds() -> CGRect {
-    guard let drawingId = appModel.drawingId,
+    guard let drawingId = appModel.canvasStates[canvasId]?.drawingId,
           let drawing = appModel.drawings[drawingId]
     else {
       return CGRect(origin: .zero, size: canvasContentSize)
@@ -189,7 +194,7 @@ struct MiniMapView: View {
   private var viewportIndicator: some View {
     let contentScale = calculateContentScale(contentBounds: getContentBounds())
     let visibleSize = canvas.frame.size
-    let zoomFactor = CGFloat(appModel.canvasZoomFactor / 100)
+    let zoomFactor = CGFloat(canvasZoomFactor / 100)
 
     // 计算视口在小地图中的尺寸，考虑缩放因子
     let viewportWidth = visibleSize.width * contentScale / zoomFactor
@@ -225,7 +230,7 @@ struct MiniMapView: View {
   }
 
   private func updateThumbnail() {
-    guard let drawingId = appModel.drawingId else { return }
+    guard let drawingId = appModel.canvasStates[canvasId]?.drawingId else { return }
     Task { @MainActor in
       appModel.generateThumbnail(drawingId)
     }
@@ -234,7 +239,7 @@ struct MiniMapView: View {
   private func updateContentOffset(_ location: CGPoint, isDragging: Bool = true) {
     let contentScale = calculateContentScale(contentBounds: getContentBounds())
     let visibleSize = canvas.frame.size
-    let zoomFactor = CGFloat(appModel.canvasZoomFactor / 100)
+    let zoomFactor = CGFloat(canvasZoomFactor / 100)
 
     // 计算画布在小地图中的总尺寸和位置
     let scaledCanvasWidth = canvasContentSize.width * contentScale
@@ -261,6 +266,6 @@ struct MiniMapView: View {
 }
 
 #Preview {
-  MiniMapView(canvas: PKCanvasView(), isHorizontal: true, contentOffset: .constant(.init(x: 100, y: 100)))
+  MiniMapView(canvas: PKCanvasView(), isHorizontal: true, canvasId: UUID(), contentOffset: .constant(.init(x: 100, y: 100)))
     .environment(AppModel())
 }

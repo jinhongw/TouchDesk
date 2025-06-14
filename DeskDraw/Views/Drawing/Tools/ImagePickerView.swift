@@ -13,9 +13,10 @@ struct ImagePickerView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.dismiss) private var dismiss
   let point: CGPoint
+  let canvasId: UUID
 
   var body: some View {
-    ImagePickerUIView(point: point)
+    ImagePickerUIView(point: point, canvasId: canvasId)
       .environment(appModel)
       .ignoresSafeArea()
   }
@@ -26,6 +27,7 @@ struct ImagePickerUIView: UIViewControllerRepresentable {
   @Environment(\.dismiss) private var dismiss
 
   let point: CGPoint
+  let canvasId: UUID
 
   func makeUIViewController(context: Context) -> UIImagePickerController {
     let picker = UIImagePickerController()
@@ -63,7 +65,7 @@ struct ImagePickerUIView: UIViewControllerRepresentable {
         }
 
         // 添加图片到画布
-        parent.appModel.addImage(imageData, at: parent.point, size: size)
+        parent.appModel.addImage(imageData, at: parent.point, size: size, to: parent.canvasId)
       }
       parent.dismiss()
     }

@@ -43,41 +43,65 @@ struct DeskDrawApp: App {
         if activeWindows.contains(.windowLaunchView) {
           dismissWindow(id: WindowID.windowLaunchView.description)
         }
-        if !activeWindows.contains(.windowHorizontalDrawingView) && !activeWindows.contains(.windowVerticalDrawingView) {
+        if !activeWindows.contains(.windowHorizontalDrawingView), !activeWindows.contains(.windowVerticalDrawingView) {
           switch defaultOrientation {
           case .horizontal:
-            openWindow(id: WindowID.windowHorizontalDrawingView.description)
+            if let lastDrawingIdString = UserDefaults.standard.value(forKey: AppModel.drawingIdKey) as? String,
+               let lastDrawingId = UUID(uuidString: lastDrawingIdString)
+            {
+              let (cavasId, _) = appModel.createCanvas(drawingId: lastDrawingId)
+              openWindow(id: WindowID.windowHorizontalDrawingView.description, value: cavasId)
+            } else {
+              // TODO
+            }
           case .vertical:
-            openWindow(id: WindowID.windowVerticalDrawingView.description)
+            if let lastDrawingIdString = UserDefaults.standard.value(forKey: AppModel.drawingIdKey) as? String,
+               let lastDrawingId = UUID(uuidString: lastDrawingIdString)
+            {
+              let (cavasId, _) = appModel.createCanvas(drawingId: lastDrawingId)
+              openWindow(id: WindowID.windowVerticalDrawingView.description, value: cavasId)
+            } else {
+              // TODO
+            }
           }
         }
       @unknown default: break
       }
     }
 
-    WindowGroup(id: WindowID.windowHorizontalDrawingView.description) {
-      HorizontalDrawingView()
-        .windowStateTracked(id: .windowHorizontalDrawingView, scenePhase: scenePhase, activeWindows: $activeWindows)
-        .volumeBaseplateVisibility(volumeBaseplateVisibility ? (!appModel.showDrawing || appModel.showNotes || appModel.hideInMini ? .hidden : .automatic) : .hidden)
-        .environment(appModel)
-        .task {
-          await appModel.subscriptionViewModel.updatePurchasedProducts()
-        }
+    WindowGroup(id: WindowID.windowHorizontalDrawingView.description, for: UUID.self) { $canvasId in
+      if let canvasId,
+         let displayState = appModel.canvasStates[canvasId]?.displayState
+      {
+        HorizontalDrawingView(canvasId: canvasId)
+          .windowStateTracked(id: .windowHorizontalDrawingView, scenePhase: scenePhase, activeWindows: $activeWindows)
+          .volumeBaseplateVisibility(volumeBaseplateVisibility ? (displayState != .drawing ? .hidden : .automatic) : .hidden)
+          .persistentSystemOverlays(displayState == .mini ? .hidden : .visible)
+          .environment(appModel)
+          .task {
+            await appModel.subscriptionViewModel.updatePurchasedProducts()
+          }
+      }
     }
     .windowStyle(.volumetric)
     .volumeWorldAlignment(.gravityAligned)
     .upperLimbVisibility(.visible)
     .defaultSize(width: horizontalWindowWidth, height: horizontalWindowHeight, depth: horizontalWindowDepth)
     .windowResizability(.contentSize)
-    .persistentSystemOverlays(appModel.hideInMini ? .hidden : .visible)
 
-    WindowGroup(id: WindowID.windowVerticalDrawingView.description) {
-      VerticalDrawingView()
-        .windowStateTracked(id: .windowVerticalDrawingView, scenePhase: scenePhase, activeWindows: $activeWindows)
-        .environment(appModel)
-        .task {
-          await appModel.subscriptionViewModel.updatePurchasedProducts()
-        }
+    WindowGroup(id: WindowID.windowVerticalDrawingView.description, for: UUID.self) { $canvasId in
+      if let canvasId,
+         let displayState = appModel.canvasStates[canvasId]?.displayState
+      {
+        VerticalDrawingView(canvasId: canvasId)
+          .windowStateTracked(id: .windowHorizontalDrawingView, scenePhase: scenePhase, activeWindows: $activeWindows)
+          .volumeBaseplateVisibility(volumeBaseplateVisibility ? (displayState != .drawing ? .hidden : .automatic) : .hidden)
+          .persistentSystemOverlays(displayState == .mini ? .hidden : .visible)
+          .environment(appModel)
+          .task {
+            await appModel.subscriptionViewModel.updatePurchasedProducts()
+          }
+      }
     }
     .windowStyle(.plain)
     .defaultSize(width: verticalWindowWidth, height: verticalWindowHeight)
@@ -87,7 +111,7 @@ struct DeskDrawApp: App {
         .windowStateTracked(id: .windowAboutView, scenePhase: scenePhase, activeWindows: $activeWindows)
         .environment(appModel)
     }
-    
+
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
@@ -123,13 +147,14 @@ struct DeskDrawApp: App {
       WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 760))
     }
 
-    WindowGroup(id: WindowID.windowExportImageView.description) {
-      ExportImageView(image: appModel.exportImage, bounds: appModel.currentDrawing?.bounds.size ?? .init(width: 320, height: 320))
+    WindowGroup(id: WindowID.windowExportImageView.description, for: UUID.self) { $canvasId in
+      ExportImageView(image: appModel.exportImage, bounds: appModel.getCurrentDrawing(for: canvasId ?? UUID())?.bounds.size ?? .init(width: 320, height: 320))
         .windowStateTracked(id: .windowExportImageView, scenePhase: scenePhase, activeWindows: $activeWindows)
         .onAppear {
           print(#function, "appModel.isShareImageViewShowing = true")
           appModel.isShareImageViewShowing = true
-          guard let drawingId = appModel.drawingId else { return }
+          // Note: This is for export, so we use the current global drawing
+          guard let canvasId, let drawingId = appModel.canvasStates[canvasId]?.drawingId else { return }
           appModel.generateThumbnail(drawingId, isFullScale: true)
         }
         .onDisappear {
@@ -139,35 +164,42 @@ struct DeskDrawApp: App {
         }
     }
     .windowResizability(.contentSize)
-    .defaultWindowPlacement { content, context in
-      guard let drawing = appModel.currentDrawing else {
-        return WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 480))
-      }
-      return WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 460 + 480 * drawing.bounds.height / drawing.bounds.width))
-    }
+//    .defaultWindowPlacement { content, context in
+//      guard let drawing = appModel.getCurrentDrawing(for: canvasId ?? UUID()) else {
+//        return WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 480))
+//      }
+//      return WindowPlacement(.utilityPanel, size: CGSize(width: 480, height: 460 + 480 * drawing.bounds.height / drawing.bounds.width))
+//    }
 
-    WindowGroup(id: WindowID.windowImagePickerView.description, for: CGPoint.self) { point in
-      ImagePickerView(point: point.wrappedValue ?? .zero)
-        .windowStateTracked(id: .windowImagePickerView, scenePhase: scenePhase, activeWindows: $activeWindows)
-        .environment(appModel)
+    WindowGroup(id: WindowID.windowImagePickerView.description, for: ImagePickerDataModel.self) { $data in
+      if let point = data?.point, let canvasId = data?.canvasId {
+        ImagePickerView(point: point, canvasId: canvasId)
+          .windowStateTracked(id: .windowImagePickerView, scenePhase: scenePhase, activeWindows: $activeWindows)
+          .environment(appModel)
+      }
     }
     .windowResizability(.contentSize)
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel)
     }
 
-    WindowGroup(id: WindowID.windowCanvasInspectView.description) {
-      CanvasInspectView()
+    WindowGroup(id: WindowID.windowCanvasInspectView.description, for: UUID.self) { $canvasId in
+      CanvasInspectView(canvasId: canvasId)
         .windowStateTracked(id: .windowCanvasInspectView, scenePhase: scenePhase, activeWindows: $activeWindows)
         .environment(appModel)
     }
-    .defaultWindowPlacement { content, context in
-      guard let drawing = appModel.currentDrawing else {
-        return WindowPlacement(.utilityPanel, size: CGSize(width: 1024, height: 1024))
-      }
-      return WindowPlacement(.utilityPanel, size: CGSize(width: max(1024, drawing.bounds.width + 120), height: max(1024, drawing.bounds.height + 120)))
-    }
+//    .defaultWindowPlacement { content, context in
+//      guard let drawing = appModel.currentDrawing else {
+//        return WindowPlacement(.utilityPanel, size: CGSize(width: 1024, height: 1024))
+//      }
+//      return WindowPlacement(.utilityPanel, size: CGSize(width: max(1024, drawing.bounds.width + 120), height: max(1024, drawing.bounds.height + 120)))
+//    }
   }
+}
+
+struct ImagePickerDataModel: Hashable, Codable {
+  let point: CGPoint
+  let canvasId: UUID
 }
 
 let logger = Logger(subsystem: "jinhonn.com.DeskDraw", category: "general")

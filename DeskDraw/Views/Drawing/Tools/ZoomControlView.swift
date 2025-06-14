@@ -252,6 +252,6 @@ struct FoldMiniMapButton: View {
 }
 
 #Preview {
-  MiniMapView(canvas: PKCanvasView(), isHorizontal: true, contentOffset: .constant(.init(x: 100, y: 100)))
+  MiniMapView(canvas: PKCanvasView(), isHorizontal: true, canvasId: UUID(), contentOffset: .constant(.init(x: 100, y: 100)))
     .environment(AppModel())
 }

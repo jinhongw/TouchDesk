@@ -47,38 +47,41 @@ struct VerticalDrawingView: View {
   @State private var contentOffset: CGPoint = .zero
 
   private let toolHeight: CGFloat = 72
+  let canvasId: UUID
 
   var body: some View {
+    let displayState = appModel.canvasStates[canvasId]?.displayState ?? .drawing
+    
     GeometryReader { proxy in
       ZStack {
-        NotesView(canvas: canvas)
+        NotesView(canvas: canvas, canvasId: canvasId)
           .environment(appModel)
           .frame(width: proxy.size.width, height: proxy.size.height)
-          .scaleEffect(appModel.showNotes && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
-          .blur(radius: appModel.showNotes && !appModel.hideInMini ? 0 : 200)
-          .opacity(appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-          .disabled(!appModel.showNotes || appModel.hideInMini)
+          .scaleEffect(displayState == .notes ? 1 : 0.1, anchor: displayState == .mini ? .leadingBack : .center)
+          .blur(radius: displayState == .notes ? 0 : 200)
+          .opacity(displayState == .notes ? 1 : 0)
+          .disabled(displayState != .notes)
         drawingView(width: proxy.size.width, height: proxy.size.height)
           .colorScheme(.light)
-          .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
-          .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
-          .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : 200)
-          .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini)
+          .scaleEffect(displayState == .drawing ? 1 : 0.1, anchor: displayState == .mini ? .leadingBack : .center)
+          .opacity(displayState == .drawing ? 1 : 0)
+          .blur(radius: displayState == .drawing ? 0 : 200)
+          .disabled(displayState != .drawing)
           .clipShape(RoundedRectangle(cornerRadius: 60, style: .continuous))
           .overlay(alignment: .bottomTrailing) {
             if showMiniMap || showZoomControlView {
-              MiniMapView(canvas: canvas, isHorizontal: false, contentOffset: $contentOffset)
+              MiniMapView(canvas: canvas, isHorizontal: false, canvasId: canvasId, contentOffset: $contentOffset)
                 .padding(16)
-                .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+                .opacity(displayState == .drawing ? 1 : 0)
                 .offset(y: -toolHeight)
             }
           }
           .overlay(alignment: .bottomLeading) {
-            if showQuickDrawingSwitch {
-              QuickDrawingSwitch(isHorizontal: false)
+                    if showQuickDrawingSwitch {
+          QuickDrawingSwitch(isHorizontal: false, canvasId: canvasId)
                 .environment(appModel)
                 .padding(16)
-                .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+                .opacity(displayState == .drawing ? 1 : 0)
                 .offset(y: -toolHeight)
             }
           }
@@ -89,11 +92,12 @@ struct VerticalDrawingView: View {
               eraserType: $eraserType,
               isSelectorActive: $isSelectorActive,
               canvas: canvas,
-              isHorizontal: false
+              isHorizontal: false,
+              canvasId: canvasId
             )
             .environment(appModel)
             .frame(width: proxy.size.width, height: 120)
-            .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0, anchor: .bottom)
+            .scaleEffect(displayState == .drawing ? 1 : 0, anchor: .bottom)
             .offset(z: 80)
           }
           .offset(z: -60)
@@ -103,31 +107,31 @@ struct VerticalDrawingView: View {
         verticalWindowHeight = size.height
       }
     }
-    .animation(.spring, value: appModel.showDrawing)
-    .animation(.spring, value: appModel.showNotes)
-    .animation(.spring, value: appModel.hideInMini)
+    .animation(.spring, value: displayState)
   }
   
   @MainActor
   @ViewBuilder
   private func drawingView(width: CGFloat, height: CGFloat) -> some View {
     @Bindable var appModel = appModel
-    if appModel.drawings.isEmpty || appModel.drawingId == nil {
+    let canvasDrawingId = appModel.canvasStates[canvasId]?.drawingId
+    if appModel.drawings.isEmpty || canvasDrawingId == nil {
       ProgressView()
     } else {
       DrawingUIViewRepresentable(
         model: Binding(
           get: {
-            if let drawing = appModel.currentDrawing {
+            if let canvasDrawingId, let drawing = appModel.drawings[canvasDrawingId] {
               print(#function, "canvas show \(drawing.id)")
               return drawing
             } else if let firstDrawingId = appModel.ids.first, let firstDrawing = appModel.drawings[firstDrawingId] {
-              appModel.selectDrawingId(firstDrawingId)
+              appModel.canvasStates[canvasId]?.setDrawingId(firstDrawingId)
               print(#function, "canvas show first drawing \(firstDrawingId)")
               return firstDrawing
             } else {
-              appModel.addNewDrawing()
-              if let newDrawingId = appModel.drawingId, let newDrawing = appModel.drawings[newDrawingId] {
+              let newDrawingId = appModel.addNewDrawing()
+              if let newDrawing = appModel.drawings[newDrawingId] {
+                appModel.canvasStates[canvasId]?.setDrawingId(newDrawingId)
                 print(#function, "canvas show new drawing \(newDrawingId)")
                 return newDrawing
               }
@@ -135,9 +139,9 @@ struct VerticalDrawingView: View {
             }
           },
           set: { newValue in
-            guard let drawingId = appModel.drawingId else { return }
-            print(#function, "canvas set \(drawingId)")
-            appModel.drawings[drawingId] = newValue
+            guard let canvasDrawingId else { return }
+            print(#function, "canvas set \(canvasDrawingId)")
+            appModel.drawings[canvasDrawingId] = newValue
           }
         ),
         toolStatus: $toolStatus,
@@ -151,23 +155,32 @@ struct VerticalDrawingView: View {
         fountainPenWidth: $fountainPenWidth,
         eraserWidth: $eraserWidth,
         color: $drawColor,
-        isLocked: $appModel.isLocked,
+        isLocked: Binding(
+          get: { appModel.canvasStates[canvasId]?.isLocked ?? false },
+          set: { appModel.canvasStates[canvasId]?.setIsLocked($0) }
+        ),
         isShareImageViewShowing: $appModel.isShareImageViewShowing,
-        imageEditingId: $appModel.imageEditingId,
+        imageEditingId: Binding(
+          get: { appModel.canvasStates[canvasId]?.imageEditingId ?? UUID() },
+          set: { appModel.canvasStates[canvasId]?.setImageEditingId($0) }
+        ),
         contentOffset: $contentOffset,
-        zoomFactor: $appModel.canvasZoomFactor,
+        zoomFactor: Binding(
+          get: { appModel.canvasStates[canvasId]?.canvasZoomFactor ?? 100 },
+          set: { appModel.canvasStates[canvasId]?.setCanvasZoomFactor($0) }
+        ),
         canvas: canvas,
         canvasWidth: width,
         canvasHeight: height,
         saveDrawing: {
-          appModel.updateDrawing(appModel.drawingId)
+          appModel.updateDrawing(canvasDrawingId)
         },
         updateExportImage: {
-          guard let drawingId = appModel.drawingId else { return }
-          appModel.generateThumbnail(drawingId, isFullScale: true)
+          guard let canvasDrawingId else { return }
+          appModel.generateThumbnail(canvasDrawingId, isFullScale: true)
         },
         deleteImage: { imageId in
-          appModel.deleteImage(imageId)
+          appModel.deleteImage(imageId, from: canvasId)
         }
       )
     }
@@ -175,6 +188,6 @@ struct VerticalDrawingView: View {
 }
 
 #Preview {
-  VerticalDrawingView()
+  VerticalDrawingView(canvasId: UUID())
     .environment(AppModel())
 }

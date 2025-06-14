@@ -40,6 +40,7 @@ struct DrawingToolsView: View {
 
   let canvas: PKCanvasView
   let isHorizontal: Bool
+  let canvasId: UUID
 
   enum ToolSettingType {
     case pen
@@ -48,6 +49,10 @@ struct DrawingToolsView: View {
     case fountainPen
     case crayon
     case eraser
+  }
+  
+  private var isLocked: Bool {
+    appModel.canvasStates[canvasId]?.isLocked ?? false
   }
 
   private func updateRecentColors(oldColor: Color, newColor: Color) {
@@ -77,7 +82,7 @@ struct DrawingToolsView: View {
     .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, 28)
     .padding(.trailing, 28)
-    .animation(.spring.speed(2), value: appModel.isLocked)
+    .animation(.spring.speed(2), value: isLocked)
   }
 
   // MARK: LeftTools
@@ -89,7 +94,7 @@ struct DrawingToolsView: View {
       showNotes
       addNewNote
       moreFuncsButton
-      if appModel.isLocked {
+      if isLocked {
         unlockCanvas
       } else {
         undo
@@ -103,7 +108,7 @@ struct DrawingToolsView: View {
   private var showNotes: some View {
     HStack {
       Button(action: {
-        appModel.showNotes = true
+        appModel.canvasStates[canvasId]?.setDisplayState(.notes)
       }, label: {
         Image(systemName: "square.grid.2x2")
           .frame(width: 8)
@@ -164,16 +169,16 @@ struct DrawingToolsView: View {
   private var unlockCanvas: some View {
     HStack {
       Button(action: {
-        appModel.isLocked.toggle()
+        appModel.canvasStates[canvasId]?.setIsLocked(!isLocked)
       }, label: {
-        Image(systemName: appModel.isLocked ? "lock" : "lock.open")
+        Image(systemName: isLocked ? "lock" : "lock.open")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .background(isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 
@@ -200,7 +205,7 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         Task {
-          openWindow(id: WindowID.windowCanvasInspectView.description)
+          openWindow(id: WindowID.windowCanvasInspectView.description, value: canvasId)
         }
       }, label: {
         HStack {
@@ -275,13 +280,13 @@ struct DrawingToolsView: View {
   private var lockCanvas: some View {
     HStack {
       Button(action: {
-        appModel.isLocked.toggle()
+        appModel.canvasStates[canvasId]?.setIsLocked(!isLocked)
         showMoreFuncsMenu = false
       }, label: {
         HStack {
-          Image(systemName: appModel.isLocked ? "lock" : "lock.open")
+          Image(systemName: isLocked ? "lock" : "lock.open")
             .frame(width: 8)
-          Text(appModel.isLocked ? "Unlock Canvas" : "Lock Canvas")
+          Text(isLocked ? "Unlock Canvas" : "Lock Canvas")
         }
       })
       .padding(6)
@@ -290,7 +295,7 @@ struct DrawingToolsView: View {
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(appModel.isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+    .background(isLocked ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
   }
 
@@ -299,7 +304,7 @@ struct DrawingToolsView: View {
   private var addNewCanvas: some View {
     HStack {
       Button(action: {
-        openWindow(id: WindowID.windowVerticalDrawingView.description)
+        openWindow(id: WindowID.windowVerticalDrawingView.description, value: UUID())
       }, label: {
         HStack {
           HStack {
@@ -335,9 +340,9 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(!(canvas.undoManager?.canUndo ?? false))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -356,9 +361,9 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     .disabled(!(canvas.undoManager?.canRedo ?? false))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 
   // MARK: RightTools
@@ -399,9 +404,9 @@ struct DrawingToolsView: View {
     .controlSize(.small)
     .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -409,9 +414,10 @@ struct DrawingToolsView: View {
   private var imageTool: some View {
     HStack {
       Button(action: {
+        let zoomFactor = appModel.canvasStates[canvasId]?.canvasZoomFactor ?? 100
         let visibleCenter = CGPoint(
-          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
-          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (zoomFactor / 100),
+          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (zoomFactor / 100)
         )
         dismissWindow(id: WindowID.windowImagePickerView.description)
         openWindow(id: WindowID.windowImagePickerView.description, value: visibleCenter)
@@ -424,9 +430,9 @@ struct DrawingToolsView: View {
     .buttonStyle(.borderless)
     .controlSize(.small)
     .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -439,6 +445,7 @@ struct DrawingToolsView: View {
       calculateWidth: { value in
         0.88 + value * 6
       },
+      canvasId: canvasId,
       pencilType: $pencilType,
       settingType: $toolSettingType,
       penWidth: $penWidth,
@@ -456,6 +463,7 @@ struct DrawingToolsView: View {
       calculateWidth: { value in
         0.5 + value * 0.875
       },
+      canvasId: canvasId,
       pencilType: $pencilType,
       settingType: $toolSettingType,
       penWidth: $monolineWidth,
@@ -473,6 +481,7 @@ struct DrawingToolsView: View {
       calculateWidth: { value in
         max(2.41, 2.4 + value * 3.4)
       },
+      canvasId: canvasId,
       pencilType: $pencilType,
       settingType: $toolSettingType,
       penWidth: $pencilWidth,
@@ -490,6 +499,7 @@ struct DrawingToolsView: View {
       calculateWidth: { value in
         10 + value * 10
       },
+      canvasId: canvasId,
       pencilType: $pencilType,
       settingType: $toolSettingType,
       penWidth: $crayonWidth,
@@ -507,6 +517,7 @@ struct DrawingToolsView: View {
       calculateWidth: { value in
         1.5 + value * 3.125
       },
+      canvasId: canvasId,
       pencilType: $pencilType,
       settingType: $toolSettingType,
       penWidth: $fountainPenWidth,
@@ -656,9 +667,9 @@ struct DrawingToolsView: View {
           lastUpdateDragValue = 0
         }
     )
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 
   let testColors: [Color] = [.black, .white, .red]
@@ -696,9 +707,9 @@ struct DrawingToolsView: View {
         )
       }
     }
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 }
 
@@ -709,6 +720,7 @@ struct InkToolView: View {
   let toolType: DrawingToolsView.ToolSettingType
   let iconName: String
   let calculateWidth: (CGFloat) -> CGFloat
+  let canvasId: UUID
 
   @Binding var pencilType: PKInkingTool.InkType
   @Binding var settingType: DrawingToolsView.ToolSettingType?
@@ -716,6 +728,10 @@ struct InkToolView: View {
   @Binding var toolStatus: CanvasToolStatus
 
   @State var lastUpdateDragValue: CGFloat = 0
+  
+  private var isLocked: Bool {
+    appModel.canvasStates[canvasId]?.isLocked ?? false
+  }
 
   var body: some View {
     HStack {
@@ -781,9 +797,9 @@ struct InkToolView: View {
           lastUpdateDragValue = 0
         }
     )
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+    .disabled(isLocked)
+    .opacity(isLocked ? 0 : 1)
+    .scaleEffect(isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -839,10 +855,12 @@ struct InkToolView: View {
 class ImagePickerCoordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
   let canvas: PKCanvasView
   let appModel: AppModel
+  let canvasId: UUID
 
-  init(canvas: PKCanvasView, appModel: AppModel) {
+  init(canvas: PKCanvasView, appModel: AppModel, canvasId: UUID) {
     self.canvas = canvas
     self.appModel = appModel
+    self.canvasId = canvasId
   }
 
   func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
@@ -858,7 +876,7 @@ class ImagePickerCoordinator: NSObject, UIImagePickerControllerDelegate, UINavig
     )
 
     // 添加图片到画布
-    appModel.addImage(imageData, at: visibleCenter, size: CGSize(width: 320, height: 320))
+    appModel.addImage(imageData, at: visibleCenter, size: CGSize(width: 320, height: 320), to: canvasId)
   }
 
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
@@ -952,7 +970,7 @@ struct RecentColorButton: View {
         eraserType: $eraserType,
         isSelectorActive: $isSelectorActive,
         canvas: canvas,
-        isHorizontal: true
+        isHorizontal: true, canvasId: UUID()
       )
       .environment(AppModel())
       .frame(width: 1024, height: 44)

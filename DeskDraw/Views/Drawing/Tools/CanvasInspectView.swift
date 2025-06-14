@@ -11,14 +11,16 @@ import SwiftUI
 struct CanvasInspectView: View {
   @Environment(AppModel.self) private var appModel
   @AppStorage("canvasInspectViewBgColor") private var bgColor: Color = .clear
+  let canvasId: UUID?
 
   var body: some View {
+    EmptyView()
     GeometryReader { proxy in
-      if let _ = appModel.currentDrawing {
+      if let canvasId, let currentDrawing = appModel.getCurrentDrawing(for: canvasId) {
         ScrollableCanvasView(
           model: Binding(
             get: {
-              return appModel.currentDrawing ?? DrawingModel(name: "", drawing: PKDrawing())
+              return currentDrawing
             },
             set: { _ in }
           ),
@@ -257,7 +259,7 @@ struct ScrollableCanvasView: UIViewRepresentable {
 
 #Preview {
   NavigationStack {
-    CanvasInspectView()
+    CanvasInspectView(canvasId: UUID())
       .environment(AppModel())
   }
 }

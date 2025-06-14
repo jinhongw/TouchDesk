@@ -17,6 +17,7 @@ struct NotesView: View {
   @State private var isAddButtonVisible = true
 
   let canvas: PKCanvasView
+  let canvasId: UUID
 
   private let columns = [
     GridItem(.adaptive(minimum: 180, maximum: 220)),
@@ -78,9 +79,11 @@ struct NotesView: View {
           }
           ToolbarItem(placement: .topBarTrailing) { editButton }
         }
-        .onChange(of: appModel.showNotes) { _, newValue in
-          guard newValue else { return }
-          proxy.scrollTo(appModel.drawingId, anchor: .center)
+        .onChange(of: appModel.canvasStates[canvasId]?.displayState) { _, newValue in
+          guard newValue == .notes else { return }
+          if let canvasDrawingId = appModel.canvasStates[canvasId]?.drawingId {
+            proxy.scrollTo(canvasDrawingId, anchor: .center)
+          }
         }
       }
     }
@@ -101,7 +104,7 @@ struct NotesView: View {
       } else {
         Image(systemName: "questionmark.app.dashed")
       }
-      if id == appModel.drawingId {
+      if id == appModel.canvasStates[canvasId]?.drawingId {
         RoundedRectangle(cornerRadius: 20)
           .stroke(Color.white, lineWidth: 3)
       }
@@ -223,8 +226,7 @@ struct NotesView: View {
   @ViewBuilder
   private var returnButton: some View {
     Button(action: {
-      appModel.showNotes = false
-      appModel.showDrawing = true
+      appModel.canvasStates[canvasId]?.setDisplayState(.drawing)
     }, label: {
       Text("Back")
     })
@@ -270,23 +272,26 @@ struct NotesView: View {
 
   @MainActor
   private func addNewDrawing() {
-    appModel.updateDrawing(appModel.drawingId)
-    appModel.addNewDrawing()
-    appModel.showNotes = false
-    appModel.showDrawing = true
+    if let canvasDrawingId = appModel.canvasStates[canvasId]?.drawingId {
+      appModel.updateDrawing(canvasDrawingId)
+    }
+    let newDrawingId = appModel.addNewDrawing()
+    appModel.canvasStates[canvasId]?.setDrawingId(newDrawingId)
+    appModel.canvasStates[canvasId]?.setDisplayState(.drawing)
   }
 
   @MainActor
   private func handleNoteTap(at id: UUID) {
     AudioServicesPlaySystemSound(1104)
-    appModel.updateDrawing(appModel.drawingId)
-    appModel.selectDrawingId(id)
-    appModel.showNotes = false
-    appModel.showDrawing = true
+    if let canvasDrawingId = appModel.canvasStates[canvasId]?.drawingId {
+      appModel.updateDrawing(canvasDrawingId)
+    }
+    appModel.canvasStates[canvasId]?.setDrawingId(id)
+    appModel.canvasStates[canvasId]?.setDisplayState(.drawing)
   }
 }
 
 #Preview {
-  NotesView(canvas: PKCanvasView())
+  NotesView(canvas: PKCanvasView(), canvasId: UUID())
     .environment(AppModel())
 }

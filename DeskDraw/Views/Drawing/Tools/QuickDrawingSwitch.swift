@@ -9,9 +9,14 @@ struct QuickDrawingSwitch: View {
   @AppStorage("quickDrawingSwitchSizeInVertical") private var quickDrawingSwitchSizeInVertical: Double = 1.5
   
   let isHorizontal: Bool
+  let canvasId: UUID
 
   private let size: CGFloat = 50
   private let gap: CGFloat = 8
+  
+  private var canvasDrawingId: UUID? {
+    appModel.canvasStates[canvasId]?.drawingId
+  }
   
   private var scrollViewWidth: CGFloat {
     size * 3 + gap * 3
@@ -52,7 +57,7 @@ struct QuickDrawingSwitch: View {
         }
       }
       .contentShape(Rectangle())
-      .onChange(of: appModel.drawingId) { _, newId in
+      .onChange(of: canvasDrawingId) { _, newId in
         if let id = newId {
           withAnimation(.smooth) {
             proxy.scrollTo(id, anchor: .center)
@@ -60,7 +65,7 @@ struct QuickDrawingSwitch: View {
         }
       }
       .onAppear {
-        if let id = appModel.drawingId {
+        if let id = canvasDrawingId {
           withAnimation(.smooth) {
             proxy.scrollTo(id, anchor: .center)
           }
@@ -84,7 +89,7 @@ struct QuickDrawingSwitch: View {
       } else {
         Image(systemName: "questionmark.app.dashed")
       }
-      if drawing.id == appModel.drawingId {
+      if drawing.id == canvasDrawingId {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
           .stroke(Color.white, lineWidth: 1.5)
       }
@@ -103,14 +108,16 @@ struct QuickDrawingSwitch: View {
     .hoverEffect(.highlight)
     .onTapGesture {
       AudioServicesPlaySystemSound(1104)
-      appModel.updateDrawing(drawing.id)
-      appModel.selectDrawingId(drawing.id)
+      if let currentDrawingId = canvasDrawingId {
+        appModel.updateDrawing(currentDrawingId)
+      }
+      appModel.canvasStates[canvasId]?.setDrawingId(drawing.id)
     }
   }
 }
 
 #Preview {
-  QuickDrawingSwitch(isHorizontal: true)
+  QuickDrawingSwitch(isHorizontal: true, canvasId: UUID())
     .environment(AppModel())
     .background(.gray.opacity(0.3), in: .rect)
     .background(.white, in: .rect)
