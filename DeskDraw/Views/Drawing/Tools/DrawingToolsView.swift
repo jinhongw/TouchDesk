@@ -204,7 +204,7 @@ struct DrawingToolsView: View {
         }
       }, label: {
         HStack {
-          Image(systemName: "plus.square.on.square")
+          Image(systemName: "arrow.up.left.and.arrow.down.right")
             .frame(width: 8)
           Text("查看画布")
         }
