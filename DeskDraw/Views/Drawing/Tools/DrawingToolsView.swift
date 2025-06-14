@@ -304,7 +304,10 @@ struct DrawingToolsView: View {
   private var addNewCanvas: some View {
     HStack {
       Button(action: {
-        openWindow(id: WindowID.windowVerticalDrawingView.description, value: UUID())
+        if let drawingId = appModel.getCurrentDrawing(for: canvasId)?.id {
+          let (canvasId, _) = appModel.createCanvas(drawingId: drawingId)
+          openWindow(id: WindowID.windowVerticalDrawingView.description, value: canvasId)
+        }
       }, label: {
         HStack {
           HStack {

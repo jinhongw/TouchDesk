@@ -13,16 +13,15 @@ import SwiftUI
 @Observable
 class AppModel {
   let subscriptionViewModel = SubscriptionViewModel()
+  
   var drawings: [UUID: DrawingModel] = [:]
+  var canvasStates: [UUID: CanvasState] = [:]
+  
   private(set) var thumbnails: [UUID: UIImage] = [:]
   private(set) var ids = [UUID]()
   private(set) var deletedDrawings = [DrawingModel]()
-  var aboutNavigationPath = NavigationPath()
-
-  // 多画布状态管理
-  var canvasStates: [UUID: CanvasState] = [:]
   
-  // 应用级别的状态
+  var aboutNavigationPath = NavigationPath()
   var isShareImageViewShowing = false
   var exportImage: UIImage?
 
@@ -30,7 +29,7 @@ class AppModel {
   static let thumbnailSize = CGSize(width: 512, height: 512)
   static let drawingIdKey = "drawingIdKey"
   /// Dispatch queues for the background operations done by this controller.
-  private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .background)
+  private let thumbnailQueue = DispatchQueue(label: "ThumbnailQueue", qos: .utility)
   private let serializationQueue = DispatchQueue(label: "SerializationQueue", qos: .background)
 
   private var thumbnailTraitCollection = UITraitCollection() {
@@ -128,7 +127,9 @@ class AppModel {
   }
 
   private func saveDrawing(_ id: UUID) {
+    debugPrint(#function, "id \(id)")
     guard let drawing = drawings[id] else { return }
+    debugPrint(#function, "id contains \(ids.contains(id))")
     if !ids.contains(id) {
       ids.insert(id, at: 0)
     }
@@ -288,8 +289,6 @@ class AppModel {
   private func updateThumbnail(_ image: UIImage, at id: UUID) {
     thumbnails[id] = image
   }
-
-
 
   private func getOrCreateImage(from imageData: Data, id: UUID) -> UIImage? {
     if let cachedImage = imageCache[id] {

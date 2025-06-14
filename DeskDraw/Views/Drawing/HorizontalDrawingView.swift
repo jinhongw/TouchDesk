@@ -45,7 +45,7 @@ struct HorizontalDrawingView: View {
 
   private let toolDepth: CGFloat = 72
   let canvasId: UUID
-
+  
   var body: some View {
     let displayState = appModel.canvasStates[canvasId]?.displayState ?? .drawing
     
@@ -152,7 +152,9 @@ struct HorizontalDrawingView: View {
   @ViewBuilder
   private func drawingView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     @Bindable var appModel = appModel
-    let canvasDrawingId = appModel.canvasStates[canvasId]?.drawingId
+    var canvasDrawingId: UUID? {
+      appModel.canvasStates[canvasId]?.drawingId
+    }
     if appModel.drawings.isEmpty || canvasDrawingId == nil {
       ProgressView()
     } else {
@@ -211,11 +213,14 @@ struct HorizontalDrawingView: View {
         canvasWidth: width,
         canvasHeight: depth - toolDepth,
         saveDrawing: {
-          appModel.updateDrawing(canvasDrawingId)
+          if let canvasDrawingId {
+            appModel.updateDrawing(canvasDrawingId)
+          }
         },
         updateExportImage: {
-          guard let canvasDrawingId else { return }
-          appModel.generateThumbnail(canvasDrawingId, isFullScale: true)
+          if let canvasDrawingId {
+            appModel.generateThumbnail(canvasDrawingId, isFullScale: true)
+          }
         },
         deleteImage: { imageId in
           appModel.deleteImage(imageId, from: canvasId)

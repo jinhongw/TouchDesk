@@ -49,8 +49,8 @@ struct DeskDrawApp: App {
             if let lastDrawingIdString = UserDefaults.standard.value(forKey: AppModel.drawingIdKey) as? String,
                let lastDrawingId = UUID(uuidString: lastDrawingIdString)
             {
-              let (cavasId, _) = appModel.createCanvas(drawingId: lastDrawingId)
-              openWindow(id: WindowID.windowHorizontalDrawingView.description, value: cavasId)
+              let (canvasId, _) = appModel.createCanvas(drawingId: lastDrawingId)
+              openWindow(id: WindowID.windowHorizontalDrawingView.description, value: canvasId)
             } else {
               // TODO
             }
@@ -58,8 +58,8 @@ struct DeskDrawApp: App {
             if let lastDrawingIdString = UserDefaults.standard.value(forKey: AppModel.drawingIdKey) as? String,
                let lastDrawingId = UUID(uuidString: lastDrawingIdString)
             {
-              let (cavasId, _) = appModel.createCanvas(drawingId: lastDrawingId)
-              openWindow(id: WindowID.windowVerticalDrawingView.description, value: cavasId)
+              let (canvasId, _) = appModel.createCanvas(drawingId: lastDrawingId)
+              openWindow(id: WindowID.windowVerticalDrawingView.description, value: canvasId)
             } else {
               // TODO
             }

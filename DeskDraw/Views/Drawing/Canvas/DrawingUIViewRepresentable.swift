@@ -152,6 +152,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     canvas.isOpaque = false
     canvas.becomeFirstResponder()
     context.coordinator.lastDrawingId = model.id
+    context.coordinator.lastDrawing = model.drawing
     context.coordinator.lastImages = model.images
     canvas.delegate = context.coordinator
 
@@ -276,8 +277,35 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       updateImageViews(in: canvas, context: context)
 
       context.coordinator.lastDrawingId = model.id
+      context.coordinator.lastDrawing = model.drawing
       context.coordinator.lastImages = model.images
       context.coordinator.isUpdatingFromModel = false
+    } else if context.coordinator.lastDrawing != model.drawing {
+      print(#function, "DEBUG Change drawing content")
+      
+      // 只有在满足以下条件时才同步drawing内容：
+      // 1. 不是正在从模型更新canvas
+      // 2. 不是正在从用户输入更新模型
+      // 3. 模型的drawing确实与canvas的drawing不同
+      if !context.coordinator.isUpdatingFromModel && 
+         !context.coordinator.isUpdatingFromUserInput &&
+         canvas.drawing != model.drawing {
+        
+        print(#function, "DEBUG Syncing external drawing changes")
+        context.coordinator.isUpdatingFromModel = true
+        
+        // 更新 canvas 的 drawing 内容
+        canvas.drawing = model.drawing
+        context.coordinator.lastDrawing = model.drawing
+        
+        // 更新内容大小
+        updateContentSizeForDrawing(coordinator: context.coordinator)
+        
+        context.coordinator.isUpdatingFromModel = false
+      } else {
+        // 只更新lastDrawing以保持同步状态
+        context.coordinator.lastDrawing = model.drawing
+      }
     } else if context.coordinator.lastImages != model.images {
       print(#function, "DEBUG Change images")
 
@@ -551,10 +579,12 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   class Coordinator: NSObject, PKCanvasViewDelegate, UIScrollViewDelegate {
     var parent: DrawingUIViewRepresentable
     var lastDrawingId: UUID = .init()
+    var lastDrawing: PKDrawing = PKDrawing()
     var lastImages: [ImageElement] = []
     var saveWorkItem: DispatchWorkItem?
     var saveScrollWorkItem: DispatchWorkItem?
     var isUpdatingFromModel = false
+    var isUpdatingFromUserInput = false
     var lastImageEditingId: UUID?
     var lastImageElements: [UUID: ImageElement] = [:]
     var lastSelectorActive: Bool = false
@@ -572,8 +602,15 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-      guard !isUpdatingFromModel else { return }
+      guard !isUpdatingFromModel else { 
+        print(#function, "DEBUG Skipping - isUpdatingFromModel is true")
+        return 
+      }
 
+      print(#function, "DEBUG User drawing changed")
+      // 标记为用户输入更新
+      isUpdatingFromUserInput = true
+      
       saveWorkItem?.cancel()
       saveWorkItem = nil
 
@@ -582,11 +619,18 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         if self.parent.model.drawing != canvasView.drawing {
           Task { @MainActor [weak self] in
             guard let self = self else { return }
+            print(#function, "DEBUG Updating model from user input")
             self.parent.model.drawing = canvasView.drawing
+            self.lastDrawing = canvasView.drawing
             self.parent.updateContentSizeForDrawing(coordinator: self)
             self.parent.saveDrawing()
             if self.parent.isShareImageViewShowing {
               self.parent.updateExportImage()
+            }
+            // 延迟重置标志
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+              print(#function, "DEBUG Resetting isUpdatingFromUserInput flag")
+              self.isUpdatingFromUserInput = false
             }
           }
         }
