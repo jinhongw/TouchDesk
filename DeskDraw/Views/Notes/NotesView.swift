@@ -151,7 +151,7 @@ struct NotesView: View {
         Spacer()
         VStack {
           Button(action: {
-            appModel.deleteDrawing(id)
+            appModel.deleteDrawing(id, canvasId: canvasId)
           }, label: {
             Image(systemName: "minus")
           })
@@ -182,7 +182,7 @@ struct NotesView: View {
     .onTapGesture {
       AudioServicesPlaySystemSound(1104)
       if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
-        addNewDrawing()
+        addNewDrawing(canvasId: canvasId)
       } else {
         dismissWindow(id: WindowID.windowSubscriptionView.description)
         openWindow(id: WindowID.windowSubscriptionView.description)
@@ -202,7 +202,7 @@ struct NotesView: View {
     Button(action: {
       AudioServicesPlaySystemSound(1104)
       if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
-        addNewDrawing()
+        addNewDrawing(canvasId: canvasId)
       } else {
         dismissWindow(id: WindowID.windowSubscriptionView.description)
         openWindow(id: WindowID.windowSubscriptionView.description)
@@ -271,12 +271,11 @@ struct NotesView: View {
   }
 
   @MainActor
-  private func addNewDrawing() {
+  private func addNewDrawing(canvasId: UUID) {
     if let canvasDrawingId = appModel.canvasStates[canvasId]?.drawingId {
       appModel.updateDrawing(canvasDrawingId)
     }
-    let newDrawingId = appModel.addNewDrawing()
-    appModel.canvasStates[canvasId]?.setDrawingId(newDrawingId)
+    let newDrawingId = appModel.addNewDrawing(canvasId: canvasId)
     appModel.canvasStates[canvasId]?.setDisplayState(.drawing)
   }
 

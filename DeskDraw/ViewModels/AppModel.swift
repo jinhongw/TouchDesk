@@ -106,7 +106,7 @@ class AppModel {
 
     } catch {
       logger.info("\(#function) Could not load drawings: \(error.localizedDescription)")
-      addNewDrawing()
+      addNewDrawing(canvasId: nil)
     }
   }
 
@@ -315,7 +315,7 @@ class AppModel {
 }
 
 extension AppModel {
-  func addNewDrawing() -> UUID {
+  func addNewDrawing(canvasId: UUID?) -> UUID {
     print(#function, "addNewDrawing")
     var newDrawing = PKDrawing()
     let defaultStrokes = createDefaultStrokes()
@@ -329,6 +329,10 @@ extension AppModel {
     drawings[drawing.id] = drawing
     thumbnails[drawing.id] = UIImage()
     saveDrawing(drawing.id)
+    
+    if let canvasId {
+      canvasStates[canvasId]?.setDrawingId(drawing.id)
+    }
 
     return drawing.id
   }
@@ -390,7 +394,7 @@ extension AppModel {
     saveDrawing(id)
   }
 
-  func deleteDrawing(_ id: UUID) {
+  func deleteDrawing(_ id: UUID, canvasId: UUID?) {
     guard let drawing = drawings[id] else { return }
     deletedDrawings.append(drawing)
 
@@ -403,9 +407,9 @@ extension AppModel {
 
     drawings.removeValue(forKey: id)
     thumbnails.removeValue(forKey: id)
-
+    
     if drawings.isEmpty {
-      let _ = addNewDrawing()
+      let _ = addNewDrawing(canvasId: canvasId)
     }
   }
 

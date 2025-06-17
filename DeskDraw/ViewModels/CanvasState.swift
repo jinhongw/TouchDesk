@@ -34,6 +34,7 @@ class CanvasState {
 extension CanvasState {
   /// 设置绘图ID
   func setDrawingId(_ drawingId: UUID?) {
+    UserDefaults.standard.set(drawingId?.uuidString, forKey: AppModel.drawingIdKey)
     self.drawingId = drawingId
   }
   

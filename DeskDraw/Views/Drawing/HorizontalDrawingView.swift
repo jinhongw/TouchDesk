@@ -169,7 +169,7 @@ struct HorizontalDrawingView: View {
               print(#function, "canvas show first drawing \(firstDrawingId)")
               return firstDrawing
             } else {
-              let newDrawingId = appModel.addNewDrawing()
+              let newDrawingId = appModel.addNewDrawing(canvasId: canvasId)
               if let newDrawing = appModel.drawings[newDrawingId] {
                 appModel.canvasStates[canvasId]?.setDrawingId(newDrawingId)
                 print(#function, "canvas show new drawing \(newDrawingId)")

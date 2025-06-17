@@ -126,7 +126,7 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         if appModel.drawings.count <= 2 || appModel.subscriptionViewModel.hasPro {
-          appModel.addNewDrawing()
+          appModel.addNewDrawing(canvasId: canvasId)
         } else {
           dismissWindow(id: WindowID.windowSubscriptionView.description)
           openWindow(id: WindowID.windowSubscriptionView.description)
