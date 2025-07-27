@@ -82,6 +82,7 @@ struct DrawingView: View {
           .overlay {
             if (appModel.isInPlaceCanvasImmersive && !appModel.isClosingPlaceCanvasImmersive) || appModel.isBeginingPlacement {
               PlaceAssistView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth, placeZOffset: placeZOffset, zRotation: $zRotation, verticalZOffest: $verticalZOffest, horizontalYOffest: $horizontalYOffest)
+                .offset(y: 2) // Offset to counteract the z-axis offset of the overlay
                 .environment(appModel)
                 .onAppear {
                   onPlaceAssistViewAppear(proxy: proxy)
