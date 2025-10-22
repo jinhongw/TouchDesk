@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		C40057D02D3A7B1100D26107 /* TouchDesk - Desktop Canvas.storekit in Resources */ = {isa = PBXBuildFile; fileRef = C40057CF2D3A7B1100D26107 /* TouchDesk - Desktop Canvas.storekit */; };
 		C48DC8C82EA90A4F001B8D1E /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = C48DC8C72EA90A4B001B8D1E /* README.md */; };
+		C48DC9D82EA91160001B8D1E /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = C48DC9D72EA91160001B8D1E /* LICENSE */; };
 		C4BB6F902D1D0C2900791CD8 /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = C4BB6F8F2D1D0C2900791CD8 /* RealityKitContent */; };
 		C4C700092D33ADB9008FD0CC /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C4C700082D33ADB9008FD0CC /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
@@ -26,6 +27,7 @@
 /* Begin PBXFileReference section */
 		C40057CF2D3A7B1100D26107 /* TouchDesk - Desktop Canvas.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = "TouchDesk - Desktop Canvas.storekit"; sourceTree = "<group>"; };
 		C48DC8C72EA90A4B001B8D1E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		C48DC9D72EA91160001B8D1E /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		C4BB6F8A2D1D0C2900791CD8 /* DeskDraw.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeskDraw.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4BB6F8E2D1D0C2900791CD8 /* RealityKitContent */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = RealityKitContent; sourceTree = "<group>"; };
 		C4BB6FA52D1D0C2C00791CD8 /* DeskDrawTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DeskDrawTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -81,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				C48DC8C72EA90A4B001B8D1E /* README.md */,
+				C48DC9D72EA91160001B8D1E /* LICENSE */,
 				C40057CF2D3A7B1100D26107 /* TouchDesk - Desktop Canvas.storekit */,
 				C4C700082D33ADB9008FD0CC /* Localizable.xcstrings */,
 				C4BB6F8C2D1D0C2900791CD8 /* DeskDraw */,
@@ -208,6 +211,7 @@
 			files = (
 				C4C700092D33ADB9008FD0CC /* Localizable.xcstrings in Resources */,
 				C40057D02D3A7B1100D26107 /* TouchDesk - Desktop Canvas.storekit in Resources */,
+				C48DC9D82EA91160001B8D1E /* LICENSE in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
