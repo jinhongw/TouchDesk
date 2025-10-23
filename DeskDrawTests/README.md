@@ -1,5 +1,13 @@
 <p align="center">
-<img height="256" src="https://github.com/jinhongw/TouchDesk/blob/main/DeskDraw/Assets.xcassets/TouchDesk%20App%20Icon.imageset/TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png?raw=true" />
+<img src="https://github.com/jinhongw/TouchDesk/blob/main/DeskDraw/Assets.xcassets/TouchDesk%20App%20Icon.imageset/TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png?raw=true" style="height: 256px; max-height: 256px;" />
+<style>
+@media (max-width: 768px) {
+  img[src*="TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png"] {
+    height: 168px !important;
+    max-height: 168px !important;
+  }
+}
+</style>
 </p>
 <h1 align="center">TouchDesk</h1>
 
@@ -38,7 +46,7 @@ With TouchDesk, transform any horizontal or vertical surface into an infinite ca
 ## License
 
 This project is licensed under the
-[Copany Open Collaboration License (COSL)](https://github.com/Copanies/Copany/blob/main/LICENSE)
+[Copany Open Collaboration License (COSL)](./LICENSE)
 
 ## Legal Disclaimer
 
