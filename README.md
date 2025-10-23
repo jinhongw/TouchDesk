@@ -1,13 +1,5 @@
-<p align="center">
-<img src="https://github.com/jinhongw/TouchDesk/blob/main/DeskDraw/Assets.xcassets/TouchDesk%20App%20Icon.imageset/TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png?raw=true" style="height: 256px; max-height: 256px;" />
-<style>
-@media (max-width: 768px) {
-  img[src*="TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png"] {
-    height: 168px !important;
-    max-height: 168px !important;
-  }
-}
-</style>
+<p align="center" style="padding: 0 60px;">
+<img src="https://github.com/jinhongw/TouchDesk/blob/main/DeskDraw/Assets.xcassets/TouchDesk%20App%20Icon.imageset/TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png?raw=true" style="max-width: 256px; width: 100%; height: auto;" />
 </p>
 <h1 align="center">TouchDesk</h1>
 
