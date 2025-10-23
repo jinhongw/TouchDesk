@@ -1,7 +1,7 @@
 <div align="center">
 <picture>
-  <source media="(max-width: 520px)" srcset="https://github.com/jinhongw/TouchDesk/blob/main/DeskDraw/Assets.xcassets/TouchDesk%20App%20Icon.imageset/TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png?raw=true" width="128">
-  <img src="https://github.com/jinhongw/TouchDesk/blob/main/DeskDraw/Assets.xcassets/TouchDesk%20App%20Icon.imageset/TouchDesk%20App%20Icon2%20-%201024%20x%201024%20pt.png?raw=true" width="256">
+  <source media="(max-width: 520px)" srcset="https://github.com/jinhongw/TouchDesk/blob/main/TouchDesk_Icon_Stroke.png?raw=true" width="168">
+  <img src="https://github.com/jinhongw/TouchDesk/blob/main/TouchDesk_Icon_Stroke.png?raw=true" width="256">
 </picture>
 </div>
 <h1 align="center">TouchDesk</h1>
