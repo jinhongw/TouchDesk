@@ -7,6 +7,7 @@ struct DrawingModel: Codable {
   var name: String
   var drawing: PKDrawing
   var images: [ImageElement]
+  var webs: [WebElement]
   var texts: [TextElement]
   var createdAt: Date
   var modifiedAt: Date
@@ -22,6 +23,7 @@ struct DrawingModel: Codable {
     self.drawing = drawing
     self.isFavorite = isFavorite
     images = []
+    webs = []
     texts = []
     createdAt = Date()
     modifiedAt = Date()
@@ -33,6 +35,7 @@ struct DrawingModel: Codable {
     name = try container.decode(String.self, forKey: .name)
     drawing = try container.decode(PKDrawing.self, forKey: .drawing)
     images = try container.decode([ImageElement].self, forKey: .images)
+    webs = (try? container.decode([WebElement].self, forKey: .webs)) ?? []
     texts = try container.decode([TextElement].self, forKey: .texts)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     modifiedAt = try container.decode(Date.self, forKey: .modifiedAt)
@@ -44,6 +47,7 @@ struct DrawingModel: Codable {
     case name
     case drawing
     case images
+    case webs
     case texts
     case createdAt
     case modifiedAt
@@ -77,6 +81,38 @@ struct ImageElement: Codable, Equatable {
   static func == (lhs: ImageElement, rhs: ImageElement) -> Bool {
     lhs.id == rhs.id &&
     lhs.imageData == rhs.imageData &&
+    lhs.position == rhs.position &&
+    lhs.size == rhs.size &&
+    lhs.rotation == rhs.rotation
+  }
+}
+
+struct WebElement: Codable, Equatable {
+  let id: UUID
+  var url: String
+  var position: CGPoint
+  var size: CGSize
+  var rotation: Double
+
+  init(id: UUID, url: String, position: CGPoint, size: CGSize, rotation: Double) {
+    self.id = id
+    self.url = url
+    self.position = position
+    self.size = size
+    self.rotation = rotation
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case url
+    case position
+    case size
+    case rotation
+  }
+
+  static func == (lhs: WebElement, rhs: WebElement) -> Bool {
+    lhs.id == rhs.id &&
+    lhs.url == rhs.url &&
     lhs.position == rhs.position &&
     lhs.size == rhs.size &&
     lhs.rotation == rhs.rotation

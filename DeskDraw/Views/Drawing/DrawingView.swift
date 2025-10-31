@@ -181,7 +181,7 @@ struct DrawingView: View {
     if appModel.drawings.isEmpty || appModel.drawingId == nil {
       ProgressView()
     } else {
-      DrawingUIViewRepresentable(
+      DrawingUIView(
         canvas: canvas,
         model: Binding(
           get: {
@@ -234,6 +234,9 @@ struct DrawingView: View {
         },
         deleteImage: { imageId in
           appModel.deleteImage(imageId)
+        },
+        deleteWeb: { webId in
+          appModel.deleteWeb(webId)
         }
       )
     }

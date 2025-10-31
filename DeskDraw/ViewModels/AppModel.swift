@@ -197,6 +197,11 @@ class AppModel {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
       contentBounds = contentBounds.union(imageFrame)
     }
+    // 将网页元素的区域纳入整体边界（缩略图不实际渲染网页，仅用于裁剪范围）
+    for webElement in drawingModel.webs {
+      let webFrame = CGRect(origin: webElement.position, size: webElement.size)
+      contentBounds = contentBounds.union(webFrame)
+    }
 
     if contentBounds.isNull || contentBounds.isEmpty {
       contentBounds = CGRect(x: 0, y: 0, width: thumbnailSize.width, height: thumbnailSize.height)
@@ -274,6 +279,7 @@ class AppModel {
               context.cgContext.restoreGState()
             }
           }
+          // 网页元素不绘制，只参与边界计算，避免复杂离屏渲染
 
           let drawingImage = drawing.thumbnail(
             rect: contentBounds,
@@ -443,6 +449,15 @@ extension AppModel {
     imageEditingId = imageElement.id
   }
 
+  func addWeb(_ url: String, at position: CGPoint, size: CGSize, rotation: Double = 0) {
+    let webElement = WebElement(id: UUID(), url: url, position: position, size: size, rotation: rotation)
+    guard let drawingId else { return }
+    drawings[drawingId]?.webs.append(webElement)
+    updateDrawing(drawingId)
+    // 复用 imageEditingId 作为通用编辑目标 ID
+    imageEditingId = webElement.id
+  }
+
   func addText(_ text: String, at position: CGPoint, fontSize: CGFloat = 16, fontWeight: Font.Weight = .regular, color: Color = .black, rotation: Double = 0) {
     let textElement = TextElement(id: UUID(), text: text, position: position, fontSize: fontSize, fontWeight: fontWeight, color: color, rotation: rotation)
     guard let drawingId else { return }
@@ -456,6 +471,13 @@ extension AppModel {
     // 清除编辑状态
     imageEditingId = nil
     // 保存更改
+    updateDrawing(drawingId)
+  }
+
+  func deleteWeb(_ webId: UUID) {
+    guard let drawingId else { return }
+    drawings[drawingId]?.webs.removeAll { $0.id == webId }
+    imageEditingId = nil
     updateDrawing(drawingId)
   }
 }

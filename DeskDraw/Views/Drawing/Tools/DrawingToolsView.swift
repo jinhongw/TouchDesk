@@ -426,6 +426,7 @@ struct DrawingToolsView: View {
       fountainPenTool
       selectTool
       imageTool
+      webTool
       colorPicker
     }
   }
@@ -464,6 +465,30 @@ struct DrawingToolsView: View {
         openWindow(id: "imagePicker", value: visibleCenter)
       }, label: {
         Image(systemName: "photo.on.rectangle.angled")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var webTool: some View {
+    HStack {
+      Button(action: {
+        let visibleCenter = CGPoint(
+          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+        )
+        appModel.addWeb("https://www.google.com", at: visibleCenter, size: CGSize(width: 800, height: 600))
+      }, label: {
+        Image(systemName: "safari")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)

@@ -83,6 +83,16 @@ class ImageContainerView: UIScrollView {
     imageView.removeFromSuperview()
   }
 
+  // 添加网页视图到容器
+  func addWebView(_ webView: ResizableWebView) {
+    contentView.addSubview(webView)
+  }
+
+  // 移除网页视图
+  func removeWebView(_ webView: ResizableWebView) {
+    webView.removeFromSuperview()
+  }
+
   // 清除所有图片视图
   func removeAllImageViews() {
     contentView.subviews.forEach { $0.removeFromSuperview() }
