@@ -127,6 +127,7 @@ extension DrawingUIView {
 
       webView.editingId = imageEditingId
       webView.isLocked = isLocked
+      webView.isSelectorActive = isSelectorActive
       webView.isUserInteractionEnabled = isSelectorActive || webView.editingId == webElement.id
 
       let lastElement = context.coordinator.lastWebElements[webElement.id]
@@ -179,6 +180,18 @@ extension DrawingUIView {
       webView.onDelete = { [weak coordinator = context.coordinator] in
         guard let coordinator = coordinator else { return }
         coordinator.parent.deleteWeb(webElement.id)
+      }
+
+      webView.onBeginEditing = {
+        imageEditingId = webElement.id
+        webView.editingId = imageEditingId
+        webView.isUserInteractionEnabled = isSelectorActive || imageEditingId == webElement.id
+      }
+
+      webView.onFinishEditing = {
+        imageEditingId = nil
+        webView.editingId = imageEditingId
+        webView.isUserInteractionEnabled = isSelectorActive || imageEditingId == webElement.id
       }
     }
     context.coordinator.lastWebs = model.webs

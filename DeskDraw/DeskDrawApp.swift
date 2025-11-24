@@ -20,6 +20,16 @@ struct DeskDrawApp: App {
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
 
   var body: some Scene {
+    WindowGroup(id: "minimalCanvasView") {
+      MinimalCanvasView()
+    }
+    .windowStyle(.volumetric)
+    .volumeWorldAlignment(.gravityAligned)
+    .upperLimbVisibility(.visible)
+    .defaultSize(width: 0.65, height: 0.35, depth: 0.35, in: .meters)
+    .windowResizability(.contentSize)
+    
+    
     WindowGroup(id: "drawingView") {
       DrawingView()
         .volumeBaseplateVisibility(volumeBaseplateVisibility ? (!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement || !isHorizontal ? .hidden : .automatic) : .hidden)

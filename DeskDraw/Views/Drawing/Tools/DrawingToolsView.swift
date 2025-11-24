@@ -486,7 +486,7 @@ struct DrawingToolsView: View {
           x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
           y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
         )
-        appModel.addWeb("https://www.google.com", at: visibleCenter, size: CGSize(width: 800, height: 600))
+        appModel.addWeb("https://www.google.com", at: visibleCenter, size: CGSize(width: 640, height: 480))
       }, label: {
         Image(systemName: "safari")
           .frame(width: 8)

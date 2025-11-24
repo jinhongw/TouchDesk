@@ -9,6 +9,8 @@ class ResizableWebView: UIView {
   private var controlPoints: [ControlPointView] = []
   private var webContentView: WKWebView
   private var deleteButton: UIButton
+  private var confirmButton: UIButton
+  private var editButton: UIButton
   private var dragStartPoint: CGPoint?
   private let minimumDragDistance: CGFloat = 5.0
 
@@ -21,6 +23,12 @@ class ResizableWebView: UIView {
   var onPositionChanged: ((CGPoint) -> Void)?
   var onTapped: (() -> Void)?
   var onDelete: (() -> Void)?
+  var onBeginEditing: (() -> Void)?
+  var onFinishEditing: (() -> Void)?
+
+  var isSelectorActive: Bool = false {
+    didSet { updateInteractionState() }
+  }
 
   var editingId: UUID? {
     didSet { updateInteractionState() }
@@ -31,6 +39,10 @@ class ResizableWebView: UIView {
     controlPoints.forEach { $0.isHidden = !shouldShowControls }
     updateDragGesture()
     updateDeleteButtonVisibility()
+    let isEditing = (webId == editingId) && !isLocked
+    deleteButton.isHidden = !isEditing
+    confirmButton.isHidden = !isEditing
+    editButton.isHidden = isEditing || !isSelectorActive
   }
 
   private func updateDeleteButtonVisibility() {
@@ -51,6 +63,8 @@ class ResizableWebView: UIView {
     config.allowsInlineMediaPlayback = true
     webContentView = WKWebView(frame: .zero, configuration: config)
     deleteButton = UIButton(type: .system)
+    confirmButton = UIButton(type: .system)
+    editButton = UIButton(type: .system)
 
     super.init(frame: .zero)
     backgroundColor = .clear
@@ -96,9 +110,60 @@ class ResizableWebView: UIView {
     addSubview(deleteButton)
     deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
 
+    // Confirm button setup
+    confirmButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+    let confirmBlurView = UIVisualEffectView(effect: blurEffect)
+    confirmBlurView.frame = confirmButton.bounds
+    confirmBlurView.layer.cornerRadius = toolButtonSize / 2
+    confirmBlurView.clipsToBounds = true
+    confirmBlurView.isUserInteractionEnabled = false
+    confirmButton.insertSubview(confirmBlurView, at: 0)
+
+    var confirmConfig = UIButton.Configuration.plain()
+    confirmConfig.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    confirmConfig.image = UIImage(systemName: "checkmark")
+    confirmConfig.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    confirmConfig.baseForegroundColor = .white
+    confirmButton.configuration = confirmConfig
+
+    confirmButton.contentVerticalAlignment = .center
+    confirmButton.contentHorizontalAlignment = .center
+    confirmButton.imageView?.contentMode = .center
+    confirmButton.tintColor = .white
+    confirmButton.layer.cornerRadius = toolButtonSize / 2
+    confirmButton.clipsToBounds = true
+    addSubview(confirmButton)
+    confirmButton.addTarget(self, action: #selector(handleConfirm), for: .touchUpInside)
+
+    // Edit button setup
+    editButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+    let editBlurView = UIVisualEffectView(effect: blurEffect)
+    editBlurView.frame = editButton.bounds
+    editBlurView.layer.cornerRadius = toolButtonSize / 2
+    editBlurView.clipsToBounds = true
+    editBlurView.isUserInteractionEnabled = false
+    editButton.insertSubview(editBlurView, at: 0)
+
+    var editConfig = UIButton.Configuration.plain()
+    editConfig.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    editConfig.image = UIImage(systemName: "pencil.line")
+    editConfig.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    editConfig.baseForegroundColor = .white
+    editButton.configuration = editConfig
+
+    editButton.contentVerticalAlignment = .center
+    editButton.contentHorizontalAlignment = .center
+    editButton.imageView?.contentMode = .center
+    editButton.tintColor = .white
+    editButton.layer.cornerRadius = toolButtonSize / 2
+    editButton.clipsToBounds = true
+    addSubview(editButton)
+    editButton.addTarget(self, action: #selector(handleEdit), for: .touchUpInside)
+
     setupControlPoints()
     setupDragGesture()
     setupTapGesture()
+    updateInteractionState()
   }
 
   @available(*, unavailable)
@@ -148,6 +213,14 @@ class ResizableWebView: UIView {
     if !isLocked { onDelete?() }
   }
 
+  @objc private func handleConfirm() {
+    if !isLocked { onFinishEditing?() }
+  }
+
+  @objc private func handleEdit() {
+    if !isLocked { onBeginEditing?() }
+  }
+
   override func layoutSubviews() {
     super.layoutSubviews()
     let inset = controlPointTouchSize / 2
@@ -160,6 +233,12 @@ class ResizableWebView: UIView {
       width: toolButtonSize,
       height: toolButtonSize
     )
+
+    // Confirm button at right side of delete button
+    confirmButton.frame = deleteButton.frame.offsetBy(dx: 36, dy: 0)
+
+    // Edit button shares the same position as delete button when non-editing
+    editButton.frame = deleteButton.frame
 
     updateControlPointsPosition()
   }
@@ -235,7 +314,10 @@ class ResizableWebView: UIView {
       if alpha == 1.0, distance < minimumDragDistance { return }
       if alpha == 1.0 {
         alpha = 0.5
+        // 隐藏顶部按钮，避免拖拽时遮挡
         deleteButton.isHidden = true
+        confirmButton.isHidden = true
+        editButton.isHidden = true
       }
       let translation = gesture.translation(in: superview)
       center = CGPoint(x: center.x + translation.x, y: center.y + translation.y)
@@ -243,7 +325,8 @@ class ResizableWebView: UIView {
     case .ended, .cancelled:
       dragStartPoint = nil
       alpha = 1.0
-      updateDeleteButtonVisibility()
+      // 统一恢复显隐
+      updateInteractionState()
       onPositionChanged?(frame.origin)
     default:
       dragStartPoint = nil
@@ -261,6 +344,8 @@ class ResizableWebView: UIView {
 
   override func removeFromSuperview() {
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    confirmButton.removeTarget(nil, action: nil, for: .allEvents)
+    editButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
       $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
@@ -271,11 +356,15 @@ class ResizableWebView: UIView {
     onPositionChanged = nil
     onTapped = nil
     onDelete = nil
+    onBeginEditing = nil
+    onFinishEditing = nil
     super.removeFromSuperview()
   }
 
   deinit {
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    confirmButton.removeTarget(nil, action: nil, for: .allEvents)
+    editButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
       $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
@@ -286,6 +375,8 @@ class ResizableWebView: UIView {
     onPositionChanged = nil
     onTapped = nil
     onDelete = nil
+    onBeginEditing = nil
+    onFinishEditing = nil
   }
 }
 
