@@ -20,6 +20,16 @@ struct DeskDrawApp: App {
   @AppStorage("isHorizontal") private var isHorizontal: Bool = true
 
   var body: some Scene {
+
+    WindowGroup(id: "customKeyboardView") {
+      CustomKeyboardBottomView()
+    }
+    .windowStyle(.volumetric)
+    .volumeWorldAlignment(.gravityAligned)
+    .upperLimbVisibility(.visible)
+    .defaultSize(width: 0.65, height: 0.35, depth: 0.35, in: .meters)
+    .windowResizability(.contentSize)
+
     WindowGroup(id: "minimalCanvasView") {
       MinimalCanvasView()
     }
