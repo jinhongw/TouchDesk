@@ -308,6 +308,16 @@ class AppModel {
             )
             if let cachedImage = DispatchQueue.main.sync(execute: { self.webSnapshotCache[webElement.id] }) {
               cachedImage.draw(in: webRect)
+            } else if webElement.cachedTitle != nil || webElement.cachedIconData != nil {
+              let iconImage = webElement.cachedIconData.flatMap { UIImage(data: $0) }
+              Self.drawWebCardFromCachedMetadata(
+                context: context.cgContext,
+                rect: webRect,
+                title: webElement.cachedTitle ?? "Web",
+                iconImage: iconImage,
+                url: webElement.url,
+                scale: scale
+              )
             } else {
               Self.drawWebPlaceholderCard(
                 context: context.cgContext,
@@ -369,6 +379,16 @@ class AppModel {
     webSnapshotCache[webId] = image
   }
 
+  /// Persists loaded card metadata (title, icon) into the current drawing's WebElement for thumbnails and offline display.
+  func updateWebCachedMetadata(webId: UUID, title: String, iconData: Data?) {
+    guard let drawingId, var drawing = drawings[drawingId],
+          let index = drawing.webs.firstIndex(where: { $0.id == webId }) else { return }
+    drawing.webs[index].cachedTitle = title
+    drawing.webs[index].cachedIconData = iconData
+    drawings[drawingId] = drawing
+    saveDrawing(drawingId)
+  }
+
   private func cleanupWebSnapshotCache() {
     webSnapshotCache.removeAll()
   }
@@ -378,6 +398,60 @@ class AppModel {
     cleanupWebSnapshotCache()
     thumbnailWorkItem?.cancel()
     thumbnailWorkItem = nil
+  }
+
+  /// Draws a web card in thumbnails using persisted metadata (title, optional icon).
+  private static func drawWebCardFromCachedMetadata(
+    context: CGContext,
+    rect: CGRect,
+    title: String,
+    iconImage: UIImage?,
+    url: String,
+    scale: CGFloat
+  ) {
+    let cornerRadius = min(rect.width, rect.height) * 0.1
+    let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+    context.addPath(path)
+    context.setFillColor(UIColor.systemGray5.withAlphaComponent(0.9).cgColor)
+    context.fillPath()
+    context.addPath(path)
+    context.clip()
+    let iconSize = min(rect.width, rect.height) * 0.25
+    if let icon = iconImage {
+      let iconRect = CGRect(
+        x: rect.midX - iconSize / 2,
+        y: rect.midY - iconSize / 2 - rect.height * 0.08,
+        width: iconSize,
+        height: iconSize
+      )
+      icon.draw(in: iconRect)
+    } else {
+      let config = UIImage.SymbolConfiguration(pointSize: iconSize * 0.8, weight: .regular)
+      guard let globeImage = UIImage(systemName: "globe", withConfiguration: config)?
+        .withTintColor(.darkGray, renderingMode: .alwaysOriginal) else { return }
+      let iconRect = CGRect(
+        x: rect.midX - iconSize / 2,
+        y: rect.midY - iconSize / 2 - rect.height * 0.08,
+        width: iconSize,
+        height: iconSize
+      )
+      globeImage.draw(in: iconRect)
+    }
+    let fontSize = max(8, min(rect.width, rect.height) * 0.12)
+    let font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: UIColor.darkGray
+    ]
+    let truncated = title.count > 20 ? String(title.prefix(17)) + "..." : title
+    let textSize = (truncated as NSString).size(withAttributes: attrs)
+    let textRect = CGRect(
+      x: rect.midX - textSize.width / 2,
+      y: rect.midY + rect.height * 0.05,
+      width: min(rect.width - 4, textSize.width),
+      height: textSize.height
+    )
+    (truncated as NSString).draw(in: textRect, withAttributes: attrs)
   }
 
   /// Draws a placeholder card for web elements in thumbnails (rounded rect, fill, globe icon, truncated URL).

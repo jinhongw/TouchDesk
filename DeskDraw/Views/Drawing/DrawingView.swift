@@ -254,6 +254,9 @@ struct DrawingView: View {
         updateWebSnapshot: { webId, image in
           appModel.updateWebSnapshot(webId: webId, image: image)
         },
+        updateWebCachedMetadata: { webId, title, iconData in
+          appModel.updateWebCachedMetadata(webId: webId, title: title, iconData: iconData)
+        },
         refreshThumbnailAfterWebSnapshot: {
           guard let drawingId = appModel.drawingId else { return }
           appModel.generateThumbnail(drawingId)

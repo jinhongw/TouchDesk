@@ -93,13 +93,19 @@ struct WebElement: Codable, Equatable {
   var position: CGPoint
   var size: CGSize
   var rotation: Double
+  /// Cached card title from LPMetadataProvider (persisted for thumbnail and offline display).
+  var cachedTitle: String?
+  /// Cached favicon/site icon as PNG data (persisted like ImageElement.imageData).
+  var cachedIconData: Data?
 
-  init(id: UUID, url: String, position: CGPoint, size: CGSize, rotation: Double) {
+  init(id: UUID, url: String, position: CGPoint, size: CGSize, rotation: Double, cachedTitle: String? = nil, cachedIconData: Data? = nil) {
     self.id = id
     self.url = url
     self.position = position
     self.size = size
     self.rotation = rotation
+    self.cachedTitle = cachedTitle
+    self.cachedIconData = cachedIconData
   }
 
   enum CodingKeys: String, CodingKey {
@@ -108,6 +114,30 @@ struct WebElement: Codable, Equatable {
     case position
     case size
     case rotation
+    case cachedTitle
+    case cachedIconData
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(UUID.self, forKey: .id)
+    url = try container.decode(String.self, forKey: .url)
+    position = try container.decode(CGPoint.self, forKey: .position)
+    size = try container.decode(CGSize.self, forKey: .size)
+    rotation = try container.decode(Double.self, forKey: .rotation)
+    cachedTitle = try container.decodeIfPresent(String.self, forKey: .cachedTitle)
+    cachedIconData = try container.decodeIfPresent(Data.self, forKey: .cachedIconData)
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(id, forKey: .id)
+    try container.encode(url, forKey: .url)
+    try container.encode(position, forKey: .position)
+    try container.encode(size, forKey: .size)
+    try container.encode(rotation, forKey: .rotation)
+    try container.encodeIfPresent(cachedTitle, forKey: .cachedTitle)
+    try container.encodeIfPresent(cachedIconData, forKey: .cachedIconData)
   }
 
   static func == (lhs: WebElement, rhs: WebElement) -> Bool {
@@ -115,7 +145,9 @@ struct WebElement: Codable, Equatable {
     lhs.url == rhs.url &&
     lhs.position == rhs.position &&
     lhs.size == rhs.size &&
-    lhs.rotation == rhs.rotation
+    lhs.rotation == rhs.rotation &&
+    lhs.cachedTitle == rhs.cachedTitle &&
+    lhs.cachedIconData == rhs.cachedIconData
   }
 }
 

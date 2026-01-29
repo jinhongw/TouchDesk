@@ -128,7 +128,12 @@ extension DrawingUIView {
       if let cached = webViewCache[webElement.id] {
         return cached
       }
-      let webView = ResizableWebView(url: webElement.url, size: webElement.size)
+      let webView = ResizableWebView(
+        url: webElement.url,
+        size: webElement.size,
+        cachedTitle: webElement.cachedTitle,
+        cachedIconData: webElement.cachedIconData
+      )
       webView.webId = webElement.id
       webViewCache[webElement.id] = webView
       return webView

@@ -24,8 +24,8 @@ class ResizableWebView: UIView {
   var onTapped: (() -> Void)?
   var onDelete: (() -> Void)?
   var onEnterFullScreen: (() -> Void)?
-  /// Called when the preview card has finished loading (metadata or error). Use to snapshot for thumbnail.
-  var onPreviewLoaded: (() -> Void)?
+  /// Called when the preview card has finished loading (metadata or error). Passes title and iconData for persistence.
+  var onPreviewLoaded: ((_ title: String, _ iconData: Data?) -> Void)?
 
   var isSelectorActive: Bool = false {
     didSet { updateInteractionState() }
@@ -56,7 +56,7 @@ class ResizableWebView: UIView {
     layer.zPosition = (webId == editingId && !isLocked) ? 1 : -1
   }
 
-  init(url: String, size: CGSize) {
+  init(url: String, size: CGSize, cachedTitle: String? = nil, cachedIconData: Data? = nil) {
     previewView = WebsitePreviewView(frame: .zero)
     deleteButton = UIButton(type: .system)
     fullscreenButton = UIButton(type: .system)
@@ -72,10 +72,13 @@ class ResizableWebView: UIView {
       height: size.height
     )
     addSubview(previewView)
-    previewView.onMetadataLoaded = { [weak self] in
-      self?.onPreviewLoaded?()
+    previewView.onMetadataLoaded = { [weak self] title, iconData in
+      self?.onPreviewLoaded?(title, iconData)
     }
 
+    if cachedTitle != nil || cachedIconData != nil {
+      previewView.configureWithCached(title: cachedTitle, iconData: cachedIconData, urlString: url)
+    }
     if let u = URL(string: url) {
       previewView.load(from: u)
     }
@@ -147,7 +150,7 @@ class ResizableWebView: UIView {
   /// Updates the preview content when the saved URL changes (e.g. after full-screen navigation).
   func updateURL(_ url: String) {
     if let u = URL(string: url) {
-      previewView.load(from: u)
+      previewView.load(from: u, forceLoadingState: true)
     }
   }
 

@@ -9,8 +9,8 @@ struct WebsiteMetadata {
 
 /// A compact website preview card that shows site icon, title and URL text.
 final class WebsitePreviewView: UIView {
-  /// Called when metadata has finished loading (success or error). Use this to snapshot after the card is ready.
-  var onMetadataLoaded: (() -> Void)?
+  /// Called when metadata has finished loading (success or error). Passes title and icon as Data for persistence.
+  var onMetadataLoaded: ((_ title: String, _ iconData: Data?) -> Void)?
 
   private let imageView = UIImageView()
   private let titleLabel = UILabel()
@@ -92,6 +92,12 @@ final class WebsitePreviewView: UIView {
     setLoadingState()
   }
 
+  /// True when we are showing persisted metadata (not loading and not error).
+  private var hasCachedContent: Bool {
+    let t = titleLabel.text
+    return t != nil && t != "Loading..." && t != "Failed to load"
+  }
+
   private func setLoadingState() {
     imageView.image = UIImage(systemName: "globe")
     titleLabel.text = "Loading..."
@@ -102,7 +108,7 @@ final class WebsitePreviewView: UIView {
     imageView.image = UIImage(systemName: "exclamationmark.triangle")
     titleLabel.text = "Failed to load"
     urlLabel.text = url.host ?? url.absoluteString
-    onMetadataLoaded?()
+    onMetadataLoaded?(titleLabel.text ?? "Failed to load", nil)
   }
 
   func configure(with metadata: WebsiteMetadata) {
@@ -113,11 +119,25 @@ final class WebsitePreviewView: UIView {
     }
     titleLabel.text = metadata.title
     urlLabel.text = metadata.urlString
-    onMetadataLoaded?()
+    let iconData = metadata.icon?.pngData()
+    onMetadataLoaded?(metadata.title, iconData)
   }
 
-  func load(from url: URL) {
-    setLoadingState()
+  /// Show persisted metadata immediately (e.g. when opening a drawing) before load(from:) completes.
+  func configureWithCached(title: String?, iconData: Data?, urlString: String?) {
+    if let iconData, let icon = UIImage(data: iconData) {
+      imageView.image = icon
+    } else {
+      imageView.image = UIImage(systemName: "globe")
+    }
+    titleLabel.text = title ?? "Loading..."
+    urlLabel.text = urlString ?? nil
+  }
+
+  func load(from url: URL, forceLoadingState: Bool = false) {
+    if forceLoadingState || titleLabel.text == nil || titleLabel.text == "Loading..." {
+      setLoadingState()
+    }
 
     // LPMetadataProvider is a one-shot object; create a new instance per fetch.
     let provider = LPMetadataProvider()
@@ -127,12 +147,16 @@ final class WebsitePreviewView: UIView {
 
         if let error = error {
           print(#function, "Failed to fetch metadata: \(error.localizedDescription)")
-          self.setErrorState(for: url)
+          if !self.hasCachedContent {
+            self.setErrorState(for: url)
+          }
           return
         }
 
         guard let linkMetadata = linkMetadata else {
-          self.setErrorState(for: url)
+          if !self.hasCachedContent {
+            self.setErrorState(for: url)
+          }
           return
         }
 

@@ -10,6 +10,8 @@ import WebKit
 
 struct FullScreenWebViewContainer: View {
   @Environment(AppModel.self) private var appModel
+  @State private var goBackTrigger: Int = 0
+  @State private var canGoBack: Bool = false
 
   let width: CGFloat
   let contentHeight: CGFloat
@@ -32,6 +34,7 @@ struct FullScreenWebViewContainer: View {
       if let url = currentURL {
         FullScreenWebView(
           url: url,
+          goBackTrigger: goBackTrigger,
           onURLChange: { newURL in
             guard
               let drawingId = appModel.drawingId,
@@ -46,7 +49,8 @@ struct FullScreenWebViewContainer: View {
             drawing.modifiedAt = Date()
             appModel.drawings[drawingId] = drawing
             appModel.updateDrawing(drawingId)
-          }
+          },
+          onCanGoBackChange: { canGoBack = $0 }
         )
           .cornerRadius(20)
           .frame(width: width, height: contentHeight)
@@ -56,15 +60,29 @@ struct FullScreenWebViewContainer: View {
           .frame(width: width, height: contentHeight)
       }
 
-      Button {
-        appModel.exitFullScreenWeb()
-      } label: {
-        Image(systemName: "xmark")
-          .font(.system(size: 14, weight: .semibold))
-          .padding(8)
+      HStack(spacing: 8) {
+        Button {
+          goBackTrigger += 1
+        } label: {
+          Image(systemName: "chevron.left")
+            .font(.system(size: 14, weight: .semibold))
+            .padding(8)
+        }
+        .buttonStyle(.plain)
+        .background(.ultraThinMaterial, in: Circle())
+        .disabled(!canGoBack)
+        .opacity(canGoBack ? 1 : 0)
+
+        Button {
+          appModel.exitFullScreenWeb()
+        } label: {
+          Image(systemName: "xmark")
+            .font(.system(size: 14, weight: .semibold))
+            .padding(8)
+        }
+        .buttonStyle(.plain)
+        .background(.ultraThinMaterial, in: Circle())
       }
-      .buttonStyle(.borderless)
-      .background(.ultraThinMaterial, in: Circle())
       .padding(16)
     }
   }
@@ -72,10 +90,13 @@ struct FullScreenWebViewContainer: View {
 
 struct FullScreenWebView: UIViewRepresentable {
   let url: URL
+  let goBackTrigger: Int
   let onURLChange: (URL) -> Void
+  let onCanGoBackChange: (Bool) -> Void
 
   class Coordinator: NSObject, WKNavigationDelegate {
     let parent: FullScreenWebView
+    var lastGoBackTrigger: Int = 0
 
     init(parent: FullScreenWebView) {
       self.parent = parent
@@ -86,6 +107,7 @@ struct FullScreenWebView: UIViewRepresentable {
       if currentURL != parent.url {
         parent.onURLChange(currentURL)
       }
+      parent.onCanGoBackChange(webView.canGoBack)
     }
   }
 
@@ -97,8 +119,6 @@ struct FullScreenWebView: UIViewRepresentable {
     let configuration = WKWebViewConfiguration()
     configuration.allowsInlineMediaPlayback = true
     let webView = WKWebView(frame: .zero, configuration: configuration)
-    // webView.backgroundColor = .clear
-    // webView.isOpaque = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
     webView.navigationDelegate = context.coordinator
     webView.load(URLRequest(url: url))
@@ -108,6 +128,12 @@ struct FullScreenWebView: UIViewRepresentable {
   func updateUIView(_ uiView: WKWebView, context: Context) {
     if uiView.url != url {
       uiView.load(URLRequest(url: url))
+    }
+    if goBackTrigger > context.coordinator.lastGoBackTrigger {
+      context.coordinator.lastGoBackTrigger = goBackTrigger
+      if uiView.canGoBack {
+        uiView.goBack()
+      }
     }
   }
 }
