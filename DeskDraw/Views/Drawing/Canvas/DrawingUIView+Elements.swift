@@ -128,7 +128,7 @@ extension DrawingUIView {
       webView.editingId = imageEditingId
       webView.isLocked = isLocked
       webView.isSelectorActive = isSelectorActive
-      webView.isUserInteractionEnabled = isSelectorActive || webView.editingId == webElement.id
+      webView.isUserInteractionEnabled = true
 
       let lastElement = context.coordinator.lastWebElements[webElement.id]
       let needsUpdate = existingWebViews[webElement.id] == nil ||
@@ -152,6 +152,10 @@ extension DrawingUIView {
         }
       }
 
+      if lastElement?.url != webElement.url {
+        webView.updateURL(webElement.url)
+      }
+
       webView.onPositionChanged = { [weak coordinator = context.coordinator] newPosition in
         guard let coordinator = coordinator else { return }
         let inset = webView.controlPointTouchSize / 2
@@ -168,30 +172,23 @@ extension DrawingUIView {
 
       webView.onTapped = {
         guard let id = webView.webId else { return }
-        if id == imageEditingId {
-          imageEditingId = nil
+        if isSelectorActive {
+          if id == imageEditingId {
+            imageEditingId = nil
+          } else {
+            imageEditingId = id
+          }
         } else {
-          imageEditingId = id
+          if id == imageEditingId {
+            imageEditingId = nil
+          }
         }
         webView.editingId = imageEditingId
-        webView.isUserInteractionEnabled = isSelectorActive || imageEditingId == id
       }
 
       webView.onDelete = { [weak coordinator = context.coordinator] in
         guard let coordinator = coordinator else { return }
         coordinator.parent.deleteWeb(webElement.id)
-      }
-
-      webView.onBeginEditing = {
-        imageEditingId = webElement.id
-        webView.editingId = imageEditingId
-        webView.isUserInteractionEnabled = isSelectorActive || imageEditingId == webElement.id
-      }
-
-      webView.onFinishEditing = {
-        imageEditingId = nil
-        webView.editingId = imageEditingId
-        webView.isUserInteractionEnabled = isSelectorActive || imageEditingId == webElement.id
       }
 
       webView.onEnterFullScreen = { [weak coordinator = context.coordinator] in

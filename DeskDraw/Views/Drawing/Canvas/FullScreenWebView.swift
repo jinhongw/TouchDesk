@@ -30,7 +30,24 @@ struct FullScreenWebViewContainer: View {
   var body: some View {
     ZStack(alignment: .topTrailing) {
       if let url = currentURL {
-        FullScreenWebView(url: url)
+        FullScreenWebView(
+          url: url,
+          onURLChange: { newURL in
+            guard
+              let drawingId = appModel.drawingId,
+              var drawing = appModel.drawings[drawingId],
+              let webId = appModel.fullScreenWebId,
+              let index = drawing.webs.firstIndex(where: { $0.id == webId })
+            else {
+              return
+            }
+
+            drawing.webs[index].url = newURL.absoluteString
+            drawing.modifiedAt = Date()
+            appModel.drawings[drawingId] = drawing
+            appModel.updateDrawing(drawingId)
+          }
+        )
           .cornerRadius(20)
           .frame(width: width, height: contentHeight)
           .colorScheme(.light)
@@ -55,14 +72,35 @@ struct FullScreenWebViewContainer: View {
 
 struct FullScreenWebView: UIViewRepresentable {
   let url: URL
+  let onURLChange: (URL) -> Void
+
+  class Coordinator: NSObject, WKNavigationDelegate {
+    let parent: FullScreenWebView
+
+    init(parent: FullScreenWebView) {
+      self.parent = parent
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+      guard let currentURL = webView.url else { return }
+      if currentURL != parent.url {
+        parent.onURLChange(currentURL)
+      }
+    }
+  }
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(parent: self)
+  }
 
   func makeUIView(context: Context) -> WKWebView {
     let configuration = WKWebViewConfiguration()
     configuration.allowsInlineMediaPlayback = true
     let webView = WKWebView(frame: .zero, configuration: configuration)
-    webView.backgroundColor = .clear
-    webView.isOpaque = false
+    // webView.backgroundColor = .clear
+    // webView.isOpaque = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
+    webView.navigationDelegate = context.coordinator
     webView.load(URLRequest(url: url))
     return webView
   }
