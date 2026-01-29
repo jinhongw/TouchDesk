@@ -426,7 +426,7 @@ struct DrawingToolsView: View {
       fountainPenTool
       selectTool
       imageTool
-//      webTool
+      webTool
       colorPicker
     }
   }

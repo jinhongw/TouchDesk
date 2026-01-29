@@ -11,6 +11,7 @@ class ResizableWebView: UIView {
   private var deleteButton: UIButton
   private var confirmButton: UIButton
   private var editButton: UIButton
+  private var fullscreenButton: UIButton
   private var dragStartPoint: CGPoint?
   private let minimumDragDistance: CGFloat = 5.0
 
@@ -25,6 +26,7 @@ class ResizableWebView: UIView {
   var onDelete: (() -> Void)?
   var onBeginEditing: (() -> Void)?
   var onFinishEditing: (() -> Void)?
+  var onEnterFullScreen: (() -> Void)?
 
   var isSelectorActive: Bool = false {
     didSet { updateInteractionState() }
@@ -43,6 +45,7 @@ class ResizableWebView: UIView {
     deleteButton.isHidden = !isEditing
     confirmButton.isHidden = !isEditing
     editButton.isHidden = isEditing || !isSelectorActive
+    fullscreenButton.isHidden = !shouldShowControls
   }
 
   private func updateDeleteButtonVisibility() {
@@ -65,6 +68,7 @@ class ResizableWebView: UIView {
     deleteButton = UIButton(type: .system)
     confirmButton = UIButton(type: .system)
     editButton = UIButton(type: .system)
+    fullscreenButton = UIButton(type: .system)
 
     super.init(frame: .zero)
     backgroundColor = .clear
@@ -160,6 +164,31 @@ class ResizableWebView: UIView {
     addSubview(editButton)
     editButton.addTarget(self, action: #selector(handleEdit), for: .touchUpInside)
 
+    // Fullscreen button setup
+    fullscreenButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+    let fullscreenBlurView = UIVisualEffectView(effect: blurEffect)
+    fullscreenBlurView.frame = fullscreenButton.bounds
+    fullscreenBlurView.layer.cornerRadius = toolButtonSize / 2
+    fullscreenBlurView.clipsToBounds = true
+    fullscreenBlurView.isUserInteractionEnabled = false
+    fullscreenButton.insertSubview(fullscreenBlurView, at: 0)
+
+    var fullscreenConfig = UIButton.Configuration.plain()
+    fullscreenConfig.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    fullscreenConfig.image = UIImage(systemName: "arrow.up.left.and.arrow.down.right")
+    fullscreenConfig.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    fullscreenConfig.baseForegroundColor = .white
+    fullscreenButton.configuration = fullscreenConfig
+
+    fullscreenButton.contentVerticalAlignment = .center
+    fullscreenButton.contentHorizontalAlignment = .center
+    fullscreenButton.imageView?.contentMode = .center
+    fullscreenButton.tintColor = .white
+    fullscreenButton.layer.cornerRadius = toolButtonSize / 2
+    fullscreenButton.clipsToBounds = true
+    addSubview(fullscreenButton)
+    fullscreenButton.addTarget(self, action: #selector(handleEnterFullScreen), for: .touchUpInside)
+
     setupControlPoints()
     setupDragGesture()
     setupTapGesture()
@@ -221,6 +250,10 @@ class ResizableWebView: UIView {
     if !isLocked { onBeginEditing?() }
   }
 
+  @objc private func handleEnterFullScreen() {
+    if !isLocked { onEnterFullScreen?() }
+  }
+
   override func layoutSubviews() {
     super.layoutSubviews()
     let inset = controlPointTouchSize / 2
@@ -239,6 +272,9 @@ class ResizableWebView: UIView {
 
     // Edit button shares the same position as delete button when non-editing
     editButton.frame = deleteButton.frame
+
+    // Fullscreen button placed to the left of delete button
+    fullscreenButton.frame = deleteButton.frame.offsetBy(dx: -36, dy: 0)
 
     updateControlPointsPosition()
   }

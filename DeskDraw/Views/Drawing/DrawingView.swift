@@ -61,10 +61,19 @@ struct DrawingView: View {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
             drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
-              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : 200)
+              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isFullScreenWebActive ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isFullScreenWebActive ? 1 : 0)
+              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isFullScreenWebActive ? 0 : 200)
               .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+              .offset(y: proxy.size.height / 2)
+              .offset(z: -proxy.size.depth)
+          }
+          .overlay {
+            fullScreenWebRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+              .scaleEffect(appModel.isFullScreenWebActive && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .blur(radius: appModel.isFullScreenWebActive && !appModel.hideInMini ? 0 : 200)
+              .opacity(appModel.isFullScreenWebActive && !appModel.hideInMini ? 1 : 0)
+              .disabled(!appModel.isFullScreenWebActive || appModel.hideInMini)
               .offset(y: proxy.size.height / 2)
               .offset(z: -proxy.size.depth)
           }
@@ -102,6 +111,7 @@ struct DrawingView: View {
       .animation(.spring, value: appModel.showDrawing)
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
+      .animation(.spring, value: appModel.isFullScreenWebActive)
       .animation(.spring, value: isHorizontal)
     }
   }
@@ -237,6 +247,9 @@ struct DrawingView: View {
         },
         deleteWeb: { webId in
           appModel.deleteWeb(webId)
+        },
+        enterFullScreenWeb: { webId in
+          appModel.enterFullScreenWeb(webId: webId)
         }
       )
     }
@@ -255,6 +268,25 @@ struct DrawingView: View {
       Attachment(id: "notesView") {
         NotesView(canvas: canvas)
           .environment(appModel)
+          .frame(width: width, height: depth)
+      }
+    }
+    .frame(width: width)
+    .frame(depth: depth)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func fullScreenWebRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    RealityView { content, attachments in
+      if let webView = attachments.entity(for: "fullScreenWebView") {
+        webView.position = .init(x: 0, y: 0, z: 0)
+        webView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        content.add(webView)
+      }
+    } attachments: {
+      Attachment(id: "fullScreenWebView") {
+        FullScreenWebViewContainer(width: width, contentHeight: depth)
           .frame(width: width, height: depth)
       }
     }

@@ -193,6 +193,10 @@ extension DrawingUIView {
         webView.editingId = imageEditingId
         webView.isUserInteractionEnabled = isSelectorActive || imageEditingId == webElement.id
       }
+
+      webView.onEnterFullScreen = { [weak coordinator = context.coordinator] in
+        coordinator?.parent.enterFullScreenWeb(webElement.id)
+      }
     }
     context.coordinator.lastWebs = model.webs
     context.coordinator.lastWebElements = Dictionary(uniqueKeysWithValues: model.webs.map { ($0.id, $0) })

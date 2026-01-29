@@ -29,6 +29,8 @@ class AppModel {
   var isOpeningPlaceCanvasImmersive = false
   var isBeginingPlacement = true
   var isShareImageViewShowing = false
+  var isFullScreenWebActive = false
+  var fullScreenWebId: UUID?
   var exportImage: UIImage?
   var aboutNavigationPath = NavigationPath()
   var canvasZoomFactor: Double = 100
@@ -479,6 +481,19 @@ extension AppModel {
     drawings[drawingId]?.webs.removeAll { $0.id == webId }
     imageEditingId = nil
     updateDrawing(drawingId)
+  }
+
+  func enterFullScreenWeb(webId: UUID) {
+    guard let drawingId else { return }
+    guard let drawing = drawings[drawingId] else { return }
+    guard drawing.webs.contains(where: { $0.id == webId }) else { return }
+    fullScreenWebId = webId
+    isFullScreenWebActive = true
+  }
+
+  func exitFullScreenWeb() {
+    isFullScreenWebActive = false
+    fullScreenWebId = nil
   }
 }
 
