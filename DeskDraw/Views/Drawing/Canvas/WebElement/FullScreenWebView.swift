@@ -10,6 +10,7 @@ import WebKit
 
 struct FullScreenWebViewContainer: View {
   @Environment(AppModel.self) private var appModel
+  @AppStorage("isHorizontal") private var isHorizontal: Bool = true
   @State private var goBackTrigger: Int = 0
   @State private var canGoBack: Bool = false
   @State private var isLoading: Bool = true
@@ -32,7 +33,7 @@ struct FullScreenWebViewContainer: View {
   }
 
   var body: some View {
-    ZStack(alignment: .topTrailing) {
+    ZStack(alignment: isHorizontal ? .topTrailing : .bottomTrailing) {
       if let url = currentURL {
         ZStack {
           FullScreenWebView(
@@ -56,11 +57,13 @@ struct FullScreenWebViewContainer: View {
             onCanGoBackChange: { canGoBack = $0 },
             onLoadingChange: { isLoading = $0 },
             onErrorChange: {
-              debugPrint(#function, "loadError \($0)")
+              guard $0 != nil else { return }
+              debugPrint(#function, "loadError \($0 ?? "")")
               loadError = $0
             }
           )
           .cornerRadius(20)
+          .padding(.top, isHorizontal ? 42 : 0)
           .frame(width: width, height: contentHeight)
           .colorScheme(.light)
 
@@ -75,35 +78,44 @@ struct FullScreenWebViewContainer: View {
           .frame(width: width, height: contentHeight)
       }
 
-      HStack(spacing: 8) {
-        Button {
-          goBackTrigger += 1
-        } label: {
-          Image(systemName: "chevron.left")
-            .font(.system(size: 14, weight: .semibold))
-            .padding(8)
+      HStack(spacing: 12) {
+        HStack {
+          Button {
+            goBackTrigger += 1
+          } label: {
+            Image(systemName: "chevron.left")
+              .frame(width: 8)
+          }
+          .frame(width: 44, height: 44)
         }
-        .buttonStyle(.plain)
-        .background(.ultraThinMaterial, in: Circle())
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
         .disabled(!canGoBack)
         .opacity(canGoBack ? 1 : 0)
 
-        Button {
-          appModel.exitFullScreenWeb()
-        } label: {
-          Image(systemName: "xmark")
-            .font(.system(size: 14, weight: .semibold))
-            .padding(8)
+        HStack {
+          Button {
+            appModel.exitFullScreenWeb()
+          } label: {
+            Image(systemName: "xmark")
+              .frame(width: 8)
+          }
+          .frame(width: 44, height: 44)
         }
-        .buttonStyle(.plain)
-        .background(.ultraThinMaterial, in: Circle())
+        .buttonStyle(.borderless)
+        .controlSize(.small)
+        .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
       }
-      .padding(16)
+      .padding(8)
+      .rotation3DEffect(.degrees(isHorizontal ? -45 : 45), axis: (1, 0, 0), anchor: .center)
+      .scaleEffect(0.8, anchor: .bottomFront)
+      .offset(z: 64)
     }
   }
 
   private var loadingOverlay: some View {
-    Color.black.opacity(0.3)
+    Color.clear
       .frame(width: width, height: contentHeight)
       .overlay {
         ProgressView()
@@ -114,7 +126,7 @@ struct FullScreenWebViewContainer: View {
   }
 
   private func errorOverlay(message: String) -> some View {
-    Color.black.opacity(0.3)
+    Color.clear
       .frame(width: width, height: contentHeight)
       .overlay {
         VStack(spacing: 12) {

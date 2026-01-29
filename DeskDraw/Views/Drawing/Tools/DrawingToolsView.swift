@@ -516,7 +516,7 @@ struct DrawingToolsView: View {
           .font(.caption)
           .foregroundStyle(.secondary)
         TextField("", text: $webURLString)
-          .frame(minWidth: 260)
+          .frame(minWidth: 220)
         Button(action: {
           webURLString = ""
         }, label: {
@@ -542,10 +542,11 @@ struct DrawingToolsView: View {
       })
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
     }
-    .rotation3DEffect(.degrees(isHorizontal ? -43 : -25), axis: (1, 0, 0), anchor: .bottom)
-    .scaleEffect(showWebURLInput ? 0.8 : 0, anchor: .bottomFront)
     .opacity(showWebURLInput ? 1 : 0)
-    .offset(y: -56)
+    .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
+    .scaleEffect(showWebURLInput ? 0.8 : 0, anchor: .bottomFront)
+    .offset(y: -64)
+    .offset(z: 24)
     .disabled(!showWebURLInput)
   }
 

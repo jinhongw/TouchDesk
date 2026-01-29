@@ -196,3 +196,21 @@ struct CustomKeyboardBottomView: View {
   }
 }
 
+//    WindowGroup(id: "customKeyboardView") {
+//      CustomKeyboardBottomView()
+//    }
+//    .windowStyle(.volumetric)
+//    .volumeWorldAlignment(.gravityAligned)
+//    .upperLimbVisibility(.visible)
+//    .defaultSize(width: 0.65, height: 0.35, depth: 0.35, in: .meters)
+//    .windowResizability(.contentSize)
+//
+//    WindowGroup(id: "minimalCanvasView") {
+//      MinimalCanvasView()
+//    }
+//    .windowStyle(.volumetric)
+//    .volumeWorldAlignment(.gravityAligned)
+//    .upperLimbVisibility(.visible)
+//    .defaultSize(width: 0.65, height: 0.35, depth: 0.35, in: .meters)
+//    .windowResizability(.contentSize)
+    
