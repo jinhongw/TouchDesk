@@ -20,12 +20,11 @@ struct FullScreenWebViewContainer: View {
   let contentHeight: CGFloat
 
   private var currentURL: URL? {
-    guard
-      let drawingId = appModel.drawingId,
-      let drawing = appModel.drawings[drawingId],
-      let webId = appModel.fullScreenWebId,
-      let web = drawing.webs.first(where: { $0.id == webId }),
-      let url = URL(string: web.url)
+    guard let drawingId = appModel.drawingId,
+          let drawing = appModel.drawings[drawingId],
+          let webId = appModel.fullScreenWebId,
+          let web = drawing.webs.first(where: { $0.id == webId }),
+          let url = URL(string: web.url)
     else {
       return nil
     }
@@ -40,11 +39,10 @@ struct FullScreenWebViewContainer: View {
             url: url,
             goBackTrigger: goBackTrigger,
             onURLChange: { newURL in
-              guard
-                let drawingId = appModel.drawingId,
-                var drawing = appModel.drawings[drawingId],
-                let webId = appModel.fullScreenWebId,
-                let index = drawing.webs.firstIndex(where: { $0.id == webId })
+              guard let drawingId = appModel.drawingId,
+                    var drawing = appModel.drawings[drawingId],
+                    let webId = appModel.fullScreenWebId,
+                    let index = drawing.webs.firstIndex(where: { $0.id == webId })
               else {
                 return
               }
@@ -69,8 +67,6 @@ struct FullScreenWebViewContainer: View {
 
           if let error = loadError {
             errorOverlay(message: error)
-          } else if isLoading {
-            loadingOverlay
           }
         }
       } else {
@@ -218,4 +214,3 @@ struct FullScreenWebView: UIViewRepresentable {
     }
   }
 }
-
