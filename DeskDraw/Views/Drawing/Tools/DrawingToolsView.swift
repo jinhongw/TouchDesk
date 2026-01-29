@@ -27,10 +27,13 @@ struct DrawingToolsView: View {
   @AppStorage("showRecentColors") private var showRecentColors = true
   @AppStorage("recentColors") private var recentColorsArray: ColorArrayStorageModel = .init(colors: [])
   @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
+  @AppStorage("webURLString") private var webURLString: String = "https://www.google.com"
 
   @State private var toolSettingType: ToolSettingType? = nil
   @State private var showColorPicker = false
   @State private var showMoreFuncsMenu = false
+
+  @State private var showWebURLInput: Bool = false
 
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
@@ -424,11 +427,29 @@ struct DrawingToolsView: View {
       pencilTool
       crayonTool
       fountainPenTool
-      selectTool
-      imageTool
-      webTool
+      elementToolPanel
       colorPicker
     }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var elementToolPanel: some View {
+    HStack(spacing: -8) {
+      selectTool
+      webTool
+      imageTool
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .overlay(alignment: .bottom) {
+      webURLInput
+    }
+    .animation(.spring.speed(2), value: showWebURLInput)
+    .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -441,15 +462,11 @@ struct DrawingToolsView: View {
         Image(systemName: "hand.point.up.left")
           .frame(width: 8)
       })
+      .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -471,10 +488,6 @@ struct DrawingToolsView: View {
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -482,23 +495,58 @@ struct DrawingToolsView: View {
   private var webTool: some View {
     HStack {
       Button(action: {
-        let visibleCenter = CGPoint(
-          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
-          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
-        )
-        appModel.addWeb("https://www.google.com", at: visibleCenter, size: CGSize(width: 160, height: 116))
+        showWebURLInput.toggle()
       }, label: {
         Image(systemName: "safari")
           .frame(width: 8)
       })
+      .background(showWebURLInput ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var webURLInput: some View {
+    HStack(spacing: 8) {
+      HStack(spacing: 8) {
+        Image(systemName: "link")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        TextField("", text: $webURLString)
+          .frame(minWidth: 260)
+        Button(action: {
+          webURLString = ""
+        }, label: {
+          Image(systemName: "xmark.circle.fill")
+            .font(.caption)
+            .foregroundStyle(.placeholder)
+        })
+        .buttonStyle(.plain)
+        .buttonBorderShape(.circle)
+        .fixedSize()
+      }
+      .padding(12)
+      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+      Button(action: {
+        let visibleCenter = CGPoint(
+          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+        )
+        appModel.addWeb(webURLString, at: visibleCenter, size: CGSize(width: 160, height: 116))
+      }, label: {
+        Image(systemName: "checkmark")
+          .frame(width: 8)
+      })
+      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    }
+    .rotation3DEffect(.degrees(isHorizontal ? -43 : -25), axis: (1, 0, 0), anchor: .bottom)
+    .scaleEffect(showWebURLInput ? 0.8 : 0, anchor: .bottomFront)
+    .opacity(showWebURLInput ? 1 : 0)
+    .offset(y: -56)
+    .disabled(!showWebURLInput)
   }
 
   @MainActor

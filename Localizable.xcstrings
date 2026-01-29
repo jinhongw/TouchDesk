@@ -1586,6 +1586,9 @@
         }
       }
     },
+    "https://www.google.com" : {
+
+    },
     "Join TouchDesk on Copany" : {
 
     },
@@ -1867,6 +1870,9 @@
     },
     "Little Sunshine - SunClock" : {
       "shouldTranslate" : false
+    },
+    "Load Failed" : {
+
     },
     "Lock Canvas" : {
       "localizations" : {

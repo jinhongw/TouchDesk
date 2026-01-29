@@ -12,6 +12,8 @@ struct FullScreenWebViewContainer: View {
   @Environment(AppModel.self) private var appModel
   @State private var goBackTrigger: Int = 0
   @State private var canGoBack: Bool = false
+  @State private var isLoading: Bool = true
+  @State private var loadError: String?
 
   let width: CGFloat
   let contentHeight: CGFloat
@@ -32,29 +34,42 @@ struct FullScreenWebViewContainer: View {
   var body: some View {
     ZStack(alignment: .topTrailing) {
       if let url = currentURL {
-        FullScreenWebView(
-          url: url,
-          goBackTrigger: goBackTrigger,
-          onURLChange: { newURL in
-            guard
-              let drawingId = appModel.drawingId,
-              var drawing = appModel.drawings[drawingId],
-              let webId = appModel.fullScreenWebId,
-              let index = drawing.webs.firstIndex(where: { $0.id == webId })
-            else {
-              return
-            }
+        ZStack {
+          FullScreenWebView(
+            url: url,
+            goBackTrigger: goBackTrigger,
+            onURLChange: { newURL in
+              guard
+                let drawingId = appModel.drawingId,
+                var drawing = appModel.drawings[drawingId],
+                let webId = appModel.fullScreenWebId,
+                let index = drawing.webs.firstIndex(where: { $0.id == webId })
+              else {
+                return
+              }
 
-            drawing.webs[index].url = newURL.absoluteString
-            drawing.modifiedAt = Date()
-            appModel.drawings[drawingId] = drawing
-            appModel.updateDrawing(drawingId)
-          },
-          onCanGoBackChange: { canGoBack = $0 }
-        )
+              drawing.webs[index].url = newURL.absoluteString
+              drawing.modifiedAt = Date()
+              appModel.drawings[drawingId] = drawing
+              appModel.updateDrawing(drawingId)
+            },
+            onCanGoBackChange: { canGoBack = $0 },
+            onLoadingChange: { isLoading = $0 },
+            onErrorChange: {
+              debugPrint(#function, "loadError \($0)")
+              loadError = $0
+            }
+          )
           .cornerRadius(20)
           .frame(width: width, height: contentHeight)
           .colorScheme(.light)
+
+          if let error = loadError {
+            errorOverlay(message: error)
+          } else if isLoading {
+            loadingOverlay
+          }
+        }
       } else {
         Color.clear
           .frame(width: width, height: contentHeight)
@@ -86,6 +101,38 @@ struct FullScreenWebViewContainer: View {
       .padding(16)
     }
   }
+
+  private var loadingOverlay: some View {
+    Color.black.opacity(0.3)
+      .frame(width: width, height: contentHeight)
+      .overlay {
+        ProgressView()
+          .scaleEffect(1.2)
+          .tint(.white)
+      }
+      .cornerRadius(20)
+  }
+
+  private func errorOverlay(message: String) -> some View {
+    Color.black.opacity(0.3)
+      .frame(width: width, height: contentHeight)
+      .overlay {
+        VStack(spacing: 12) {
+          Image(systemName: "exclamationmark.triangle.fill")
+            .font(.system(size: 40))
+            .foregroundStyle(.yellow)
+          Text("Load Failed")
+            .font(.headline)
+            .foregroundStyle(.white)
+          Text(message)
+            .font(.subheadline)
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+        }
+      }
+      .cornerRadius(20)
+  }
 }
 
 struct FullScreenWebView: UIViewRepresentable {
@@ -93,6 +140,8 @@ struct FullScreenWebView: UIViewRepresentable {
   let goBackTrigger: Int
   let onURLChange: (URL) -> Void
   let onCanGoBackChange: (Bool) -> Void
+  let onLoadingChange: (Bool) -> Void
+  let onErrorChange: (String?) -> Void
 
   class Coordinator: NSObject, WKNavigationDelegate {
     let parent: FullScreenWebView
@@ -102,12 +151,32 @@ struct FullScreenWebView: UIViewRepresentable {
       self.parent = parent
     }
 
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+      parent.onLoadingChange(true)
+      parent.onErrorChange(nil)
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+      parent.onLoadingChange(false)
       guard let currentURL = webView.url else { return }
       if currentURL != parent.url {
         parent.onURLChange(currentURL)
       }
       parent.onCanGoBackChange(webView.canGoBack)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+      parent.onLoadingChange(false)
+      if (error as NSError).code != NSURLErrorCancelled {
+        parent.onErrorChange(error.localizedDescription)
+      }
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+      parent.onLoadingChange(false)
+      if (error as NSError).code != NSURLErrorCancelled {
+        parent.onErrorChange(error.localizedDescription)
+      }
     }
   }
 
