@@ -779,6 +779,9 @@
         }
       }
     },
+    "Create Together, Share Rewards" : {
+
+    },
     "Credits" : {
       "localizations" : {
         "de" : {
@@ -1582,6 +1585,9 @@
           }
         }
       }
+    },
+    "Join TouchDesk on Copany" : {
+
     },
     "Learn More" : {
       "localizations" : {

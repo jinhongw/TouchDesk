@@ -130,6 +130,7 @@ struct AboutView: View {
       }
       Section {
         appStore
+//        joinCopany
         if isSimplifiedChinese {
           followMeOnREDnote
         }
@@ -149,7 +150,7 @@ struct AboutView: View {
           .font(.subheadline)
       }
     }
-    .frame(width: 480, height: isSimplifiedChinese ? 1000 : 880)
+    .frame(width: 480, height: isSimplifiedChinese ? 1400 : 1200)
     .scrollDisabled(true)
     .padding(.vertical, 20)
   }
@@ -277,6 +278,26 @@ struct AboutView: View {
         VStack(alignment: .leading) {
           Text("Rate the App")
           Text("Like the app support me")
+            .font(.caption)
+        }
+      }
+    })
+  }
+  
+  @MainActor
+  @ViewBuilder
+  private var joinCopany: some View {
+    Button(action: {
+      openURL(URL(string: "https://copany.app/copany/30")!)
+    }, label: {
+      HStack {
+        Image("copany_icon")
+          .resizable()
+          .frame(width: 36, height: 36)
+          .cornerRadius(18)
+        VStack(alignment: .leading) {
+          Text("Join TouchDesk on Copany")
+          Text("Create Together, Share Rewards")
             .font(.caption)
         }
       }
