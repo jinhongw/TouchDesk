@@ -194,6 +194,15 @@ extension DrawingUIView {
       webView.onEnterFullScreen = { [weak coordinator = context.coordinator] in
         coordinator?.parent.enterFullScreenWeb(webElement.id)
       }
+
+      webView.onPreviewLoaded = { [weak coordinator = context.coordinator] in
+        guard let coordinator = coordinator else { return }
+        guard let webView = coordinator.webViewCache[webElement.id] else { return }
+        guard webView.superview != nil, webView.bounds.width > 0, webView.bounds.height > 0 else { return }
+        guard let image = webView.snapshotPreview() else { return }
+        coordinator.parent.updateWebSnapshot(webElement.id, image)
+        coordinator.parent.refreshThumbnailAfterWebSnapshot()
+      }
     }
     context.coordinator.lastWebs = model.webs
     context.coordinator.lastWebElements = Dictionary(uniqueKeysWithValues: model.webs.map { ($0.id, $0) })

@@ -37,6 +37,8 @@ struct DrawingUIView: UIViewRepresentable {
   let deleteImage: (UUID) -> Void
   let deleteWeb: (UUID) -> Void
   let enterFullScreenWeb: (UUID) -> Void
+  let updateWebSnapshot: (UUID, UIImage) -> Void
+  let refreshThumbnailAfterWebSnapshot: () -> Void
 
   var ink: PKInkingTool {
     var tool = PKInkingTool(pencilType, color: UIColor(color))

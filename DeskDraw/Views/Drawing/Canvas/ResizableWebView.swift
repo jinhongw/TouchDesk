@@ -24,6 +24,8 @@ class ResizableWebView: UIView {
   var onTapped: (() -> Void)?
   var onDelete: (() -> Void)?
   var onEnterFullScreen: (() -> Void)?
+  /// Called when the preview card has finished loading (metadata or error). Use to snapshot for thumbnail.
+  var onPreviewLoaded: (() -> Void)?
 
   var isSelectorActive: Bool = false {
     didSet { updateInteractionState() }
@@ -70,6 +72,9 @@ class ResizableWebView: UIView {
       height: size.height
     )
     addSubview(previewView)
+    previewView.onMetadataLoaded = { [weak self] in
+      self?.onPreviewLoaded?()
+    }
 
     if let u = URL(string: url) {
       previewView.load(from: u)
@@ -190,6 +195,20 @@ class ResizableWebView: UIView {
 
   @objc private func handleEnterFullScreen() {
     if !isLocked { onEnterFullScreen?() }
+  }
+
+  /// Renders the preview card (WebsitePreviewView) to an image for thumbnail cache. Call on main thread.
+  func snapshotPreview() -> UIImage? {
+    guard bounds.size.width > 0, bounds.size.height > 0 else { return nil }
+    let inset = controlPointTouchSize / 2
+    let cardSize = CGSize(width: bounds.width - inset * 2, height: bounds.height - inset * 2)
+    guard cardSize.width > 0, cardSize.height > 0 else { return nil }
+    let format = UIGraphicsImageRendererFormat()
+    format.opaque = false
+    let renderer = UIGraphicsImageRenderer(size: cardSize, format: format)
+    return renderer.image { _ in
+      previewView.drawHierarchy(in: CGRect(origin: .zero, size: cardSize), afterScreenUpdates: true)
+    }
   }
 
   override func layoutSubviews() {
@@ -325,6 +344,8 @@ class ResizableWebView: UIView {
     onTapped = nil
     onDelete = nil
     onEnterFullScreen = nil
+    onPreviewLoaded = nil
+    previewView.onMetadataLoaded = nil
     super.removeFromSuperview()
   }
 
@@ -342,6 +363,8 @@ class ResizableWebView: UIView {
     onTapped = nil
     onDelete = nil
     onEnterFullScreen = nil
+    onPreviewLoaded = nil
+    previewView.onMetadataLoaded = nil
   }
 }
 

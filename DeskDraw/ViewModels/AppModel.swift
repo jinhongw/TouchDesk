@@ -8,6 +8,7 @@
 import Foundation
 @preconcurrency import PencilKit
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -54,6 +55,7 @@ class AppModel {
   private var thumbnailWorkItem: DispatchWorkItem?
   private let thumbnailDebounceInterval: TimeInterval = 0.5
   private var imageCache: [UUID: UIImage] = [:]
+  private var webSnapshotCache: [UUID: UIImage] = [:]
   private var currentThumbnailId: UUID?
   
   var currentDrawing: DrawingModel? {
@@ -281,7 +283,41 @@ class AppModel {
               context.cgContext.restoreGState()
             }
           }
-          // 网页元素不绘制，只参与边界计算，避免复杂离屏渲染
+          for webElement in drawingModel.webs {
+            context.cgContext.saveGState()
+            let relativeX = (webElement.position.x - contentBounds.minX) * scale
+            let relativeY = (webElement.position.y - contentBounds.minY) * scale
+            let scaledPosition = CGPoint(
+              x: drawingOrigin.x + relativeX,
+              y: drawingOrigin.y + relativeY
+            )
+            let scaledSize = CGSize(
+              width: webElement.size.width * scale,
+              height: webElement.size.height * scale
+            )
+            context.cgContext.translateBy(
+              x: scaledPosition.x + scaledSize.width / 2,
+              y: scaledPosition.y + scaledSize.height / 2
+            )
+            context.cgContext.rotate(by: webElement.rotation)
+            let webRect = CGRect(
+              x: -scaledSize.width / 2,
+              y: -scaledSize.height / 2,
+              width: scaledSize.width,
+              height: scaledSize.height
+            )
+            if let cachedImage = DispatchQueue.main.sync(execute: { self.webSnapshotCache[webElement.id] }) {
+              cachedImage.draw(in: webRect)
+            } else {
+              Self.drawWebPlaceholderCard(
+                context: context.cgContext,
+                rect: webRect,
+                url: webElement.url,
+                scale: scale
+              )
+            }
+            context.cgContext.restoreGState()
+          }
 
           let drawingImage = drawing.thumbnail(
             rect: contentBounds,
@@ -329,10 +365,58 @@ class AppModel {
     imageCache.removeAll()
   }
 
+  func updateWebSnapshot(webId: UUID, image: UIImage) {
+    webSnapshotCache[webId] = image
+  }
+
+  private func cleanupWebSnapshotCache() {
+    webSnapshotCache.removeAll()
+  }
+
   @objc private func handleMemoryWarning() {
     cleanupImageCache()
+    cleanupWebSnapshotCache()
     thumbnailWorkItem?.cancel()
     thumbnailWorkItem = nil
+  }
+
+  /// Draws a placeholder card for web elements in thumbnails (rounded rect, fill, globe icon, truncated URL).
+  private static func drawWebPlaceholderCard(context: CGContext, rect: CGRect, url: String, scale: CGFloat) {
+    let cornerRadius = min(rect.width, rect.height) * 0.1
+    let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+    context.addPath(path)
+    context.setFillColor(UIColor.systemGray5.withAlphaComponent(0.9).cgColor)
+    context.fillPath()
+    context.addPath(path)
+    context.clip()
+    let config = UIImage.SymbolConfiguration(pointSize: min(rect.width, rect.height) * 0.25, weight: .regular)
+    guard let globeImage = UIImage(systemName: "globe", withConfiguration: config)?
+      .withTintColor(.darkGray, renderingMode: .alwaysOriginal) else { return }
+    let iconW = globeImage.size.width
+    let iconH = globeImage.size.height
+    let iconRect = CGRect(
+      x: rect.midX - iconW / 2,
+      y: rect.midY - iconH / 2 - rect.height * 0.08,
+      width: iconW,
+      height: iconH
+    )
+    globeImage.draw(in: iconRect)
+    let label = (URL(string: url)?.host).map { String($0) } ?? "Web"
+    let fontSize = max(8, min(rect.width, rect.height) * 0.12)
+    let font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: UIColor.darkGray
+    ]
+    let truncated = label.count > 20 ? String(label.prefix(17)) + "..." : label
+    let textSize = (truncated as NSString).size(withAttributes: attrs)
+    let textRect = CGRect(
+      x: rect.midX - textSize.width / 2,
+      y: rect.midY + rect.height * 0.05,
+      width: min(rect.width - 4, textSize.width),
+      height: textSize.height
+    )
+    (truncated as NSString).draw(in: textRect, withAttributes: attrs)
   }
 }
 

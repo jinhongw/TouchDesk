@@ -250,6 +250,13 @@ struct DrawingView: View {
         },
         enterFullScreenWeb: { webId in
           appModel.enterFullScreenWeb(webId: webId)
+        },
+        updateWebSnapshot: { webId, image in
+          appModel.updateWebSnapshot(webId: webId, image: image)
+        },
+        refreshThumbnailAfterWebSnapshot: {
+          guard let drawingId = appModel.drawingId else { return }
+          appModel.generateThumbnail(drawingId)
         }
       )
     }

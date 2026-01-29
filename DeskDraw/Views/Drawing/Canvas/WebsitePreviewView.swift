@@ -9,6 +9,9 @@ struct WebsiteMetadata {
 
 /// A compact website preview card that shows site icon, title and URL text.
 final class WebsitePreviewView: UIView {
+  /// Called when metadata has finished loading (success or error). Use this to snapshot after the card is ready.
+  var onMetadataLoaded: (() -> Void)?
+
   private let imageView = UIImageView()
   private let titleLabel = UILabel()
   private let urlLabel = UILabel()
@@ -99,6 +102,7 @@ final class WebsitePreviewView: UIView {
     imageView.image = UIImage(systemName: "exclamationmark.triangle")
     titleLabel.text = "Failed to load"
     urlLabel.text = url.host ?? url.absoluteString
+    onMetadataLoaded?()
   }
 
   func configure(with metadata: WebsiteMetadata) {
@@ -109,6 +113,7 @@ final class WebsitePreviewView: UIView {
     }
     titleLabel.text = metadata.title
     urlLabel.text = metadata.urlString
+    onMetadataLoaded?()
   }
 
   func load(from url: URL) {
