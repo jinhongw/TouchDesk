@@ -7,6 +7,7 @@ struct DrawingModel: Codable {
   var name: String
   var drawing: PKDrawing
   var images: [ImageElement]
+  var videos: [VideoElement]
   var webs: [WebElement]
   var texts: [TextElement]
   var createdAt: Date
@@ -14,7 +15,20 @@ struct DrawingModel: Codable {
   var isFavorite: Bool
 
   var bounds: CGRect {
-    drawing.bounds
+    var contentBounds = drawing.bounds
+    for image in images {
+      let frame = CGRect(origin: image.position, size: image.size)
+      contentBounds = contentBounds.isNull ? frame : contentBounds.union(frame)
+    }
+    for video in videos {
+      let frame = CGRect(origin: video.position, size: video.size)
+      contentBounds = contentBounds.isNull ? frame : contentBounds.union(frame)
+    }
+    for web in webs {
+      let frame = CGRect(origin: web.position, size: web.size)
+      contentBounds = contentBounds.isNull ? frame : contentBounds.union(frame)
+    }
+    return contentBounds
   }
 
   init(id: UUID = UUID(), name: String, drawing: PKDrawing, isFavorite: Bool = false) {
@@ -23,6 +37,7 @@ struct DrawingModel: Codable {
     self.drawing = drawing
     self.isFavorite = isFavorite
     images = []
+    videos = []
     webs = []
     texts = []
     createdAt = Date()
@@ -35,6 +50,7 @@ struct DrawingModel: Codable {
     name = try container.decode(String.self, forKey: .name)
     drawing = try container.decode(PKDrawing.self, forKey: .drawing)
     images = try container.decode([ImageElement].self, forKey: .images)
+    videos = (try? container.decode([VideoElement].self, forKey: .videos)) ?? []
     webs = (try? container.decode([WebElement].self, forKey: .webs)) ?? []
     texts = try container.decode([TextElement].self, forKey: .texts)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
@@ -47,11 +63,58 @@ struct DrawingModel: Codable {
     case name
     case drawing
     case images
+    case videos
     case webs
     case texts
     case createdAt
     case modifiedAt
     case isFavorite
+  }
+}
+
+struct VideoElement: Codable, Equatable, Sendable {
+  let id: UUID
+  let assetId: UUID
+  var fileName: String
+  var thumbnailFileName: String
+  var mimeType: String
+  var originalFileName: String?
+  var sizeBytes: Int64
+  var duration: Double
+  var pixelWidth: CGFloat
+  var pixelHeight: CGFloat
+  var position: CGPoint
+  var size: CGSize
+  var rotation: Double
+
+  init(
+    id: UUID,
+    assetId: UUID,
+    fileName: String,
+    thumbnailFileName: String,
+    mimeType: String,
+    originalFileName: String?,
+    sizeBytes: Int64,
+    duration: Double,
+    pixelWidth: CGFloat,
+    pixelHeight: CGFloat,
+    position: CGPoint,
+    size: CGSize,
+    rotation: Double
+  ) {
+    self.id = id
+    self.assetId = assetId
+    self.fileName = fileName
+    self.thumbnailFileName = thumbnailFileName
+    self.mimeType = mimeType
+    self.originalFileName = originalFileName
+    self.sizeBytes = sizeBytes
+    self.duration = duration
+    self.pixelWidth = pixelWidth
+    self.pixelHeight = pixelHeight
+    self.position = position
+    self.size = size
+    self.rotation = rotation
   }
 }
 

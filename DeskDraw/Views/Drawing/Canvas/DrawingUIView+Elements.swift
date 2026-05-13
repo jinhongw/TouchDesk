@@ -118,6 +118,101 @@ extension DrawingUIView {
     }
   }
 
+  // MARK: VideoView
+
+  func updateVideoViews(in canvas: PKCanvasView, context: Context) {
+    let currentVideoIds = Set(model.videos.map { $0.id })
+    let existingVideoViews = context.coordinator.videoViewCache
+
+    for (videoId, videoView) in existingVideoViews {
+      if !currentVideoIds.contains(videoId) {
+        context.coordinator.imageContainer?.removeImageView(videoView)
+        context.coordinator.videoViewCache.removeValue(forKey: videoId)
+      }
+    }
+
+    for videoElement in model.videos {
+      guard let videoView = context.coordinator.getOrCreateVideoView(for: videoElement) else { continue }
+
+      videoView.editingId = imageEditingId
+      videoView.isLocked = isLocked
+      videoView.isSelectorActive = isSelectorActive
+      videoView.isUserInteractionEnabled = true
+
+      let lastElement = context.coordinator.lastVideoElements[videoElement.id]
+      let needsUpdate = existingVideoViews[videoElement.id] == nil ||
+        lastElement?.assetId != videoElement.assetId ||
+        lastElement?.thumbnailFileName != videoElement.thumbnailFileName ||
+        lastElement?.position != videoElement.position ||
+        lastElement?.size != videoElement.size ||
+        lastElement?.rotation != videoElement.rotation
+
+      if needsUpdate {
+        let inset = videoView.controlPointTouchSize / 2
+        let adjustedFrame = CGRect(
+          x: videoElement.position.x - inset,
+          y: videoElement.position.y - inset,
+          width: videoElement.size.width + inset * 2,
+          height: videoElement.size.height + inset * 2
+        )
+        videoView.frame = adjustedFrame
+        videoView.transform = CGAffineTransform(rotationAngle: videoElement.rotation)
+
+        if videoView.superview == nil {
+          context.coordinator.imageContainer?.addImageView(videoView)
+        }
+      }
+
+      videoView.onPositionChanged = { [weak coordinator = context.coordinator] newPosition in
+        guard let coordinator = coordinator else { return }
+        let inset = videoView.controlPointTouchSize / 2
+        let actualPosition = CGPoint(
+          x: newPosition.x + inset,
+          y: newPosition.y + inset
+        )
+        coordinator.updateVideoPosition(videoId: videoElement.id, position: actualPosition)
+      }
+
+      videoView.onSizeChanged = { [weak coordinator = context.coordinator] newSize in
+        guard let coordinator = coordinator else { return }
+        let inset = videoView.controlPointTouchSize
+        let actualSize = CGSize(
+          width: newSize.width - inset,
+          height: newSize.height - inset
+        )
+        coordinator.updateVideoSize(videoId: videoElement.id, size: actualSize)
+      }
+
+      videoView.onTapped = {
+        guard let videoId = videoView.imageId else { return }
+
+        if videoId == imageEditingId {
+          imageEditingId = nil
+        } else {
+          imageEditingId = videoId
+        }
+
+        videoView.editingId = imageEditingId
+        videoView.isUserInteractionEnabled = true
+      }
+
+      videoView.onQuickSelected = {
+        guard let videoId = videoView.imageId else { return }
+        imageEditingId = videoId
+        videoView.editingId = imageEditingId
+        videoView.isUserInteractionEnabled = true
+      }
+
+      videoView.onDelete = { [weak coordinator = context.coordinator] in
+        guard let coordinator = coordinator else { return }
+        coordinator.parent.deleteVideo(videoElement.id)
+      }
+    }
+
+    context.coordinator.lastVideos = model.videos
+    context.coordinator.lastVideoElements = Dictionary(uniqueKeysWithValues: model.videos.map { ($0.id, $0) })
+  }
+
   // MARK: WebView
 
   func updateWebViews(in canvas: PKCanvasView, context: Context) {

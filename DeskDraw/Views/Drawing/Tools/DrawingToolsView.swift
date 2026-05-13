@@ -527,6 +527,7 @@ struct DrawingToolsView: View {
       selectTool
       webTool
       imageTool
+      videoTool
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
@@ -570,6 +571,27 @@ struct DrawingToolsView: View {
         openWindow(id: "imagePicker", value: visibleCenter)
       }, label: {
         Image(systemName: "photo.on.rectangle.angled")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var videoTool: some View {
+    HStack {
+      Button(action: {
+        let visibleCenter = CGPoint(
+          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+        )
+        dismissWindow(id: "videoPicker")
+        openWindow(id: "videoPicker", value: visibleCenter)
+      }, label: {
+        Image(systemName: "video.badge.plus")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)

@@ -151,7 +151,7 @@ struct FullScreenWebView: UIViewRepresentable {
   let onLoadingChange: (Bool) -> Void
   let onErrorChange: (String?) -> Void
 
-  class Coordinator: NSObject, WKNavigationDelegate {
+  class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
     let parent: FullScreenWebView
     var lastGoBackTrigger: Int = 0
 
@@ -186,6 +186,18 @@ struct FullScreenWebView: UIViewRepresentable {
         parent.onErrorChange(error.localizedDescription)
       }
     }
+
+    func webView(
+      _ webView: WKWebView,
+      createWebViewWith configuration: WKWebViewConfiguration,
+      for navigationAction: WKNavigationAction,
+      windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+      if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+        webView.load(URLRequest(url: url))
+      }
+      return nil
+    }
   }
 
   func makeCoordinator() -> Coordinator {
@@ -195,9 +207,15 @@ struct FullScreenWebView: UIViewRepresentable {
   func makeUIView(context: Context) -> WKWebView {
     let configuration = WKWebViewConfiguration()
     configuration.allowsInlineMediaPlayback = true
+    configuration.allowsAirPlayForMediaPlayback = true
+    configuration.mediaTypesRequiringUserActionForPlayback = []
+    configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+
     let webView = WKWebView(frame: .zero, configuration: configuration)
     webView.scrollView.contentInsetAdjustmentBehavior = .never
     webView.navigationDelegate = context.coordinator
+    webView.uiDelegate = context.coordinator
+    webView.allowsBackForwardNavigationGestures = true
     webView.load(URLRequest(url: url))
     return webView
   }

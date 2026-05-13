@@ -1,3 +1,4 @@
+import AVFoundation
 import UIKit
 
 class ResizableImageView: UIView, UIGestureRecognizerDelegate {
@@ -10,6 +11,11 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   private var deleteButton: UIButton
   private var dragStartPoint: CGPoint?
   private let minimumDragDistance: CGFloat = 5.0
+  private var videoURL: URL?
+  private var videoPlayer: AVPlayer?
+  private var videoPlayerLayer: AVPlayerLayer?
+  private weak var videoButton: UIButton?
+  private var playbackEndObserver: NSObjectProtocol?
 
   var isLocked: Bool = false {
     didSet {
@@ -27,6 +33,35 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   var image: UIImage? {
     get { imageContentView.image }
     set { imageContentView.image = newValue }
+  }
+
+  func addVideoBadge() {
+    let tag = 90210
+    if viewWithTag(tag) != nil { return }
+
+    let badge = UIButton(type: .system)
+    badge.tag = tag
+    badge.tintColor = UIColor.white.withAlphaComponent(0.92)
+    badge.translatesAutoresizingMaskIntoConstraints = false
+    badge.addTarget(self, action: #selector(toggleVideoPlayback), for: .touchUpInside)
+    badge.configuration = videoButtonConfiguration(systemName: "play.circle.fill")
+    imageContentView.isUserInteractionEnabled = true
+    imageContentView.addSubview(badge)
+    videoButton = badge
+    let proportionalWidth = badge.widthAnchor.constraint(equalTo: imageContentView.widthAnchor, multiplier: 0.22)
+    proportionalWidth.priority = .defaultHigh
+    NSLayoutConstraint.activate([
+      badge.centerXAnchor.constraint(equalTo: imageContentView.centerXAnchor),
+      badge.centerYAnchor.constraint(equalTo: imageContentView.centerYAnchor),
+      badge.widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
+      proportionalWidth,
+      badge.heightAnchor.constraint(equalTo: badge.widthAnchor),
+    ])
+  }
+
+  func configureVideoPlayback(url: URL) {
+    videoURL = url
+    addVideoBadge()
   }
 
   var editingId: UUID? {
@@ -180,6 +215,7 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     let inset = controlPointTouchSize / 2
     let imageFrame = bounds.inset(by: UIEdgeInsets(top: inset, left: inset, bottom: inset, right: inset))
     imageContentView.frame = imageFrame
+    videoPlayerLayer?.frame = imageContentView.bounds
 
     // 更新删除按钮位置
     deleteButton.frame = CGRect(
@@ -368,7 +404,73 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     false
   }
 
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    var view = touch.view
+    while let currentView = view {
+      if currentView is UIControl {
+        return false
+      }
+      view = currentView.superview
+    }
+    return true
+  }
+
+  private func videoButtonConfiguration(systemName: String) -> UIButton.Configuration {
+    var config = UIButton.Configuration.plain()
+    config.image = UIImage(systemName: systemName)
+    config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 34, weight: .regular)
+    config.baseForegroundColor = UIColor.white.withAlphaComponent(0.92)
+    config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
+    return config
+  }
+
+  @objc private func toggleVideoPlayback() {
+    guard let videoURL else { return }
+
+    if videoPlayer == nil {
+      let player = AVPlayer(url: videoURL)
+      let playerLayer = AVPlayerLayer(player: player)
+      playerLayer.videoGravity = .resizeAspect
+      playerLayer.frame = imageContentView.bounds
+      imageContentView.layer.insertSublayer(playerLayer, at: 0)
+      videoPlayer = player
+      videoPlayerLayer = playerLayer
+      playbackEndObserver = NotificationCenter.default.addObserver(
+        forName: .AVPlayerItemDidPlayToEndTime,
+        object: player.currentItem,
+        queue: .main
+      ) { [weak self] _ in
+        self?.videoPlayer?.seek(to: .zero)
+        self?.videoPlayer?.pause()
+        self?.videoButton?.configuration = self?.videoButtonConfiguration(systemName: "play.circle.fill")
+      }
+    }
+
+    guard let videoPlayer else { return }
+    if videoPlayer.timeControlStatus == .playing {
+      videoPlayer.pause()
+      videoButton?.configuration = videoButtonConfiguration(systemName: "play.circle.fill")
+    } else {
+      videoPlayer.play()
+      videoButton?.configuration = videoButtonConfiguration(systemName: "pause.circle.fill")
+    }
+  }
+
+  private func cleanupVideoPlayback() {
+    videoPlayer?.pause()
+    videoPlayer = nil
+    videoPlayerLayer?.removeFromSuperlayer()
+    videoPlayerLayer = nil
+    if let playbackEndObserver {
+      NotificationCenter.default.removeObserver(playbackEndObserver)
+      self.playbackEndObserver = nil
+    }
+    videoButton?.removeTarget(nil, action: nil, for: .allEvents)
+    videoButton = nil
+  }
+
   override func removeFromSuperview() {
+    cleanupVideoPlayback()
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
@@ -387,6 +489,7 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   }
 
   deinit {
+    cleanupVideoPlayback()
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {

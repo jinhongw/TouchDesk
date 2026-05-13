@@ -1,6 +1,9 @@
 import Foundation
+import AVFoundation
+import UniformTypeIdentifiers
+import UIKit
 
-class DrawingFileManager {
+final class DrawingFileManager: @unchecked Sendable {
   static let shared = DrawingFileManager()
 
   private init() {}
@@ -17,6 +20,24 @@ class DrawingFileManager {
   // 获取索引文件路径
   private var indexFilePath: URL {
     drawingsDirectory.appendingPathComponent("index.json")
+  }
+
+  private var assetsDirectory: URL {
+    let directory = drawingsDirectory.appendingPathComponent("assets", isDirectory: true)
+    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory
+  }
+
+  private var videosDirectory: URL {
+    let directory = assetsDirectory.appendingPathComponent("videos", isDirectory: true)
+    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory
+  }
+
+  private var thumbnailsDirectory: URL {
+    let directory = assetsDirectory.appendingPathComponent("thumbnails", isDirectory: true)
+    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory
   }
 
   // 保存绘图索引
@@ -79,6 +100,134 @@ class DrawingFileManager {
     var ids = loadDrawingIndex()
     ids.removeAll { $0 == id }
     try saveDrawingIndex(ids)
+  }
+
+  func videoURL(fileName: String) -> URL {
+    videosDirectory.appendingPathComponent(fileName)
+  }
+
+  func thumbnailURL(fileName: String) -> URL {
+    thumbnailsDirectory.appendingPathComponent(fileName)
+  }
+
+  func importVideo(from sourceURL: URL, at position: CGPoint, maxDisplaySize: CGFloat = 320) async throws -> VideoElement {
+    let didStartAccessing = sourceURL.startAccessingSecurityScopedResource()
+    defer {
+      if didStartAccessing {
+        sourceURL.stopAccessingSecurityScopedResource()
+      }
+    }
+
+    let asset = AVURLAsset(url: sourceURL)
+    guard try await asset.load(.isPlayable) else {
+      throw CocoaError(.fileReadUnsupportedScheme)
+    }
+
+    let assetId = UUID()
+    let fileExtension = sourceURL.pathExtension.isEmpty ? "mov" : sourceURL.pathExtension
+    let fileName = "\(assetId.uuidString).\(fileExtension)"
+    let thumbnailFileName = "\(assetId.uuidString).jpg"
+    let destinationURL = videoURL(fileName: fileName)
+
+    if FileManager.default.fileExists(atPath: destinationURL.path) {
+      try FileManager.default.removeItem(at: destinationURL)
+    }
+    try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+
+    let metadata: (duration: Double, naturalSize: CGSize, sizeBytes: Int64)
+    do {
+      metadata = try await videoMetadata(for: destinationURL)
+      let thumbnail = try await generateVideoThumbnail(for: destinationURL)
+      if let data = thumbnail.jpegData(compressionQuality: 0.82) {
+        try data.write(to: thumbnailURL(fileName: thumbnailFileName), options: .atomic)
+      }
+    } catch {
+      try? FileManager.default.removeItem(at: destinationURL)
+      try? FileManager.default.removeItem(at: thumbnailURL(fileName: thumbnailFileName))
+      throw error
+    }
+
+    let aspectRatio = metadata.naturalSize.width > 0 && metadata.naturalSize.height > 0
+      ? metadata.naturalSize.width / metadata.naturalSize.height
+      : 1
+    let displaySize: CGSize
+    if aspectRatio > 1 {
+      displaySize = CGSize(width: maxDisplaySize, height: maxDisplaySize / aspectRatio)
+    } else {
+      displaySize = CGSize(width: maxDisplaySize * aspectRatio, height: maxDisplaySize)
+    }
+
+    return VideoElement(
+      id: UUID(),
+      assetId: assetId,
+      fileName: fileName,
+      thumbnailFileName: thumbnailFileName,
+      mimeType: UTType(filenameExtension: fileExtension)?.preferredMIMEType ?? "video/quicktime",
+      originalFileName: sourceURL.lastPathComponent,
+      sizeBytes: metadata.sizeBytes,
+      duration: metadata.duration,
+      pixelWidth: metadata.naturalSize.width,
+      pixelHeight: metadata.naturalSize.height,
+      position: position,
+      size: displaySize,
+      rotation: 0
+    )
+  }
+
+  func loadVideoThumbnail(fileName: String) -> UIImage? {
+    UIImage(contentsOfFile: thumbnailURL(fileName: fileName).path)
+  }
+
+  func deleteVideoAsset(_ video: VideoElement) {
+    try? FileManager.default.removeItem(at: videoURL(fileName: video.fileName))
+    try? FileManager.default.removeItem(at: thumbnailURL(fileName: video.thumbnailFileName))
+  }
+
+  private func videoMetadata(for url: URL) async throws -> (duration: Double, naturalSize: CGSize, sizeBytes: Int64) {
+    let asset = AVURLAsset(url: url)
+    let track = try await firstVideoTrack(in: asset)
+    let naturalSize: CGSize
+    let preferredTransform: CGAffineTransform
+    if let track {
+      naturalSize = try await track.load(.naturalSize)
+      preferredTransform = try await track.load(.preferredTransform)
+    } else {
+      naturalSize = .zero
+      preferredTransform = .identity
+    }
+    let transformedSize = naturalSize.applying(preferredTransform)
+    let orientedSize = CGSize(width: abs(transformedSize.width), height: abs(transformedSize.height))
+    let values = try url.resourceValues(forKeys: [.fileSizeKey])
+    let duration = try await asset.load(.duration)
+    return (
+      duration: duration.seconds.isFinite ? duration.seconds : 0,
+      naturalSize: orientedSize,
+      sizeBytes: Int64(values.fileSize ?? 0)
+    )
+  }
+
+  private func generateVideoThumbnail(for url: URL) async throws -> UIImage {
+    let asset = AVURLAsset(url: url)
+    let generator = AVAssetImageGenerator(asset: asset)
+    generator.appliesPreferredTrackTransform = true
+    generator.maximumSize = CGSize(width: 1024, height: 1024)
+    let duration = try await asset.load(.duration)
+    let durationSeconds = duration.seconds
+    let thumbnailSecond = durationSeconds.isFinite ? min(max(durationSeconds * 0.1, 0), 1) : 0
+    let time = CMTime(seconds: thumbnailSecond, preferredTimescale: 600)
+    let cgImage = try await generator.image(at: time).image
+    return UIImage(cgImage: cgImage)
+  }
+
+  private func firstVideoTrack(in asset: AVURLAsset) async throws -> AVAssetTrack? {
+    let tracks = try await asset.load(.tracks)
+    for track in tracks {
+      let naturalSize = try await track.load(.naturalSize)
+      if naturalSize.width > 0, naturalSize.height > 0 {
+        return track
+      }
+    }
+    return nil
   }
 
   // 数据迁移

@@ -13,6 +13,7 @@ extension DrawingUIView {
     var parent: DrawingUIView
     var lastDrawingId: UUID = .init()
     var lastImages: [ImageElement] = []
+    var lastVideos: [VideoElement] = []
     var saveWorkItem: DispatchWorkItem?
     var saveScrollWorkItem: DispatchWorkItem?
     var isUpdatingFromModel = false
@@ -23,11 +24,13 @@ extension DrawingUIView {
     var isInitializing: Bool = false
     var isSettingPosition: Bool = false
     var imageViewCache: [UUID: ResizableImageView] = [:]
+    var videoViewCache: [UUID: ResizableImageView] = [:]
     var webViewCache: [UUID: ResizableWebView] = [:]
     var imageContainer: ImageContainerView?
     var contentOffsetObserver: NSKeyValueObservation?
     var lastWebs: [WebElement] = []
     var lastWebElements: [UUID: WebElement] = [:]
+    var lastVideoElements: [UUID: VideoElement] = [:]
 
     init(_ parent: DrawingUIView) {
       self.parent = parent
@@ -84,6 +87,30 @@ extension DrawingUIView {
       }
     }
 
+    func updateVideoPosition(videoId: UUID, position: CGPoint) {
+      guard let index = parent.model.videos.firstIndex(where: { $0.id == videoId }) else { return }
+      var updatedVideo = parent.model.videos[index]
+      updatedVideo.position = position
+      parent.model.videos[index] = updatedVideo
+
+      parent.saveDrawing()
+      if parent.isShareImageViewShowing {
+        parent.updateExportImage()
+      }
+    }
+
+    func updateVideoSize(videoId: UUID, size: CGSize) {
+      guard let index = parent.model.videos.firstIndex(where: { $0.id == videoId }) else { return }
+      var updatedVideo = parent.model.videos[index]
+      updatedVideo.size = size
+      parent.model.videos[index] = updatedVideo
+
+      parent.saveDrawing()
+      if parent.isShareImageViewShowing {
+        parent.updateExportImage()
+      }
+    }
+
     func updateWebPosition(webId: UUID, position: CGPoint) {
       guard let index = parent.model.webs.firstIndex(where: { $0.id == webId }) else { return }
       var updated = parent.model.webs[index]
@@ -124,6 +151,26 @@ extension DrawingUIView {
       return nil
     }
 
+    func getOrCreateVideoView(for videoElement: VideoElement) -> ResizableImageView? {
+      if let cachedView = videoViewCache[videoElement.id] {
+        cachedView.image = parent.getVideoThumbnail(videoElement)
+        cachedView.configureVideoPlayback(url: DrawingFileManager.shared.videoURL(fileName: videoElement.fileName))
+        return cachedView
+      }
+
+      guard let thumbnail = parent.getVideoThumbnail(videoElement) else {
+        print(#function, "Failed to create video thumbnail view")
+        return nil
+      }
+
+      let videoView = ResizableImageView(image: thumbnail, size: videoElement.size)
+      videoView.contentMode = .scaleAspectFit
+      videoView.imageId = videoElement.id
+      videoView.configureVideoPlayback(url: DrawingFileManager.shared.videoURL(fileName: videoElement.fileName))
+      videoViewCache[videoElement.id] = videoView
+      return videoView
+    }
+
     func getOrCreateWebView(for webElement: WebElement) -> ResizableWebView? {
       if let cached = webViewCache[webElement.id] {
         return cached
@@ -149,6 +196,16 @@ extension DrawingUIView {
       }
     }
 
+    func cleanupVideoViewCache(currentVideoIds: Set<UUID>) {
+      let unusedIds = Set(videoViewCache.keys).subtracting(currentVideoIds)
+      print("Cleaning up \(unusedIds.count) unused video views")
+
+      unusedIds.forEach { id in
+        videoViewCache[id]?.removeFromSuperview()
+        videoViewCache[id] = nil
+      }
+    }
+
     func cleanupWebViewCache(currentWebIds: Set<UUID>) {
       let unusedIds = Set(webViewCache.keys).subtracting(currentWebIds)
       print("Cleaning up \(unusedIds.count) unused web views")
@@ -167,6 +224,7 @@ extension DrawingUIView {
 
       // 清理所有缓存的视图
       cleanupImageViewCache(currentImageIds: [])
+      cleanupVideoViewCache(currentVideoIds: [])
       cleanupWebViewCache(currentWebIds: [])
     }
   }

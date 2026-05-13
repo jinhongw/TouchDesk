@@ -55,6 +55,7 @@ class AppModel {
   private var thumbnailWorkItem: DispatchWorkItem?
   private let thumbnailDebounceInterval: TimeInterval = 0.5
   private var imageCache: [UUID: UIImage] = [:]
+  private var videoThumbnailCache: [UUID: UIImage] = [:]
   private var webSnapshotCache: [UUID: UIImage] = [:]
   private var currentThumbnailId: UUID?
   
@@ -201,6 +202,10 @@ class AppModel {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
       contentBounds = contentBounds.union(imageFrame)
     }
+    for videoElement in drawingModel.videos {
+      let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+      contentBounds = contentBounds.union(videoFrame)
+    }
     // 将网页元素的区域纳入整体边界（缩略图不实际渲染网页，仅用于裁剪范围）
     for webElement in drawingModel.webs {
       let webFrame = CGRect(origin: webElement.position, size: webElement.size)
@@ -279,6 +284,39 @@ class AppModel {
                 width: scaledSize.width,
                 height: scaledSize.height
               ))
+
+              context.cgContext.restoreGState()
+            }
+          }
+          for videoElement in drawingModel.videos {
+            if let thumbnail = DispatchQueue.main.sync(execute: { self.getOrCreateVideoThumbnail(for: videoElement) }) {
+              context.cgContext.saveGState()
+
+              let relativeX = (videoElement.position.x - contentBounds.minX) * scale
+              let relativeY = (videoElement.position.y - contentBounds.minY) * scale
+              let scaledPosition = CGPoint(
+                x: drawingOrigin.x + relativeX,
+                y: drawingOrigin.y + relativeY
+              )
+              let scaledSize = CGSize(
+                width: videoElement.size.width * scale,
+                height: videoElement.size.height * scale
+              )
+
+              context.cgContext.translateBy(
+                x: scaledPosition.x + scaledSize.width / 2,
+                y: scaledPosition.y + scaledSize.height / 2
+              )
+              context.cgContext.rotate(by: videoElement.rotation)
+
+              let videoRect = CGRect(
+                x: -scaledSize.width / 2,
+                y: -scaledSize.height / 2,
+                width: scaledSize.width,
+                height: scaledSize.height
+              )
+              thumbnail.draw(in: videoRect)
+              Self.drawVideoPlayBadge(context: context.cgContext, rect: videoRect)
 
               context.cgContext.restoreGState()
             }
@@ -371,8 +409,25 @@ class AppModel {
     return nil
   }
 
+  func getOrCreateVideoThumbnail(for videoElement: VideoElement) -> UIImage? {
+    if let cachedImage = videoThumbnailCache[videoElement.assetId] {
+      return cachedImage
+    }
+
+    if let image = DrawingFileManager.shared.loadVideoThumbnail(fileName: videoElement.thumbnailFileName) {
+      videoThumbnailCache[videoElement.assetId] = image
+      return image
+    }
+
+    return nil
+  }
+
   private func cleanupImageCache() {
     imageCache.removeAll()
+  }
+
+  private func cleanupVideoThumbnailCache() {
+    videoThumbnailCache.removeAll()
   }
 
   func updateWebSnapshot(webId: UUID, image: UIImage) {
@@ -395,6 +450,7 @@ class AppModel {
 
   @objc private func handleMemoryWarning() {
     cleanupImageCache()
+    cleanupVideoThumbnailCache()
     cleanupWebSnapshotCache()
     thumbnailWorkItem?.cancel()
     thumbnailWorkItem = nil
@@ -491,6 +547,31 @@ class AppModel {
       height: textSize.height
     )
     (truncated as NSString).draw(in: textRect, withAttributes: attrs)
+  }
+
+  private static func drawVideoPlayBadge(context: CGContext, rect: CGRect) {
+    let diameter = min(rect.width, rect.height) * 0.22
+    guard diameter > 8 else { return }
+
+    let circleRect = CGRect(
+      x: rect.midX - diameter / 2,
+      y: rect.midY - diameter / 2,
+      width: diameter,
+      height: diameter
+    )
+    context.setFillColor(UIColor.black.withAlphaComponent(0.35).cgColor)
+    context.fillEllipse(in: circleRect)
+
+    let triangleWidth = diameter * 0.28
+    let triangleHeight = diameter * 0.36
+    let path = CGMutablePath()
+    path.move(to: CGPoint(x: rect.midX - triangleWidth * 0.35, y: rect.midY - triangleHeight / 2))
+    path.addLine(to: CGPoint(x: rect.midX - triangleWidth * 0.35, y: rect.midY + triangleHeight / 2))
+    path.addLine(to: CGPoint(x: rect.midX + triangleWidth * 0.55, y: rect.midY))
+    path.closeSubpath()
+    context.addPath(path)
+    context.setFillColor(UIColor.white.withAlphaComponent(0.92).cgColor)
+    context.fillPath()
   }
 }
 
@@ -609,6 +690,30 @@ extension AppModel {
     imageEditingId = imageElement.id
   }
 
+  func addVideo(from url: URL, at position: CGPoint) {
+    guard let drawingId else { return }
+    Task.detached(priority: .utility) { [weak self] in
+      do {
+        let videoElement = try await DrawingFileManager.shared.importVideo(from: url, at: position)
+
+        await MainActor.run { [weak self] in
+          guard let self = self, self.drawings[drawingId] != nil else {
+            DrawingFileManager.shared.deleteVideoAsset(videoElement)
+            return
+          }
+          self.drawings[drawingId]?.videos.append(videoElement)
+          if let thumbnail = DrawingFileManager.shared.loadVideoThumbnail(fileName: videoElement.thumbnailFileName) {
+            self.videoThumbnailCache[videoElement.assetId] = thumbnail
+          }
+          self.updateDrawing(drawingId)
+          self.imageEditingId = videoElement.id
+        }
+      } catch {
+        logger.info("\(#function) Could not import video: \(error.localizedDescription)")
+      }
+    }
+  }
+
   func addWeb(_ url: String, at position: CGPoint, size: CGSize, rotation: Double = 0) {
     let webElement = WebElement(id: UUID(), url: url, position: position, size: size, rotation: rotation)
     guard let drawingId else { return }
@@ -634,11 +739,29 @@ extension AppModel {
     updateDrawing(drawingId)
   }
 
+  func deleteVideo(_ videoId: UUID) {
+    guard let drawingId else { return }
+    guard let video = drawings[drawingId]?.videos.first(where: { $0.id == videoId }) else { return }
+    drawings[drawingId]?.videos.removeAll { $0.id == videoId }
+    imageEditingId = nil
+    updateDrawing(drawingId)
+    deleteVideoAssetIfUnused(video)
+  }
+
   func deleteWeb(_ webId: UUID) {
     guard let drawingId else { return }
     drawings[drawingId]?.webs.removeAll { $0.id == webId }
     imageEditingId = nil
     updateDrawing(drawingId)
+  }
+
+  private func deleteVideoAssetIfUnused(_ video: VideoElement) {
+    let isStillReferenced = drawings.values.contains { drawing in
+      drawing.videos.contains { $0.assetId == video.assetId }
+    }
+    guard !isStillReferenced else { return }
+    videoThumbnailCache.removeValue(forKey: video.assetId)
+    DrawingFileManager.shared.deleteVideoAsset(video)
   }
 
   func enterFullScreenWeb(webId: UUID) {

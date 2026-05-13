@@ -245,8 +245,14 @@ struct DrawingView: View {
         deleteImage: { imageId in
           appModel.deleteImage(imageId)
         },
+        deleteVideo: { videoId in
+          appModel.deleteVideo(videoId)
+        },
         deleteWeb: { webId in
           appModel.deleteWeb(webId)
+        },
+        getVideoThumbnail: { videoElement in
+          appModel.getOrCreateVideoThumbnail(for: videoElement)
         },
         enterFullScreenWeb: { webId in
           appModel.enterFullScreenWeb(webId: webId)

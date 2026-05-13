@@ -35,7 +35,9 @@ struct DrawingUIView: UIViewRepresentable {
   let saveDrawing: () -> Void
   let updateExportImage: () -> Void
   let deleteImage: (UUID) -> Void
+  let deleteVideo: (UUID) -> Void
   let deleteWeb: (UUID) -> Void
+  let getVideoThumbnail: (VideoElement) -> UIImage?
   let enterFullScreenWeb: (UUID) -> Void
   let updateWebSnapshot: (UUID, UIImage) -> Void
   let updateWebCachedMetadata: (UUID, String, Data?) -> Void
@@ -146,6 +148,7 @@ struct DrawingUIView: UIViewRepresentable {
     canvas.becomeFirstResponder()
     context.coordinator.lastDrawingId = model.id
     context.coordinator.lastImages = model.images
+    context.coordinator.lastVideos = model.videos
     canvas.delegate = context.coordinator
 
     // 创建并设置图片容器
@@ -210,6 +213,7 @@ struct DrawingUIView: UIViewRepresentable {
 
     // 使用新的图片视图管理逻辑
     updateImageViews(in: canvas, context: context)
+    updateVideoViews(in: canvas, context: context)
     updateWebViews(in: canvas, context: context)
 
     return canvas
@@ -239,6 +243,7 @@ struct DrawingUIView: UIViewRepresentable {
 
       // 清理图片视图缓存
       context.coordinator.cleanupImageViewCache(currentImageIds: Set(model.images.map { $0.id }))
+      context.coordinator.cleanupVideoViewCache(currentVideoIds: Set(model.videos.map { $0.id }))
       context.coordinator.cleanupWebViewCache(currentWebIds: Set(model.webs.map { $0.id }))
 
       // 先重置 contentSize 到默认大小
@@ -269,10 +274,12 @@ struct DrawingUIView: UIViewRepresentable {
 
       // 更新图片视图
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
       updateWebViews(in: canvas, context: context)
 
       context.coordinator.lastDrawingId = model.id
       context.coordinator.lastImages = model.images
+      context.coordinator.lastVideos = model.videos
       context.coordinator.isUpdatingFromModel = false
     } else if context.coordinator.lastImages != model.images {
       print(#function, "DEBUG Change images")
@@ -281,6 +288,15 @@ struct DrawingUIView: UIViewRepresentable {
       updateImageViews(in: canvas, context: context)
 
       context.coordinator.lastImages = model.images
+      updateContentSizeForDrawing(coordinator: context.coordinator)
+      saveDrawing()
+      updateExportImage()
+    } else if context.coordinator.lastVideos != model.videos {
+      print(#function, "DEBUG Change videos")
+
+      updateVideoViews(in: canvas, context: context)
+
+      context.coordinator.lastVideos = model.videos
       updateContentSizeForDrawing(coordinator: context.coordinator)
       saveDrawing()
       updateExportImage()
@@ -295,16 +311,19 @@ struct DrawingUIView: UIViewRepresentable {
       print(#function, "DEBUG Change selector active state")
       context.coordinator.lastSelectorActive = isSelectorActive
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
       updateWebViews(in: canvas, context: context)
     } else if context.coordinator.lastImageEditingId != imageEditingId {
       print(#function, "DEBUG Change imageEditingId")
       context.coordinator.lastImageEditingId = imageEditingId
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
       updateWebViews(in: canvas, context: context)
     } else if context.coordinator.lastLocked != isLocked {
       print(#function, "DEBUG Change locked state")
       context.coordinator.lastLocked = isLocked
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
       updateWebViews(in: canvas, context: context)
     }
   }
@@ -320,9 +339,10 @@ struct DrawingUIView: UIViewRepresentable {
     // 检查是否有任何内容（绘画或图片）
     let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
     let hasImages = !model.images.isEmpty
+    let hasVideos = !model.videos.isEmpty
     let hasWebs = !model.webs.isEmpty
 
-    guard hasDrawing || hasImages || hasWebs else {
+    guard hasDrawing || hasImages || hasVideos || hasWebs else {
       print(#function, "canvasWidth set \(defaultSize) width: \(canvasWidth) height \(canvasHeight)")
       CATransaction.begin()
       CATransaction.setDisableActions(true)
@@ -343,6 +363,10 @@ struct DrawingUIView: UIViewRepresentable {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
       print(#function, "bounds \(bounds) imageFrame \(imageFrame)")
       bounds = bounds == .zero ? imageFrame : bounds.union(imageFrame)
+    }
+    for videoElement in model.videos {
+      let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+      bounds = bounds == .zero ? videoFrame : bounds.union(videoFrame)
     }
     for webElement in model.webs {
       let webFrame = CGRect(origin: webElement.position, size: webElement.size)
@@ -402,6 +426,14 @@ struct DrawingUIView: UIViewRepresentable {
         )
         model.webs[i] = webElement
       }
+      for i in 0 ..< model.videos.count {
+        var videoElement = model.videos[i]
+        videoElement.position = CGPoint(
+          x: videoElement.position.x + transformX,
+          y: videoElement.position.y + transformY
+        )
+        model.videos[i] = videoElement
+      }
 
       canvas.setContentOffset(CGPoint(x: canvas.contentOffset.x + transformX, y: canvas.contentOffset.y + transformY), animated: false)
       CATransaction.commit()
@@ -437,9 +469,10 @@ struct DrawingUIView: UIViewRepresentable {
       // 如果没有保存的位置，使用原有逻辑
       let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
       let hasImages = !model.images.isEmpty
+      let hasVideos = !model.videos.isEmpty
       let hasWebs = !model.webs.isEmpty
 
-      guard hasDrawing || hasImages || hasWebs else {
+      guard hasDrawing || hasImages || hasVideos || hasWebs else {
         print(#function, "Set default position")
         canvas.setContentOffset(CGPoint(x: defaultSize.width / 2, y: defaultSize.height / 2), animated: true)
         // 延迟重置标志
@@ -454,6 +487,10 @@ struct DrawingUIView: UIViewRepresentable {
       for imageElement in model.images {
         let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
         contentBounds = contentBounds == .zero ? imageFrame : contentBounds.union(imageFrame)
+      }
+      for videoElement in model.videos {
+        let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+        contentBounds = contentBounds == .zero ? videoFrame : contentBounds.union(videoFrame)
       }
       for webElement in model.webs {
         let webFrame = CGRect(origin: webElement.position, size: webElement.size)
