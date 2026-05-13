@@ -82,6 +82,56 @@ struct DrawingToolsView: View {
     return min(1, width / toolbarContentWidth)
   }
 
+  private func normalizedWebURLString(from input: String) -> String? {
+    let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedInput.isEmpty else { return nil }
+
+    if trimmedInput.contains(" ") {
+      return googleSearchURLString(for: trimmedInput)
+    }
+
+    if let url = URL(string: trimmedInput), url.scheme != nil, url.host != nil {
+      return url.absoluteString
+    }
+
+    if isLikelyWebAddress(trimmedInput) {
+      return "https://\(trimmedInput)"
+    }
+
+    return googleSearchURLString(for: trimmedInput)
+  }
+
+  private func isLikelyWebAddress(_ input: String) -> Bool {
+    guard !input.contains(" ") else { return false }
+
+    if input.hasPrefix("localhost") {
+      return true
+    }
+
+    let host = input.split(separator: "/").first?.split(separator: ":").first ?? ""
+    return host.contains(".") && !host.hasPrefix(".") && !host.hasSuffix(".")
+  }
+
+  private func googleSearchURLString(for query: String) -> String? {
+    var components = URLComponents(string: "https://www.google.com/search")
+    components?.queryItems = [
+      URLQueryItem(name: "q", value: query)
+    ]
+    return components?.url?.absoluteString
+  }
+
+  @MainActor
+  private func addWebFromInput() {
+    guard let urlString = normalizedWebURLString(from: webURLString) else { return }
+    let visibleCenter = CGPoint(
+      x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+      y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+    )
+    webURLString = urlString
+    appModel.addWeb(urlString, at: visibleCenter, size: CGSize(width: 160, height: 116))
+    showWebURLInput = false
+  }
+
   @MainActor
   private var toolbarContent: some View {
     HStack(spacing: 8) {
@@ -550,11 +600,16 @@ struct DrawingToolsView: View {
   private var webURLInput: some View {
     HStack(spacing: 8) {
       HStack(spacing: 8) {
-        Image(systemName: "link")
+        Image(systemName: "magnifyingglass")
           .font(.caption)
           .foregroundStyle(.secondary)
-        TextField("", text: $webURLString)
+        TextField("Search or enter website", text: $webURLString)
           .frame(minWidth: 220)
+          .textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+          .onSubmit {
+            addWebFromInput()
+          }
         Button(action: {
           webURLString = ""
         }, label: {
@@ -569,11 +624,7 @@ struct DrawingToolsView: View {
       .padding(12)
       .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
       Button(action: {
-        let visibleCenter = CGPoint(
-          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
-          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
-        )
-        appModel.addWeb(webURLString, at: visibleCenter, size: CGSize(width: 160, height: 116))
+        addWebFromInput()
       }, label: {
         Image(systemName: "checkmark")
           .frame(width: 8)
