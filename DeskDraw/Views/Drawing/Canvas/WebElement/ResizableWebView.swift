@@ -1,7 +1,7 @@
 import WebKit
 import UIKit
 
-class ResizableWebView: UIView {
+class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   let controlPointTouchSize: CGFloat = 32
   private let controlPointVisualSize: CGFloat = 10
   private let controlPointBorderWidth: CGFloat = 2
@@ -22,6 +22,7 @@ class ResizableWebView: UIView {
   var onSizeChanged: ((CGSize) -> Void)?
   var onPositionChanged: ((CGPoint) -> Void)?
   var onTapped: (() -> Void)?
+  var onQuickSelected: (() -> Void)?
   var onDelete: (() -> Void)?
   var onEnterFullScreen: (() -> Void)?
   /// Called when the preview card has finished loading (metadata or error). Passes title and iconData for persistence.
@@ -63,6 +64,7 @@ class ResizableWebView: UIView {
 
     super.init(frame: .zero)
     backgroundColor = .clear
+    isMultipleTouchEnabled = true
 
     previewView.backgroundColor = .clear
     previewView.frame = CGRect(
@@ -139,6 +141,7 @@ class ResizableWebView: UIView {
     setupControlPoints()
     setupDragGesture()
     setupTapGesture()
+    setupPinchGesture()
     updateInteractionState()
   }
 
@@ -173,6 +176,7 @@ class ResizableWebView: UIView {
       controlPoints.append(controlPoint)
 
       let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleControlPointPan(_:)))
+      panGesture.maximumNumberOfTouches = 1
       controlPoint.addGestureRecognizer(panGesture)
     }
   }
@@ -253,6 +257,7 @@ class ResizableWebView: UIView {
 
   private func setupDragGesture() {
     let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleTranslationPan(_:)))
+    panGesture.maximumNumberOfTouches = 1
     addGestureRecognizer(panGesture)
   }
 
@@ -325,12 +330,64 @@ class ResizableWebView: UIView {
   }
 
   private func setupTapGesture() {
+    let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(_:)))
+    doubleTapGesture.numberOfTapsRequired = 2
+    doubleTapGesture.delegate = self
+    doubleTapGesture.cancelsTouchesInView = false
+    addGestureRecognizer(doubleTapGesture)
+
     let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+    tapGesture.delegate = self
+    tapGesture.require(toFail: doubleTapGesture)
     addGestureRecognizer(tapGesture)
   }
 
   @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
     if !isLocked { onTapped?() }
+  }
+
+  @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
+    if !isLocked { onQuickSelected?() }
+  }
+
+  private func setupPinchGesture() {
+    let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+    pinchGesture.delegate = self
+    addGestureRecognizer(pinchGesture)
+  }
+
+  @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+    if isLocked { return }
+
+    switch gesture.state {
+    case .began:
+      onQuickSelected?()
+      alpha = 0.5
+      deleteButton.isHidden = true
+    case .changed:
+      let scale = gesture.scale
+      let minContentSize: CGFloat = 120
+      let minSize = minContentSize + controlPointTouchSize
+      let newSize = CGSize(
+        width: max(bounds.width * scale, minSize),
+        height: max(bounds.height * scale, minSize)
+      )
+      let oldCenter = center
+      bounds.size = newSize
+      center = oldCenter
+      gesture.scale = 1
+    case .ended, .cancelled:
+      alpha = 1.0
+      updateInteractionState()
+      onSizeChanged?(bounds.size)
+      onPositionChanged?(frame.origin)
+    default:
+      alpha = 1.0
+    }
+  }
+
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    false
   }
 
   override func removeFromSuperview() {
@@ -345,6 +402,7 @@ class ResizableWebView: UIView {
     onSizeChanged = nil
     onPositionChanged = nil
     onTapped = nil
+    onQuickSelected = nil
     onDelete = nil
     onEnterFullScreen = nil
     onPreviewLoaded = nil
@@ -364,10 +422,10 @@ class ResizableWebView: UIView {
     onSizeChanged = nil
     onPositionChanged = nil
     onTapped = nil
+    onQuickSelected = nil
     onDelete = nil
     onEnterFullScreen = nil
     onPreviewLoaded = nil
     previewView.onMetadataLoaded = nil
   }
 }
-

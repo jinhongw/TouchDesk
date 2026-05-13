@@ -99,6 +99,10 @@ class ImageContainerView: UIScrollView {
   }
 
   override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    if event?.allTouches?.contains(where: { $0.type == .pencil }) == true {
+      return nil
+    }
+
     // 遍历所有子视图，看看触摸点是否在子视图内
     for subview in contentView.subviews.reversed() {
       let convertedPoint = subview.convert(point, from: self)

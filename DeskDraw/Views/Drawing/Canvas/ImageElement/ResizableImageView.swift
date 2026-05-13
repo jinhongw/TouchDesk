@@ -1,6 +1,6 @@
 import UIKit
 
-class ResizableImageView: UIView {
+class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   let controlPointTouchSize: CGFloat = 32 // 触控区域大小
   private let controlPointVisualSize: CGFloat = 10 // 视觉大小
   private let controlPointBorderWidth: CGFloat = 2
@@ -21,6 +21,7 @@ class ResizableImageView: UIView {
   var onSizeChanged: ((CGSize) -> Void)?
   var onPositionChanged: ((CGPoint) -> Void)?
   var onTapped: (() -> Void)?
+  var onQuickSelected: (() -> Void)?
   var onDelete: (() -> Void)?
 
   var image: UIImage? {
@@ -33,6 +34,8 @@ class ResizableImageView: UIView {
       updateInteractionState()
     }
   }
+
+  var isSelectorActive: Bool = false
 
   private func updateInteractionState() {
     // 根据锁定状态和编辑状态更新交互
@@ -68,6 +71,7 @@ class ResizableImageView: UIView {
 
     super.init(frame: .zero)
     backgroundColor = .clear // 确保背景透明
+    isMultipleTouchEnabled = true
 
     imageContentView.frame = CGRect(
       x: controlPointTouchSize / 2,
@@ -112,6 +116,7 @@ class ResizableImageView: UIView {
     setupControlPoints()
     setupDragGesture()
     setupTapGesture()
+    setupPinchGesture()
   }
 
   @available(*, unavailable)
@@ -141,6 +146,7 @@ class ResizableImageView: UIView {
       controlPoints.append(controlPoint)
 
       let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleControlPointPan(_:)))
+      panGesture.maximumNumberOfTouches = 1
       controlPoint.addGestureRecognizer(panGesture)
     }
   }
@@ -205,6 +211,7 @@ class ResizableImageView: UIView {
 
   private func setupDragGesture() {
     let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleImageTranslationPan(_:)))
+    panGesture.maximumNumberOfTouches = 1
     addGestureRecognizer(panGesture)
   }
 
@@ -297,14 +304,68 @@ class ResizableImageView: UIView {
   }
 
   private func setupTapGesture() {
+    let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(_:)))
+    doubleTapGesture.numberOfTapsRequired = 2
+    doubleTapGesture.delegate = self
+    doubleTapGesture.cancelsTouchesInView = false
+    addGestureRecognizer(doubleTapGesture)
+
     let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+    tapGesture.delegate = self
+    tapGesture.require(toFail: doubleTapGesture)
     addGestureRecognizer(tapGesture)
   }
 
   @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-    if !isLocked {
+    if !isLocked, isSelectorActive || imageId == editingId {
       onTapped?()
     }
+  }
+
+  @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
+    if !isLocked {
+      onQuickSelected?()
+    }
+  }
+
+  private func setupPinchGesture() {
+    let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+    pinchGesture.delegate = self
+    addGestureRecognizer(pinchGesture)
+  }
+
+  @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+    if isLocked { return }
+
+    switch gesture.state {
+    case .began:
+      onQuickSelected?()
+      alpha = 0.5
+      deleteButton.isHidden = true
+    case .changed:
+      let scale = gesture.scale
+      let minContentSize: CGFloat = 50
+      let minSize = minContentSize + controlPointTouchSize
+      let newSize = CGSize(
+        width: max(bounds.width * scale, minSize),
+        height: max(bounds.height * scale, minSize)
+      )
+      let oldCenter = center
+      bounds.size = newSize
+      center = oldCenter
+      gesture.scale = 1
+    case .ended, .cancelled:
+      alpha = 1.0
+      updateDeleteButtonVisibility()
+      onSizeChanged?(bounds.size)
+      onPositionChanged?(frame.origin)
+    default:
+      alpha = 1.0
+    }
+  }
+
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    false
   }
 
   override func removeFromSuperview() {
@@ -319,6 +380,7 @@ class ResizableImageView: UIView {
     onSizeChanged = nil
     onPositionChanged = nil
     onTapped = nil
+    onQuickSelected = nil
     onDelete = nil
 
     super.removeFromSuperview()
@@ -336,6 +398,7 @@ class ResizableImageView: UIView {
     onSizeChanged = nil
     onPositionChanged = nil
     onTapped = nil
+    onQuickSelected = nil
     onDelete = nil
   }
 }

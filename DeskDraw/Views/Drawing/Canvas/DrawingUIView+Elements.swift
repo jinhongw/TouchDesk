@@ -35,9 +35,11 @@ extension DrawingUIView {
 
       // 设置锁定状态
       imageView.isLocked = isLocked
+      imageView.isSelectorActive = isSelectorActive
 
-      // 设置是否可以响应点击事件
-      imageView.isUserInteractionEnabled = isSelectorActive || imageView.editingId == imageElement.id
+      // Always allow element-level double tap and pinch gestures. Empty canvas areas
+      // still fall through to PencilKit via ImageContainerView.hitTest.
+      imageView.isUserInteractionEnabled = true
 
       // 使用字典快速查找上一次的图片信息
       let lastElement = context.coordinator.lastImageElements[imageElement.id]
@@ -98,7 +100,14 @@ extension DrawingUIView {
         }
 
         imageView.editingId = imageEditingId
-        imageView.isUserInteractionEnabled = isSelectorActive || imageEditingId == imageId
+        imageView.isUserInteractionEnabled = true
+      }
+
+      imageView.onQuickSelected = {
+        guard let imageId = imageView.imageId else { return }
+        imageEditingId = imageId
+        imageView.editingId = imageEditingId
+        imageView.isUserInteractionEnabled = true
       }
 
       // 添加删除回调
@@ -183,6 +192,12 @@ extension DrawingUIView {
             imageEditingId = nil
           }
         }
+        webView.editingId = imageEditingId
+      }
+
+      webView.onQuickSelected = {
+        guard let id = webView.webId else { return }
+        imageEditingId = id
         webView.editingId = imageEditingId
       }
 
