@@ -10,6 +10,14 @@ import PencilKit
 import RealityKit
 import SwiftUI
 
+private struct DrawingToolsWidthPreferenceKey: PreferenceKey {
+  static var defaultValue: CGFloat = 0
+
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = max(value, nextValue())
+  }
+}
+
 struct DrawingToolsView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.openWindow) private var openWindow
@@ -34,6 +42,7 @@ struct DrawingToolsView: View {
   @State private var showMoreFuncsMenu = false
 
   @State private var showWebURLInput: Bool = false
+  @State private var toolbarContentWidth: CGFloat = 0
 
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
@@ -41,6 +50,7 @@ struct DrawingToolsView: View {
   @Binding var isSelectorActive: Bool
 
   let canvas: PKCanvasView
+  let width: CGFloat
 
   enum ToolSettingType {
     case pen
@@ -67,15 +77,43 @@ struct DrawingToolsView: View {
     recentColorsArray = ColorArrayStorageModel(colors: colors)
   }
 
-  var body: some View {
+  private var toolbarScale: CGFloat {
+    guard toolbarContentWidth > 0, width > 0 else { return 1 }
+    return min(1, width / toolbarContentWidth)
+  }
+
+  @MainActor
+  private var toolbarContent: some View {
     HStack(spacing: 8) {
       leftTools
       Spacer(minLength: 20)
       rightTools
     }
+  }
+
+  var body: some View {
+    toolbarContent
     .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, 28)
     .padding(.trailing, 28)
+    .frame(width: toolbarScale < 1 ? toolbarContentWidth : width)
+    .scaleEffect(toolbarScale, anchor: .center)
+    .frame(width: width)
+    .background {
+      toolbarContent
+        .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
+        .padding(.leading, 28)
+        .padding(.trailing, 28)
+        .fixedSize(horizontal: true, vertical: false)
+        .background {
+          GeometryReader { proxy in
+            Color.clear
+              .preference(key: DrawingToolsWidthPreferenceKey.self, value: proxy.size.width)
+          }
+        }
+        .hidden()
+    }
+    .onPreferenceChange(DrawingToolsWidthPreferenceKey.self) { toolbarContentWidth = $0 }
     .animation(.spring, value: isHorizontal)
     .animation(.spring.speed(2), value: appModel.isLocked)
   }
@@ -1072,12 +1110,13 @@ struct RecentColorButton: View {
         pencilType: $pencilType,
         eraserType: $eraserType,
         isSelectorActive: $isSelectorActive,
-        canvas: canvas
+        canvas: canvas,
+        width: 520
       )
       .environment(AppModel())
-      .frame(width: 1024, height: 44)
+      .frame(width: 520, height: 44)
       .rotation3DEffect(.degrees(90), axis: (1, 0, 0))
     }
   }
-  .frame(width: 1024)
+  .frame(width: 520)
 })

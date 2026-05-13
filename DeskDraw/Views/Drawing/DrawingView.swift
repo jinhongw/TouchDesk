@@ -312,7 +312,8 @@ struct DrawingView: View {
       pencilType: $pencilType,
       eraserType: $eraserType,
       isSelectorActive: $isSelectorActive,
-      canvas: canvas
+      canvas: canvas,
+      width: width
     )
     .environment(appModel)
     .frame(width: width, height: 120)
