@@ -438,14 +438,6 @@ private struct CanvasResizeCornerHint: View {
         style: StrokeStyle(lineWidth: 2.4, lineCap: .round)
       )
       .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
-      .overlay {
-        CornerArcShape(side: side, inset: 8)
-          .stroke(
-            Color.white.opacity(0.7),
-            style: StrokeStyle(lineWidth: 1.8, lineCap: .round)
-          )
-          .shadow(color: .black.opacity(0.3), radius: 1.5, x: 0, y: 1)
-      }
   }
 }
 
@@ -462,13 +454,13 @@ private struct CornerArcShape: Shape {
 
     switch side {
     case .left:
-      center = CGPoint(x: rect.minX, y: rect.maxY)
-      startAngle = .degrees(270)
-      endAngle = .degrees(360)
+      center = CGPoint(x: rect.maxX, y: rect.minY)
+      startAngle = .degrees(90)
+      endAngle = .degrees(180)
     case .right:
-      center = CGPoint(x: rect.maxX, y: rect.maxY)
-      startAngle = .degrees(180)
-      endAngle = .degrees(270)
+      center = CGPoint(x: rect.minX, y: rect.minY)
+      startAngle = .degrees(0)
+      endAngle = .degrees(90)
     }
 
     path.addArc(
