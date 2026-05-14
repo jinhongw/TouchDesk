@@ -15,7 +15,12 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   private var videoPlayer: AVPlayer?
   private var videoPlayerLayer: AVPlayerLayer?
   private weak var videoButton: UIButton?
+  private weak var pauseButton: UIButton?
+  private weak var fullscreenButton: UIButton?
+  private weak var progressSlider: UISlider?
   private var playbackEndObserver: NSObjectProtocol?
+  private var timeObserver: Any?
+  private var isScrubbing = false
 
   var isLocked: Bool = false {
     didSet {
@@ -29,6 +34,7 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   var onTapped: (() -> Void)?
   var onQuickSelected: (() -> Void)?
   var onDelete: (() -> Void)?
+  var onEnterFullScreen: (() -> Void)?
 
   var image: UIImage? {
     get { imageContentView.image }
@@ -57,11 +63,67 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
       proportionalWidth,
       badge.heightAnchor.constraint(equalTo: badge.widthAnchor),
     ])
+    addVideoPlaybackControls()
   }
 
   func configureVideoPlayback(url: URL) {
     videoURL = url
     addVideoBadge()
+  }
+
+  private func addVideoPlaybackControls() {
+    let controlsTag = 90211
+    if viewWithTag(controlsTag) != nil { return }
+
+    let pauseButton = UIButton(type: .system)
+    pauseButton.tag = controlsTag
+    pauseButton.tintColor = UIColor.white.withAlphaComponent(0.94)
+    pauseButton.configuration = videoButtonConfiguration(systemName: "pause.circle.fill")
+    pauseButton.translatesAutoresizingMaskIntoConstraints = false
+    pauseButton.isHidden = true
+    pauseButton.addTarget(self, action: #selector(toggleVideoPlayback), for: .touchUpInside)
+    imageContentView.addSubview(pauseButton)
+    self.pauseButton = pauseButton
+
+    let slider = UISlider()
+    slider.minimumValue = 0
+    slider.maximumValue = 1
+    slider.value = 0
+    slider.isHidden = true
+    slider.translatesAutoresizingMaskIntoConstraints = false
+    slider.minimumTrackTintColor = .white
+    slider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.35)
+    slider.thumbTintColor = .white
+    slider.addTarget(self, action: #selector(beginScrubbing(_:)), for: .touchDown)
+    slider.addTarget(self, action: #selector(scrubVideo(_:)), for: .valueChanged)
+    slider.addTarget(self, action: #selector(endScrubbing(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    imageContentView.addSubview(slider)
+    progressSlider = slider
+
+    let fullscreen = UIButton(type: .system)
+    fullscreen.tintColor = UIColor.white.withAlphaComponent(0.94)
+    fullscreen.configuration = videoButtonConfiguration(systemName: "arrow.up.left.and.arrow.down.right")
+    fullscreen.translatesAutoresizingMaskIntoConstraints = false
+    fullscreen.isHidden = true
+    fullscreen.addTarget(self, action: #selector(enterVideoFullScreen), for: .touchUpInside)
+    imageContentView.addSubview(fullscreen)
+    fullscreenButton = fullscreen
+
+    NSLayoutConstraint.activate([
+      pauseButton.leadingAnchor.constraint(equalTo: imageContentView.leadingAnchor, constant: 10),
+      pauseButton.bottomAnchor.constraint(equalTo: imageContentView.bottomAnchor, constant: -10),
+      pauseButton.widthAnchor.constraint(equalToConstant: 44),
+      pauseButton.heightAnchor.constraint(equalTo: pauseButton.widthAnchor),
+
+      fullscreen.trailingAnchor.constraint(equalTo: imageContentView.trailingAnchor, constant: -10),
+      fullscreen.bottomAnchor.constraint(equalTo: imageContentView.bottomAnchor, constant: -10),
+      fullscreen.widthAnchor.constraint(equalToConstant: 44),
+      fullscreen.heightAnchor.constraint(equalTo: fullscreen.widthAnchor),
+
+      slider.leadingAnchor.constraint(equalTo: pauseButton.trailingAnchor, constant: 8),
+      slider.trailingAnchor.constraint(equalTo: fullscreen.leadingAnchor, constant: -8),
+      slider.centerYAnchor.constraint(equalTo: pauseButton.centerYAnchor),
+    ])
   }
 
   var editingId: UUID? {
@@ -70,28 +132,32 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     }
   }
 
-  var isSelectorActive: Bool = false
+  var isSelectorActive: Bool = false {
+    didSet {
+      updateInteractionState()
+    }
+  }
 
   private func updateInteractionState() {
     // 根据锁定状态和编辑状态更新交互
-    let shouldShowControls = imageId == editingId && !isLocked
+    let shouldShowControls = (isSelectorActive || imageId == editingId) && !isLocked
     controlPoints.forEach { $0.isHidden = !shouldShowControls }
     updateDragGesture()
     updateDeleteButtonVisibility()
   }
 
   private func updateDeleteButtonVisibility() {
-    deleteButton.isHidden = imageId != editingId || isLocked
+    deleteButton.isHidden = !(isSelectorActive || imageId == editingId) || isLocked
   }
 
   private func updateDragGesture() {
     // 只在编辑状态且未锁定时启用拖拽手势
     gestureRecognizers?.forEach { gesture in
       if gesture is UIPanGestureRecognizer {
-        gesture.isEnabled = imageId == editingId && !isLocked
+        gesture.isEnabled = (isSelectorActive || imageId == editingId) && !isLocked
       }
     }
-    layer.zPosition = (imageId == editingId && !isLocked) ? 1 : -1
+    layer.zPosition = ((isSelectorActive || imageId == editingId) && !isLocked) ? 1 : -1
   }
 
   init(image: UIImage?, size: CGSize) {
@@ -353,14 +419,19 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   }
 
   @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-    if !isLocked, isSelectorActive || imageId == editingId {
+    if !isLocked, !isSelectorActive, imageId == editingId {
       onTapped?()
     }
   }
 
   @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
     if !isLocked {
-      onQuickSelected?()
+      if isSelectorActive { return }
+      if imageId == editingId {
+        onTapped?()
+      } else {
+        onQuickSelected?()
+      }
     }
   }
 
@@ -435,6 +506,7 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
       imageContentView.layer.insertSublayer(playerLayer, at: 0)
       videoPlayer = player
       videoPlayerLayer = playerLayer
+      addPeriodicTimeObserver(to: player)
       playbackEndObserver = NotificationCenter.default.addObserver(
         forName: .AVPlayerItemDidPlayToEndTime,
         object: player.currentItem,
@@ -442,22 +514,76 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
       ) { [weak self] _ in
         self?.videoPlayer?.seek(to: .zero)
         self?.videoPlayer?.pause()
-        self?.videoButton?.configuration = self?.videoButtonConfiguration(systemName: "play.circle.fill")
+        self?.progressSlider?.value = 0
+        self?.setVideoControlsPlaying(false)
       }
     }
 
     guard let videoPlayer else { return }
     if videoPlayer.timeControlStatus == .playing {
       videoPlayer.pause()
-      videoButton?.configuration = videoButtonConfiguration(systemName: "play.circle.fill")
+      setVideoControlsPlaying(false)
     } else {
       videoPlayer.play()
-      videoButton?.configuration = videoButtonConfiguration(systemName: "pause.circle.fill")
+      setVideoControlsPlaying(true)
     }
+  }
+
+  private func addPeriodicTimeObserver(to player: AVPlayer) {
+    let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
+    timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+      guard let self = self, !self.isScrubbing else { return }
+      let duration = player.currentItem?.duration.seconds ?? 0
+      guard duration.isFinite, duration > 0 else { return }
+      self.progressSlider?.value = Float(time.seconds / duration)
+    }
+  }
+
+  private func setVideoControlsPlaying(_ isPlaying: Bool) {
+    if isPlaying {
+      videoButton?.isHidden = true
+      pauseButton?.isHidden = false
+      progressSlider?.isHidden = false
+      fullscreenButton?.isHidden = false
+    } else {
+      videoButton?.isHidden = false
+      pauseButton?.isHidden = true
+      progressSlider?.isHidden = true
+      fullscreenButton?.isHidden = true
+    }
+  }
+
+  @objc private func beginScrubbing(_ slider: UISlider) {
+    isScrubbing = true
+  }
+
+  @objc private func scrubVideo(_ slider: UISlider) {
+    seekVideo(to: slider.value)
+  }
+
+  @objc private func endScrubbing(_ slider: UISlider) {
+    seekVideo(to: slider.value)
+    isScrubbing = false
+  }
+
+  private func seekVideo(to value: Float) {
+    guard let item = videoPlayer?.currentItem else { return }
+    let duration = item.duration.seconds
+    guard duration.isFinite, duration > 0 else { return }
+    videoPlayer?.seek(to: CMTime(seconds: duration * Double(value), preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+  }
+
+  @objc private func enterVideoFullScreen() {
+    videoPlayer?.pause()
+    onEnterFullScreen?()
   }
 
   private func cleanupVideoPlayback() {
     videoPlayer?.pause()
+    if let timeObserver {
+      videoPlayer?.removeTimeObserver(timeObserver)
+      self.timeObserver = nil
+    }
     videoPlayer = nil
     videoPlayerLayer?.removeFromSuperlayer()
     videoPlayerLayer = nil
@@ -466,7 +592,13 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
       self.playbackEndObserver = nil
     }
     videoButton?.removeTarget(nil, action: nil, for: .allEvents)
+    pauseButton?.removeTarget(nil, action: nil, for: .allEvents)
+    fullscreenButton?.removeTarget(nil, action: nil, for: .allEvents)
+    progressSlider?.removeTarget(nil, action: nil, for: .allEvents)
     videoButton = nil
+    pauseButton = nil
+    fullscreenButton = nil
+    progressSlider = nil
   }
 
   override func removeFromSuperview() {
@@ -484,6 +616,7 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     onTapped = nil
     onQuickSelected = nil
     onDelete = nil
+    onEnterFullScreen = nil
 
     super.removeFromSuperview()
   }
@@ -503,6 +636,7 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     onTapped = nil
     onQuickSelected = nil
     onDelete = nil
+    onEnterFullScreen = nil
   }
 }
 

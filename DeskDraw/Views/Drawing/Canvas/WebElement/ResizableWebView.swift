@@ -37,7 +37,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   }
 
   private func updateInteractionState() {
-    let shouldShowControls = webId == editingId && !isLocked
+    let shouldShowControls = (isSelectorActive || webId == editingId) && !isLocked
     controlPoints.forEach { $0.isHidden = !shouldShowControls }
     updateDragGesture()
     updateDeleteButtonVisibility()
@@ -45,16 +45,16 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   }
 
   private func updateDeleteButtonVisibility() {
-    deleteButton.isHidden = webId != editingId || isLocked
+    deleteButton.isHidden = !(isSelectorActive || webId == editingId) || isLocked
   }
 
   private func updateDragGesture() {
     gestureRecognizers?.forEach { gesture in
       if gesture is UIPanGestureRecognizer {
-        gesture.isEnabled = webId == editingId && !isLocked
+        gesture.isEnabled = (isSelectorActive || webId == editingId) && !isLocked
       }
     }
-    layer.zPosition = (webId == editingId && !isLocked) ? 1 : -1
+    layer.zPosition = ((isSelectorActive || webId == editingId) && !isLocked) ? 1 : -1
   }
 
   init(url: String, size: CGSize, cachedTitle: String? = nil, cachedIconData: Data? = nil) {
@@ -343,11 +343,20 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   }
 
   @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-    if !isLocked { onTapped?() }
+    if !isLocked, !isSelectorActive, webId == editingId {
+      onTapped?()
+    }
   }
 
   @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
-    if !isLocked { onQuickSelected?() }
+    if !isLocked {
+      if isSelectorActive { return }
+      if webId == editingId {
+        onTapped?()
+      } else {
+        onQuickSelected?()
+      }
+    }
   }
 
   private func setupPinchGesture() {

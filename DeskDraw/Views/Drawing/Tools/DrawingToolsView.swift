@@ -547,8 +547,9 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         isSelectorActive.toggle()
+        appModel.imageEditingId = nil
       }, label: {
-        Image(systemName: "hand.point.up.left")
+        Image(systemName: "squareshape.controlhandles.on.squareshape.controlhandles")
           .frame(width: 8)
       })
       .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
@@ -570,7 +571,7 @@ struct DrawingToolsView: View {
         dismissWindow(id: "imagePicker")
         openWindow(id: "imagePicker", value: visibleCenter)
       }, label: {
-        Image(systemName: "photo.on.rectangle.angled")
+        Image(systemName: "photo.badge.plus")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
@@ -607,7 +608,7 @@ struct DrawingToolsView: View {
       Button(action: {
         showWebURLInput.toggle()
       }, label: {
-        Image(systemName: "safari")
+        Image(systemName: "link.badge.plus")
           .frame(width: 8)
       })
       .background(showWebURLInput ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))

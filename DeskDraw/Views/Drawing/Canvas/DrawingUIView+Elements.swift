@@ -93,6 +93,7 @@ extension DrawingUIView {
       imageView.onTapped = {
         guard let imageId = imageView.imageId else { return }
 
+        isSelectorActive = false
         if imageId == imageEditingId {
           imageEditingId = nil
         } else {
@@ -105,6 +106,7 @@ extension DrawingUIView {
 
       imageView.onQuickSelected = {
         guard let imageId = imageView.imageId else { return }
+        isSelectorActive = false
         imageEditingId = imageId
         imageView.editingId = imageEditingId
         imageView.isUserInteractionEnabled = true
@@ -186,6 +188,7 @@ extension DrawingUIView {
       videoView.onTapped = {
         guard let videoId = videoView.imageId else { return }
 
+        isSelectorActive = false
         if videoId == imageEditingId {
           imageEditingId = nil
         } else {
@@ -198,6 +201,7 @@ extension DrawingUIView {
 
       videoView.onQuickSelected = {
         guard let videoId = videoView.imageId else { return }
+        isSelectorActive = false
         imageEditingId = videoId
         videoView.editingId = imageEditingId
         videoView.isUserInteractionEnabled = true
@@ -206,6 +210,10 @@ extension DrawingUIView {
       videoView.onDelete = { [weak coordinator = context.coordinator] in
         guard let coordinator = coordinator else { return }
         coordinator.parent.deleteVideo(videoElement.id)
+      }
+
+      videoView.onEnterFullScreen = { [weak coordinator = context.coordinator] in
+        coordinator?.parent.enterFullScreenVideo(videoElement.id)
       }
     }
 
@@ -276,22 +284,18 @@ extension DrawingUIView {
 
       webView.onTapped = {
         guard let id = webView.webId else { return }
-        if isSelectorActive {
-          if id == imageEditingId {
-            imageEditingId = nil
-          } else {
-            imageEditingId = id
-          }
+        isSelectorActive = false
+        if id == imageEditingId {
+          imageEditingId = nil
         } else {
-          if id == imageEditingId {
-            imageEditingId = nil
-          }
+          imageEditingId = id
         }
         webView.editingId = imageEditingId
       }
 
       webView.onQuickSelected = {
         guard let id = webView.webId else { return }
+        isSelectorActive = false
         imageEditingId = id
         webView.editingId = imageEditingId
       }

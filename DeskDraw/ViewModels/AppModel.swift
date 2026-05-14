@@ -32,6 +32,8 @@ class AppModel {
   var isShareImageViewShowing = false
   var isFullScreenWebActive = false
   var fullScreenWebId: UUID?
+  var isFullScreenVideoActive = false
+  var fullScreenVideoId: UUID?
   var exportImage: UIImage?
   var aboutNavigationPath = NavigationPath()
   var canvasZoomFactor: Double = 100
@@ -768,6 +770,8 @@ extension AppModel {
     guard let drawingId else { return }
     guard let drawing = drawings[drawingId] else { return }
     guard drawing.webs.contains(where: { $0.id == webId }) else { return }
+    isFullScreenVideoActive = false
+    fullScreenVideoId = nil
     fullScreenWebId = webId
     isFullScreenWebActive = true
   }
@@ -775,6 +779,21 @@ extension AppModel {
   func exitFullScreenWeb() {
     isFullScreenWebActive = false
     fullScreenWebId = nil
+  }
+
+  func enterFullScreenVideo(videoId: UUID) {
+    guard let drawingId else { return }
+    guard let drawing = drawings[drawingId] else { return }
+    guard drawing.videos.contains(where: { $0.id == videoId }) else { return }
+    isFullScreenWebActive = false
+    fullScreenWebId = nil
+    fullScreenVideoId = videoId
+    isFullScreenVideoActive = true
+  }
+
+  func exitFullScreenVideo() {
+    isFullScreenVideoActive = false
+    fullScreenVideoId = nil
   }
 }
 

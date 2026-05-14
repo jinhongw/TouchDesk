@@ -61,10 +61,10 @@ struct DrawingView: View {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
             drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isFullScreenWebActive ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !appModel.isFullScreenWebActive ? 1 : 0)
-              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isFullScreenWebActive ? 0 : 200)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !isFullScreenElementActive ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !isFullScreenElementActive ? 1 : 0)
+              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !isFullScreenElementActive ? 0 : 200)
+              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement || isFullScreenElementActive)
               .offset(y: proxy.size.height / 2)
               .offset(z: -proxy.size.depth)
           }
@@ -74,6 +74,15 @@ struct DrawingView: View {
               .blur(radius: appModel.isFullScreenWebActive && !appModel.hideInMini ? 0 : 200)
               .opacity(appModel.isFullScreenWebActive && !appModel.hideInMini ? 1 : 0)
               .disabled(!appModel.isFullScreenWebActive || appModel.hideInMini)
+              .offset(y: proxy.size.height / 2)
+              .offset(z: -proxy.size.depth)
+          }
+          .overlay {
+            fullScreenVideoRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+              .scaleEffect(appModel.isFullScreenVideoActive && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .blur(radius: appModel.isFullScreenVideoActive && !appModel.hideInMini ? 0 : 200)
+              .opacity(appModel.isFullScreenVideoActive && !appModel.hideInMini ? 1 : 0)
+              .disabled(!appModel.isFullScreenVideoActive || appModel.hideInMini)
               .offset(y: proxy.size.height / 2)
               .offset(z: -proxy.size.depth)
           }
@@ -112,8 +121,13 @@ struct DrawingView: View {
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
       .animation(.spring, value: appModel.isFullScreenWebActive)
+      .animation(.spring, value: appModel.isFullScreenVideoActive)
       .animation(.spring, value: isHorizontal)
     }
+  }
+
+  private var isFullScreenElementActive: Bool {
+    appModel.isFullScreenWebActive || appModel.isFullScreenVideoActive
   }
 
   @MainActor
@@ -257,6 +271,9 @@ struct DrawingView: View {
         enterFullScreenWeb: { webId in
           appModel.enterFullScreenWeb(webId: webId)
         },
+        enterFullScreenVideo: { videoId in
+          appModel.enterFullScreenVideo(videoId: videoId)
+        },
         updateWebSnapshot: { webId, image in
           appModel.updateWebSnapshot(webId: webId, image: image)
         },
@@ -303,6 +320,25 @@ struct DrawingView: View {
     } attachments: {
       Attachment(id: "fullScreenWebView") {
         FullScreenWebViewContainer(width: width, contentHeight: depth)
+          .frame(width: width, height: depth)
+      }
+    }
+    .frame(width: width)
+    .frame(depth: depth)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func fullScreenVideoRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    RealityView { content, attachments in
+      if let videoView = attachments.entity(for: "fullScreenVideoView") {
+        videoView.position = .init(x: 0, y: 0, z: 0)
+        videoView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        content.add(videoView)
+      }
+    } attachments: {
+      Attachment(id: "fullScreenVideoView") {
+        FullScreenVideoViewContainer(width: width, contentHeight: depth)
           .frame(width: width, height: depth)
       }
     }

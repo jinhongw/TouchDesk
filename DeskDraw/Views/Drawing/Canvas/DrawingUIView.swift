@@ -39,6 +39,7 @@ struct DrawingUIView: UIViewRepresentable {
   let deleteWeb: (UUID) -> Void
   let getVideoThumbnail: (VideoElement) -> UIImage?
   let enterFullScreenWeb: (UUID) -> Void
+  let enterFullScreenVideo: (UUID) -> Void
   let updateWebSnapshot: (UUID, UIImage) -> Void
   let updateWebCachedMetadata: (UUID, String, Data?) -> Void
   let refreshThumbnailAfterWebSnapshot: () -> Void
@@ -310,6 +311,7 @@ struct DrawingUIView: UIViewRepresentable {
     } else if context.coordinator.lastSelectorActive != isSelectorActive || context.coordinator.lastImageEditingId != imageEditingId {
       print(#function, "DEBUG Change selector active state")
       context.coordinator.lastSelectorActive = isSelectorActive
+      context.coordinator.lastImageEditingId = imageEditingId
       updateImageViews(in: canvas, context: context)
       updateVideoViews(in: canvas, context: context)
       updateWebViews(in: canvas, context: context)
