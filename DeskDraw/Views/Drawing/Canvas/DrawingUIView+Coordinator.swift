@@ -31,11 +31,54 @@ extension DrawingUIView {
     var lastWebs: [WebElement] = []
     var lastWebElements: [UUID: WebElement] = [:]
     var lastVideoElements: [UUID: VideoElement] = [:]
+    weak var elementDoubleTapGesture: UITapGestureRecognizer?
 
     init(_ parent: DrawingUIView) {
       self.parent = parent
       self.lastLocked = parent.isLocked
       super.init()
+    }
+
+    func installElementSelectionGestures(on canvas: PKCanvasView) {
+      guard elementDoubleTapGesture == nil else { return }
+
+      let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleElementDoubleTap(_:)))
+      doubleTapGesture.numberOfTapsRequired = 2
+      doubleTapGesture.cancelsTouchesInView = false
+      doubleTapGesture.delaysTouchesBegan = false
+      doubleTapGesture.delaysTouchesEnded = false
+      doubleTapGesture.delegate = self
+      canvas.addGestureRecognizer(doubleTapGesture)
+      elementDoubleTapGesture = doubleTapGesture
+    }
+
+    @objc private func handleElementDoubleTap(_ gesture: UITapGestureRecognizer) {
+      guard gesture.state == .ended,
+            !parent.isLocked,
+            !parent.isSelectorActive,
+            let imageContainer
+      else { return }
+
+      let point = gesture.location(in: imageContainer)
+      guard let target = imageContainer.topSelectableView(at: point) else { return }
+
+      if let imageView = target as? ResizableImageView,
+         let imageId = imageView.imageId {
+        parent.isSelectorActive = false
+        if parent.imageEditingId == imageId {
+          parent.imageEditingId = nil
+        } else {
+          parent.imageEditingId = imageId
+        }
+      } else if let webView = target as? ResizableWebView,
+                let webId = webView.webId {
+        parent.isSelectorActive = false
+        if parent.imageEditingId == webId {
+          parent.imageEditingId = nil
+        } else {
+          parent.imageEditingId = webId
+        }
+      }
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
@@ -227,5 +270,32 @@ extension DrawingUIView {
       cleanupVideoViewCache(currentVideoIds: [])
       cleanupWebViewCache(currentWebIds: [])
     }
+  }
+}
+
+extension DrawingUIView.Coordinator: UIGestureRecognizerDelegate {
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    true
+  }
+
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    if touch.type == .pencil {
+      return false
+    }
+
+    var view = touch.view
+    while let currentView = view {
+      if let imageView = currentView as? ResizableImageView,
+         imageView.shouldReceiveElementTouches {
+        return false
+      }
+      if let webView = currentView as? ResizableWebView,
+         webView.shouldReceiveElementTouches {
+        return false
+      }
+      view = currentView.superview
+    }
+
+    return true
   }
 }

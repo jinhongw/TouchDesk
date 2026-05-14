@@ -151,6 +151,7 @@ struct DrawingUIView: UIViewRepresentable {
     context.coordinator.lastImages = model.images
     context.coordinator.lastVideos = model.videos
     canvas.delegate = context.coordinator
+    context.coordinator.installElementSelectionGestures(on: canvas)
 
     // 创建并设置图片容器
     let imageContainer = ImageContainerView(frame: CGRect(origin: .zero, size: defaultSize))

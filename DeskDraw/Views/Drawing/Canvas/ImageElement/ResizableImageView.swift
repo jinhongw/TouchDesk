@@ -146,6 +146,10 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     updateDeleteButtonVisibility()
   }
 
+  var shouldReceiveElementTouches: Bool {
+    (isSelectorActive || imageId == editingId) && !isLocked
+  }
+
   private func updateDeleteButtonVisibility() {
     deleteButton.isHidden = !(isSelectorActive || imageId == editingId) || isLocked
   }
@@ -410,10 +414,15 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
     doubleTapGesture.numberOfTapsRequired = 2
     doubleTapGesture.delegate = self
     doubleTapGesture.cancelsTouchesInView = false
+    doubleTapGesture.delaysTouchesBegan = false
+    doubleTapGesture.delaysTouchesEnded = false
     addGestureRecognizer(doubleTapGesture)
 
     let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
     tapGesture.delegate = self
+    tapGesture.cancelsTouchesInView = false
+    tapGesture.delaysTouchesBegan = false
+    tapGesture.delaysTouchesEnded = false
     tapGesture.require(toFail: doubleTapGesture)
     addGestureRecognizer(tapGesture)
   }
@@ -425,13 +434,8 @@ class ResizableImageView: UIView, UIGestureRecognizerDelegate {
   }
 
   @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
-    if !isLocked {
-      if isSelectorActive { return }
-      if imageId == editingId {
-        onTapped?()
-      } else {
-        onQuickSelected?()
-      }
+    if !isLocked, !isSelectorActive, imageId == editingId {
+      onTapped?()
     }
   }
 

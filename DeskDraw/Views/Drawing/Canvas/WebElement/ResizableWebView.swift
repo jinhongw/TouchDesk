@@ -46,6 +46,10 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     fullscreenButton.isHidden = false
   }
 
+  var shouldReceiveElementTouches: Bool {
+    (isSelectorActive || webId == editingId) && !isLocked
+  }
+
   private func updateDeleteButtonVisibility() {
     deleteButton.isHidden = !(isSelectorActive || webId == editingId) || isLocked
   }
@@ -379,10 +383,15 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     doubleTapGesture.numberOfTapsRequired = 2
     doubleTapGesture.delegate = self
     doubleTapGesture.cancelsTouchesInView = false
+    doubleTapGesture.delaysTouchesBegan = false
+    doubleTapGesture.delaysTouchesEnded = false
     addGestureRecognizer(doubleTapGesture)
 
     let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
     tapGesture.delegate = self
+    tapGesture.cancelsTouchesInView = false
+    tapGesture.delaysTouchesBegan = false
+    tapGesture.delaysTouchesEnded = false
     tapGesture.require(toFail: doubleTapGesture)
     addGestureRecognizer(tapGesture)
   }
@@ -394,13 +403,8 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   }
 
   @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
-    if !isLocked {
-      if isSelectorActive { return }
-      if webId == editingId {
-        onTapped?()
-      } else {
-        onQuickSelected?()
-      }
+    if !isLocked, !isSelectorActive, webId == editingId {
+      onTapped?()
     }
   }
 
