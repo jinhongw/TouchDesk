@@ -10,10 +10,17 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   private var controlPoints: [ControlPointView] = []
   private var previewView: WebsitePreviewView
   private var deleteButton: UIButton
+  private var previewLockButton: UIButton
   private var previewButton: UIButton
   private var fullscreenButton: UIButton
   private var dragStartPoint: CGPoint?
   private let minimumDragDistance: CGFloat = 5.0
+  private var isPreviewEnabled = false {
+    didSet { updateInteractionState() }
+  }
+  private var isPreviewInteractionLocked = false {
+    didSet { updateInteractionState() }
+  }
 
   var isLocked: Bool = false {
     didSet { updateInteractionState() }
@@ -42,12 +49,13 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     controlPoints.forEach { $0.isHidden = !shouldShowControls }
     updateDragGesture()
     updateDeleteButtonVisibility()
+    updatePreviewLockButtonVisibility()
     previewButton.isHidden = false
     fullscreenButton.isHidden = false
   }
 
   var shouldReceiveElementTouches: Bool {
-    (isSelectorActive || webId == editingId) && !isLocked
+    !isLocked && !isPreviewInteractionLocked && (isSelectorActive || webId == editingId || isPreviewEnabled)
   }
 
   private func updateDeleteButtonVisibility() {
@@ -66,6 +74,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   init(url: String, size: CGSize, cachedTitle: String? = nil, cachedIconData: Data? = nil) {
     previewView = WebsitePreviewView(frame: .zero)
     deleteButton = UIButton(type: .system)
+    previewLockButton = UIButton(type: .system)
     previewButton = UIButton(type: .system)
     fullscreenButton = UIButton(type: .system)
 
@@ -144,6 +153,30 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     previewButton.clipsToBounds = true
     addSubview(previewButton)
     previewButton.addTarget(self, action: #selector(handlePreviewToggle), for: .touchUpInside)
+
+    previewLockButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+    let previewLockBlurView = UIVisualEffectView(effect: blurEffect)
+    previewLockBlurView.frame = previewLockButton.bounds
+    previewLockBlurView.layer.cornerRadius = toolButtonSize / 2
+    previewLockBlurView.clipsToBounds = true
+    previewLockBlurView.isUserInteractionEnabled = false
+    previewLockButton.insertSubview(previewLockBlurView, at: 0)
+
+    var previewLockConfig = UIButton.Configuration.plain()
+    previewLockConfig.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    previewLockConfig.image = UIImage(systemName: "lock")
+    previewLockConfig.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    previewLockConfig.baseForegroundColor = .white
+    previewLockButton.configuration = previewLockConfig
+
+    previewLockButton.contentVerticalAlignment = .center
+    previewLockButton.contentHorizontalAlignment = .center
+    previewLockButton.imageView?.contentMode = .center
+    previewLockButton.tintColor = .white
+    previewLockButton.layer.cornerRadius = toolButtonSize / 2
+    previewLockButton.clipsToBounds = true
+    addSubview(previewLockButton)
+    previewLockButton.addTarget(self, action: #selector(handlePreviewLockToggle), for: .touchUpInside)
 
     // Fullscreen button setup (always visible at top-right inside card)
     fullscreenButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
@@ -234,12 +267,21 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
 
   @objc private func handlePreviewToggle() {
     if isLocked { return }
-    previewButton.isSelected.toggle()
-    previewView.setPreviewEnabled(previewButton.isSelected)
+    isPreviewEnabled.toggle()
+    if !isPreviewEnabled {
+      isPreviewInteractionLocked = false
+    }
+    previewButton.isSelected = isPreviewEnabled
+    previewView.setPreviewEnabled(isPreviewEnabled)
 
     var config = previewButton.configuration
-    config?.image = UIImage(systemName: previewButton.isSelected ? "eyes.inverse" : "eyes")
+    config?.image = UIImage(systemName: isPreviewEnabled ? "eyes.inverse" : "eyes")
     previewButton.configuration = config
+  }
+
+  @objc private func handlePreviewLockToggle() {
+    guard isPreviewEnabled else { return }
+    isPreviewInteractionLocked.toggle()
   }
 
   @objc private func handleEnterFullScreen() {
@@ -287,6 +329,13 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
       height: toolButtonSize
     )
 
+    previewLockButton.frame = CGRect(
+      x: previewButton.frame.minX - 8 - toolButtonSize,
+      y: previewButton.frame.minY,
+      width: toolButtonSize,
+      height: toolButtonSize
+    )
+
     updateControlPointsPosition()
   }
 
@@ -308,6 +357,15 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleTranslationPan(_:)))
     panGesture.maximumNumberOfTouches = 1
     addGestureRecognizer(panGesture)
+  }
+
+  private func updatePreviewLockButtonVisibility() {
+    previewLockButton.isHidden = !isPreviewEnabled
+    previewLockButton.isSelected = isPreviewInteractionLocked
+
+    var config = previewLockButton.configuration
+    config?.image = UIImage(systemName: isPreviewInteractionLocked ? "lock.fill" : "lock")
+    previewLockButton.configuration = config
   }
 
   @objc private func handleControlPointPan(_ gesture: UIPanGestureRecognizer) {
@@ -415,7 +473,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   }
 
   @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-    if isLocked { return }
+    if isLocked || isPreviewEnabled { return }
 
     switch gesture.state {
     case .began:
@@ -448,8 +506,26 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     false
   }
 
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    var view = touch.view
+    while let currentView = view {
+      if currentView is UIControl {
+        return false
+      }
+      if currentView is ControlPointView {
+        return true
+      }
+      if isPreviewEnabled, currentView === previewView {
+        return false
+      }
+      view = currentView.superview
+    }
+    return true
+  }
+
   override func removeFromSuperview() {
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    previewLockButton.removeTarget(nil, action: nil, for: .allEvents)
     previewButton.removeTarget(nil, action: nil, for: .allEvents)
     fullscreenButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
@@ -471,6 +547,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
 
   deinit {
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    previewLockButton.removeTarget(nil, action: nil, for: .allEvents)
     previewButton.removeTarget(nil, action: nil, for: .allEvents)
     fullscreenButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
