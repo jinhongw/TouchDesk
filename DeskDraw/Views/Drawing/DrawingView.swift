@@ -411,12 +411,12 @@ private struct CanvasResizeCornerHints: View {
     GeometryReader { proxy in
       ZStack {
         CanvasResizeCornerHint(side: .left)
-          .frame(width: 38, height: 38)
-          .position(x: 19, y: proxy.size.height - 19)
+          .frame(width: 24, height: 24)
+          .position(x: 6, y: proxy.size.height - 6)
 
         CanvasResizeCornerHint(side: .right)
-          .frame(width: 38, height: 38)
-          .position(x: proxy.size.width - 19, y: proxy.size.height - 19)
+          .frame(width: 24, height: 24)
+          .position(x: proxy.size.width - 6, y: proxy.size.height - 6)
       }
     }
     .allowsHitTesting(false)
@@ -435,7 +435,7 @@ private struct CanvasResizeCornerHint: View {
     CornerArcShape(side: side)
       .stroke(
         Color.white.opacity(0.88),
-        style: StrokeStyle(lineWidth: 2.4, lineCap: .round)
+        style: StrokeStyle(lineWidth: 3, lineCap: .round)
       )
       .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
   }
@@ -455,12 +455,12 @@ private struct CornerArcShape: Shape {
     switch side {
     case .left:
       center = CGPoint(x: rect.maxX, y: rect.minY)
-      startAngle = .degrees(90)
-      endAngle = .degrees(135)
+      startAngle = .degrees(105)
+      endAngle = .degrees(150)
     case .right:
       center = CGPoint(x: rect.minX, y: rect.minY)
-      startAngle = .degrees(45)
-      endAngle = .degrees(90)
+      startAngle = .degrees(30)
+      endAngle = .degrees(75)
     }
 
     path.addArc(
