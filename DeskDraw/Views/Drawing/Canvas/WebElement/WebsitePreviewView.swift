@@ -1,5 +1,6 @@
 import UIKit
 import LinkPresentation
+import WebKit
 
 struct WebsiteMetadata {
   let title: String
@@ -8,20 +9,23 @@ struct WebsiteMetadata {
 }
 
 /// A compact website preview card that shows site icon, title and URL text.
-final class WebsitePreviewView: UIView {
+final class WebsitePreviewView: UIView, WKUIDelegate {
   /// Called when metadata has finished loading (success or error). Passes title and icon as Data for persistence.
   var onMetadataLoaded: ((_ title: String, _ iconData: Data?) -> Void)?
 
   private let imageView = UIImageView()
   private let titleLabel = UILabel()
   private let urlLabel = UILabel()
-  private let logoContainerView = UIView()
-  private let stackView = UIStackView()
+  private let textStack = UIStackView()
   private let blurView: UIVisualEffectView
+  private let webView: WKWebView
+  private var currentURL: URL?
+  private var isPreviewEnabled = false
 
   override init(frame: CGRect) {
     let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
     blurView = UIVisualEffectView(effect: blurEffect)
+    webView = Self.makePreviewWebView()
     super.init(frame: frame)
     setupView()
   }
@@ -29,8 +33,24 @@ final class WebsitePreviewView: UIView {
   required init?(coder: NSCoder) {
     let blurEffect = UIBlurEffect(style: .systemThinMaterialDark)
     blurView = UIVisualEffectView(effect: blurEffect)
+    webView = Self.makePreviewWebView()
     super.init(coder: coder)
     setupView()
+  }
+
+  private static func makePreviewWebView() -> WKWebView {
+    let configuration = WKWebViewConfiguration()
+    configuration.allowsInlineMediaPlayback = true
+    configuration.allowsAirPlayForMediaPlayback = true
+    configuration.mediaTypesRequiringUserActionForPlayback = []
+    configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+
+    let webView = WKWebView(frame: .zero, configuration: configuration)
+    webView.scrollView.contentInsetAdjustmentBehavior = .never
+    webView.allowsBackForwardNavigationGestures = true
+    webView.backgroundColor = .clear
+    webView.isOpaque = false
+    return webView
   }
 
   private func setupView() {
@@ -41,14 +61,17 @@ final class WebsitePreviewView: UIView {
     blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     addSubview(blurView)
 
+    webView.frame = bounds
+    webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    webView.uiDelegate = self
+    webView.isHidden = true
+    addSubview(webView)
+
     imageView.contentMode = .scaleAspectFit
     imageView.tintColor = .white
     imageView.layer.cornerRadius = 8
     imageView.clipsToBounds = true
     imageView.translatesAutoresizingMaskIntoConstraints = false
-
-    logoContainerView.translatesAutoresizingMaskIntoConstraints = false
-    logoContainerView.addSubview(imageView)
 
     titleLabel.font = UIFont.systemFont(ofSize: 14, weight: .semibold)
     titleLabel.textColor = .white
@@ -58,38 +81,51 @@ final class WebsitePreviewView: UIView {
     urlLabel.textColor = UIColor.white.withAlphaComponent(0.8)
     urlLabel.numberOfLines = 1
 
-    let textStack = UIStackView(arrangedSubviews: [titleLabel, urlLabel])
     textStack.axis = .vertical
     textStack.alignment = .leading
     textStack.spacing = 0
+    textStack.translatesAutoresizingMaskIntoConstraints = false
+    textStack.addArrangedSubview(titleLabel)
+    textStack.addArrangedSubview(urlLabel)
 
-    stackView.axis = .vertical
-    stackView.alignment = .fill
-    stackView.spacing = 4
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-    stackView.addArrangedSubview(logoContainerView)
-    stackView.addArrangedSubview(textStack)
-
-    logoContainerView.setContentHuggingPriority(.defaultLow, for: .vertical)
     textStack.setContentHuggingPriority(.required, for: .vertical)
 
-    blurView.contentView.addSubview(stackView)
+    blurView.contentView.addSubview(textStack)
+    blurView.contentView.addSubview(imageView)
 
     NSLayoutConstraint.activate([
-      stackView.leadingAnchor.constraint(equalTo: blurView.contentView.leadingAnchor, constant: 12),
-      stackView.trailingAnchor.constraint(equalTo: blurView.contentView.trailingAnchor, constant: -12),
-      stackView.topAnchor.constraint(equalTo: blurView.contentView.topAnchor, constant: 8),
-      stackView.bottomAnchor.constraint(equalTo: blurView.contentView.bottomAnchor, constant: -8),
-
-      logoContainerView.heightAnchor.constraint(greaterThanOrEqualToConstant: 48),
+      textStack.leadingAnchor.constraint(equalTo: blurView.contentView.leadingAnchor, constant: 12),
+      textStack.trailingAnchor.constraint(lessThanOrEqualTo: blurView.contentView.trailingAnchor, constant: -12),
+      textStack.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 8),
+      textStack.bottomAnchor.constraint(equalTo: blurView.contentView.bottomAnchor, constant: -12),
 
       imageView.widthAnchor.constraint(equalToConstant: 48),
       imageView.heightAnchor.constraint(equalToConstant: 48),
-      imageView.centerXAnchor.constraint(equalTo: logoContainerView.centerXAnchor),
-      imageView.centerYAnchor.constraint(equalTo: logoContainerView.centerYAnchor),
+      imageView.leadingAnchor.constraint(equalTo: blurView.contentView.leadingAnchor, constant: 12),
+      imageView.topAnchor.constraint(greaterThanOrEqualTo: blurView.contentView.topAnchor, constant: 12),
     ])
 
     setLoadingState()
+  }
+
+  func webView(
+    _ webView: WKWebView,
+    createWebViewWith configuration: WKWebViewConfiguration,
+    for navigationAction: WKNavigationAction,
+    windowFeatures: WKWindowFeatures
+  ) -> WKWebView? {
+    if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+      webView.load(URLRequest(url: url))
+    }
+    return nil
+  }
+
+  func setPreviewEnabled(_ enabled: Bool) {
+    isPreviewEnabled = enabled
+    blurView.isHidden = enabled
+    webView.isHidden = !enabled
+    guard enabled else { return }
+    loadCurrentURLInPreviewIfNeeded(force: false)
   }
 
   /// True when we are showing persisted metadata (not loading and not error).
@@ -135,6 +171,9 @@ final class WebsitePreviewView: UIView {
   }
 
   func load(from url: URL, forceLoadingState: Bool = false) {
+    currentURL = url
+    loadCurrentURLInPreviewIfNeeded(force: forceLoadingState)
+
     if forceLoadingState || titleLabel.text == nil || titleLabel.text == "Loading..." {
       setLoadingState()
     }
@@ -203,5 +242,10 @@ final class WebsitePreviewView: UIView {
       }
     }
   }
-}
 
+  private func loadCurrentURLInPreviewIfNeeded(force: Bool) {
+    guard isPreviewEnabled, let currentURL else { return }
+    guard force || webView.url != currentURL else { return }
+    webView.load(URLRequest(url: currentURL))
+  }
+}

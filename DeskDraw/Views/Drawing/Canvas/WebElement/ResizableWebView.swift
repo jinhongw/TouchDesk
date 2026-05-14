@@ -10,6 +10,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   private var controlPoints: [ControlPointView] = []
   private var previewView: WebsitePreviewView
   private var deleteButton: UIButton
+  private var previewButton: UIButton
   private var fullscreenButton: UIButton
   private var dragStartPoint: CGPoint?
   private let minimumDragDistance: CGFloat = 5.0
@@ -41,6 +42,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     controlPoints.forEach { $0.isHidden = !shouldShowControls }
     updateDragGesture()
     updateDeleteButtonVisibility()
+    previewButton.isHidden = false
     fullscreenButton.isHidden = false
   }
 
@@ -60,6 +62,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
   init(url: String, size: CGSize, cachedTitle: String? = nil, cachedIconData: Data? = nil) {
     previewView = WebsitePreviewView(frame: .zero)
     deleteButton = UIButton(type: .system)
+    previewButton = UIButton(type: .system)
     fullscreenButton = UIButton(type: .system)
 
     super.init(frame: .zero)
@@ -112,6 +115,31 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
 
     addSubview(deleteButton)
     deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
+
+    // Preview button setup (toggles inline webpage rendering inside the card)
+    previewButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+    let previewBlurView = UIVisualEffectView(effect: blurEffect)
+    previewBlurView.frame = previewButton.bounds
+    previewBlurView.layer.cornerRadius = toolButtonSize / 2
+    previewBlurView.clipsToBounds = true
+    previewBlurView.isUserInteractionEnabled = false
+    previewButton.insertSubview(previewBlurView, at: 0)
+
+    var previewConfig = UIButton.Configuration.plain()
+    previewConfig.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    previewConfig.image = UIImage(systemName: "eyes")
+    previewConfig.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    previewConfig.baseForegroundColor = .white
+    previewButton.configuration = previewConfig
+
+    previewButton.contentVerticalAlignment = .center
+    previewButton.contentHorizontalAlignment = .center
+    previewButton.imageView?.contentMode = .center
+    previewButton.tintColor = .white
+    previewButton.layer.cornerRadius = toolButtonSize / 2
+    previewButton.clipsToBounds = true
+    addSubview(previewButton)
+    previewButton.addTarget(self, action: #selector(handlePreviewToggle), for: .touchUpInside)
 
     // Fullscreen button setup (always visible at top-right inside card)
     fullscreenButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
@@ -200,6 +228,16 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     if !isLocked { onDelete?() }
   }
 
+  @objc private func handlePreviewToggle() {
+    if isLocked { return }
+    previewButton.isSelected.toggle()
+    previewView.setPreviewEnabled(previewButton.isSelected)
+
+    var config = previewButton.configuration
+    config?.image = UIImage(systemName: previewButton.isSelected ? "eyes.inverse" : "eyes")
+    previewButton.configuration = config
+  }
+
   @objc private func handleEnterFullScreen() {
     if !isLocked { onEnterFullScreen?() }
   }
@@ -234,6 +272,13 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
     fullscreenButton.frame = CGRect(
       x: bounds.width - inset - fullscreenSafeMargin - toolButtonSize,
       y: inset + fullscreenSafeMargin,
+      width: toolButtonSize,
+      height: toolButtonSize
+    )
+
+    previewButton.frame = CGRect(
+      x: fullscreenButton.frame.minX - 8 - toolButtonSize,
+      y: fullscreenButton.frame.minY,
       width: toolButtonSize,
       height: toolButtonSize
     )
@@ -401,6 +446,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
 
   override func removeFromSuperview() {
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    previewButton.removeTarget(nil, action: nil, for: .allEvents)
     fullscreenButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
@@ -421,6 +467,7 @@ class ResizableWebView: UIView, UIGestureRecognizerDelegate {
 
   deinit {
     deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    previewButton.removeTarget(nil, action: nil, for: .allEvents)
     fullscreenButton.removeTarget(nil, action: nil, for: .allEvents)
     gestureRecognizers?.forEach { removeGestureRecognizer($0) }
     controlPoints.forEach {
