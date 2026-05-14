@@ -456,10 +456,10 @@ private struct CornerArcShape: Shape {
     case .left:
       center = CGPoint(x: rect.maxX, y: rect.minY)
       startAngle = .degrees(90)
-      endAngle = .degrees(180)
+      endAngle = .degrees(135)
     case .right:
       center = CGPoint(x: rect.minX, y: rect.minY)
-      startAngle = .degrees(0)
+      startAngle = .degrees(45)
       endAngle = .degrees(90)
     }
 
