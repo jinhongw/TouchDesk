@@ -192,6 +192,11 @@ struct DrawingView: View {
               .offset(z: isHorizontal ? zOffset * 1.3 : zOffset * 1)
               .offset(y: isHorizontal ? -20 : 0)
           }
+          .overlay {
+            CanvasResizeCornerHints()
+              .padding(10)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+          }
       }
     }
     .frame(width: width, height: depth)
@@ -398,6 +403,82 @@ struct DrawingView: View {
       }
       lastCanvasPosition = position
     }
+  }
+}
+
+private struct CanvasResizeCornerHints: View {
+  var body: some View {
+    GeometryReader { proxy in
+      ZStack {
+        CanvasResizeCornerHint(side: .left)
+          .frame(width: 38, height: 38)
+          .position(x: 19, y: proxy.size.height - 19)
+
+        CanvasResizeCornerHint(side: .right)
+          .frame(width: 38, height: 38)
+          .position(x: proxy.size.width - 19, y: proxy.size.height - 19)
+      }
+    }
+    .allowsHitTesting(false)
+  }
+}
+
+private struct CanvasResizeCornerHint: View {
+  enum Side {
+    case left
+    case right
+  }
+
+  let side: Side
+
+  var body: some View {
+    CornerArcShape(side: side)
+      .stroke(
+        Color.white.opacity(0.88),
+        style: StrokeStyle(lineWidth: 2.4, lineCap: .round)
+      )
+      .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
+      .overlay {
+        CornerArcShape(side: side, inset: 8)
+          .stroke(
+            Color.white.opacity(0.7),
+            style: StrokeStyle(lineWidth: 1.8, lineCap: .round)
+          )
+          .shadow(color: .black.opacity(0.3), radius: 1.5, x: 0, y: 1)
+      }
+  }
+}
+
+private struct CornerArcShape: Shape {
+  let side: CanvasResizeCornerHint.Side
+  var inset: CGFloat = 0
+
+  func path(in rect: CGRect) -> Path {
+    var path = Path()
+    let radius = max(0, min(rect.width, rect.height) - inset)
+    let center: CGPoint
+    let startAngle: Angle
+    let endAngle: Angle
+
+    switch side {
+    case .left:
+      center = CGPoint(x: rect.minX, y: rect.maxY)
+      startAngle = .degrees(270)
+      endAngle = .degrees(360)
+    case .right:
+      center = CGPoint(x: rect.maxX, y: rect.maxY)
+      startAngle = .degrees(180)
+      endAngle = .degrees(270)
+    }
+
+    path.addArc(
+      center: center,
+      radius: radius,
+      startAngle: startAngle,
+      endAngle: endAngle,
+      clockwise: false
+    )
+    return path
   }
 }
 
