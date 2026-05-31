@@ -1,0 +1,682 @@
+import AVFoundation
+import UIKit
+
+class ResizableImageView: UIView, UIGestureRecognizerDelegate {
+  let controlPointTouchSize: CGFloat = 32 // 触控区域大小
+  private let controlPointVisualSize: CGFloat = 10 // 视觉大小
+  private let controlPointBorderWidth: CGFloat = 2
+  private let toolButtonSize: CGFloat = 23
+  private var controlPoints: [ControlPointView] = []
+  private var imageContentView: UIImageView
+  private var deleteButton: UIButton
+  private var dragStartPoint: CGPoint?
+  private let minimumDragDistance: CGFloat = 5.0
+  private var videoURL: URL?
+  private var videoPlayer: AVPlayer?
+  private var videoPlayerLayer: AVPlayerLayer?
+  private weak var videoButton: UIButton?
+  private weak var pauseButton: UIButton?
+  private weak var fullscreenButton: UIButton?
+  private weak var progressSlider: UISlider?
+  private var playbackEndObserver: NSObjectProtocol?
+  private var timeObserver: Any?
+  private var isScrubbing = false
+
+  var isLocked: Bool = false {
+    didSet {
+      updateInteractionState()
+    }
+  }
+
+  var imageId: UUID?
+  var onSizeChanged: ((CGSize) -> Void)?
+  var onPositionChanged: ((CGPoint) -> Void)?
+  var onTapped: (() -> Void)?
+  var onQuickSelected: (() -> Void)?
+  var onDelete: (() -> Void)?
+  var onEnterFullScreen: (() -> Void)?
+
+  var image: UIImage? {
+    get { imageContentView.image }
+    set { imageContentView.image = newValue }
+  }
+
+  func addVideoBadge() {
+    let tag = 90210
+    if viewWithTag(tag) != nil { return }
+
+    let badge = UIButton(type: .system)
+    badge.tag = tag
+    badge.tintColor = UIColor.white.withAlphaComponent(0.92)
+    badge.translatesAutoresizingMaskIntoConstraints = false
+    badge.addTarget(self, action: #selector(toggleVideoPlayback), for: .touchUpInside)
+    badge.configuration = videoButtonConfiguration(systemName: "play.circle.fill")
+    imageContentView.isUserInteractionEnabled = true
+    imageContentView.addSubview(badge)
+    videoButton = badge
+    let proportionalWidth = badge.widthAnchor.constraint(equalTo: imageContentView.widthAnchor, multiplier: 0.22)
+    proportionalWidth.priority = .defaultHigh
+    NSLayoutConstraint.activate([
+      badge.centerXAnchor.constraint(equalTo: imageContentView.centerXAnchor),
+      badge.centerYAnchor.constraint(equalTo: imageContentView.centerYAnchor),
+      badge.widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
+      proportionalWidth,
+      badge.heightAnchor.constraint(equalTo: badge.widthAnchor),
+    ])
+    addVideoPlaybackControls()
+  }
+
+  func configureVideoPlayback(url: URL) {
+    videoURL = url
+    addVideoBadge()
+  }
+
+  private func addVideoPlaybackControls() {
+    let controlsTag = 90211
+    if viewWithTag(controlsTag) != nil { return }
+
+    let pauseButton = UIButton(type: .system)
+    pauseButton.tag = controlsTag
+    pauseButton.tintColor = UIColor.white.withAlphaComponent(0.94)
+    pauseButton.configuration = videoButtonConfiguration(systemName: "pause.circle.fill")
+    pauseButton.translatesAutoresizingMaskIntoConstraints = false
+    pauseButton.isHidden = true
+    pauseButton.addTarget(self, action: #selector(toggleVideoPlayback), for: .touchUpInside)
+    imageContentView.addSubview(pauseButton)
+    self.pauseButton = pauseButton
+
+    let slider = UISlider()
+    slider.minimumValue = 0
+    slider.maximumValue = 1
+    slider.value = 0
+    slider.isHidden = true
+    slider.translatesAutoresizingMaskIntoConstraints = false
+    slider.minimumTrackTintColor = .white
+    slider.maximumTrackTintColor = UIColor.white.withAlphaComponent(0.35)
+    slider.thumbTintColor = .white
+    slider.addTarget(self, action: #selector(beginScrubbing(_:)), for: .touchDown)
+    slider.addTarget(self, action: #selector(scrubVideo(_:)), for: .valueChanged)
+    slider.addTarget(self, action: #selector(endScrubbing(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+    imageContentView.addSubview(slider)
+    progressSlider = slider
+
+    let fullscreen = UIButton(type: .system)
+    fullscreen.tintColor = UIColor.white.withAlphaComponent(0.94)
+    fullscreen.configuration = videoButtonConfiguration(systemName: "arrow.up.left.and.arrow.down.right")
+    fullscreen.translatesAutoresizingMaskIntoConstraints = false
+    fullscreen.isHidden = true
+    fullscreen.addTarget(self, action: #selector(enterVideoFullScreen), for: .touchUpInside)
+    imageContentView.addSubview(fullscreen)
+    fullscreenButton = fullscreen
+
+    NSLayoutConstraint.activate([
+      pauseButton.leadingAnchor.constraint(equalTo: imageContentView.leadingAnchor, constant: 10),
+      pauseButton.bottomAnchor.constraint(equalTo: imageContentView.bottomAnchor, constant: -10),
+      pauseButton.widthAnchor.constraint(equalToConstant: 44),
+      pauseButton.heightAnchor.constraint(equalTo: pauseButton.widthAnchor),
+
+      fullscreen.trailingAnchor.constraint(equalTo: imageContentView.trailingAnchor, constant: -10),
+      fullscreen.bottomAnchor.constraint(equalTo: imageContentView.bottomAnchor, constant: -10),
+      fullscreen.widthAnchor.constraint(equalToConstant: 44),
+      fullscreen.heightAnchor.constraint(equalTo: fullscreen.widthAnchor),
+
+      slider.leadingAnchor.constraint(equalTo: pauseButton.trailingAnchor, constant: 8),
+      slider.trailingAnchor.constraint(equalTo: fullscreen.leadingAnchor, constant: -8),
+      slider.centerYAnchor.constraint(equalTo: pauseButton.centerYAnchor),
+    ])
+  }
+
+  var editingId: UUID? {
+    didSet {
+      updateInteractionState()
+    }
+  }
+
+  var isSelectorActive: Bool = false {
+    didSet {
+      updateInteractionState()
+    }
+  }
+
+  private func updateInteractionState() {
+    // 根据锁定状态和编辑状态更新交互
+    let shouldShowControls = (isSelectorActive || imageId == editingId) && !isLocked
+    controlPoints.forEach { $0.isHidden = !shouldShowControls }
+    updateDragGesture()
+    updateDeleteButtonVisibility()
+  }
+
+  var shouldReceiveElementTouches: Bool {
+    (isSelectorActive || imageId == editingId) && !isLocked
+  }
+
+  private func updateDeleteButtonVisibility() {
+    deleteButton.isHidden = !(isSelectorActive || imageId == editingId) || isLocked
+  }
+
+  private func updateDragGesture() {
+    // 只在编辑状态且未锁定时启用拖拽手势
+    gestureRecognizers?.forEach { gesture in
+      if gesture is UIPanGestureRecognizer {
+        gesture.isEnabled = (isSelectorActive || imageId == editingId) && !isLocked
+      }
+    }
+    layer.zPosition = ((isSelectorActive || imageId == editingId) && !isLocked) ? 1 : -1
+  }
+
+  init(image: UIImage?, size: CGSize) {
+    // 先初始化 imageContentView
+    imageContentView = UIImageView(image: image)
+    imageContentView.backgroundColor = .clear
+    imageContentView.contentMode = .scaleAspectFit
+
+    // 初始化删除按钮
+    deleteButton = UIButton(type: .system)
+    deleteButton.isHidden = true
+
+    super.init(frame: .zero)
+    backgroundColor = .clear // 确保背景透明
+    isMultipleTouchEnabled = true
+
+    imageContentView.frame = CGRect(
+      x: controlPointTouchSize / 2,
+      y: controlPointTouchSize / 2,
+      width: size.width,
+      height: size.height
+    )
+    // 添加 imageContentView 作为子视图
+    addSubview(imageContentView)
+
+    // 添加删除按钮
+    deleteButton.frame = CGRect(x: 0, y: 0, width: toolButtonSize, height: toolButtonSize)
+
+    // 创建并配置毛玻璃效果
+    let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
+    let blurView = UIVisualEffectView(effect: blurEffect)
+    blurView.frame = deleteButton.bounds
+    blurView.layer.cornerRadius = toolButtonSize / 2
+    blurView.clipsToBounds = true
+    blurView.isUserInteractionEnabled = false
+    deleteButton.insertSubview(blurView, at: 0)
+
+    // 配置按钮样式
+    var config = UIButton.Configuration.plain()
+    config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 10, weight: .regular)
+    config.image = UIImage(systemName: "trash")
+    config.contentInsets = NSDirectionalEdgeInsets(top: 1, leading: 0.5, bottom: 0, trailing: 0)
+    config.baseForegroundColor = .white
+    deleteButton.configuration = config
+
+    // 确保按钮内容居中
+    deleteButton.contentVerticalAlignment = .center
+    deleteButton.contentHorizontalAlignment = .center
+    deleteButton.imageView?.contentMode = .center
+    deleteButton.tintColor = .white
+    deleteButton.layer.cornerRadius = toolButtonSize / 2
+    deleteButton.clipsToBounds = true
+
+    addSubview(deleteButton)
+    deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
+
+    setupControlPoints()
+    setupDragGesture()
+    setupTapGesture()
+    setupPinchGesture()
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  private func setupControlPoints() {
+    // 移除现有的控制点
+    controlPoints.forEach { $0.removeFromSuperview() }
+    controlPoints.removeAll()
+    let inset = controlPointTouchSize / 2
+    // 创建四个角落的控制点，使用相同的位置计算逻辑
+    let positions = [
+      CGPoint(x: inset, y: inset), // 左上
+      CGPoint(x: bounds.width - inset, y: inset), // 右上
+      CGPoint(x: inset, y: bounds.height - inset), // 左下
+      CGPoint(x: bounds.width - inset, y: bounds.height - inset), // 右下
+    ]
+
+    for (index, position) in positions.enumerated() {
+      let controlPoint = createControlPoint(at: position)
+      controlPoint.tag = index
+      // 根据编辑状态设置控制点的显示状态
+      controlPoint.isHidden = imageId != editingId
+      addSubview(controlPoint)
+      controlPoints.append(controlPoint)
+
+      let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleControlPointPan(_:)))
+      panGesture.maximumNumberOfTouches = 1
+      controlPoint.addGestureRecognizer(panGesture)
+    }
+  }
+
+  private func createControlPoint(at position: CGPoint) -> ControlPointView {
+    let controlPoint = ControlPointView(
+      visualSize: controlPointVisualSize,
+      touchSize: controlPointTouchSize
+    )
+    controlPoint.frame = CGRect(
+      x: position.x - controlPointTouchSize / 2,
+      y: position.y - controlPointTouchSize / 2,
+      width: controlPointTouchSize,
+      height: controlPointTouchSize
+    )
+    controlPoint.isUserInteractionEnabled = true
+
+    return controlPoint
+  }
+
+  @objc private func handleDelete() {
+    if !isLocked {
+      onDelete?()
+    }
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+
+    // 计算实际图片内容的区域（去掉控制点的触控区域）
+    let inset = controlPointTouchSize / 2
+    let imageFrame = bounds.inset(by: UIEdgeInsets(top: inset, left: inset, bottom: inset, right: inset))
+    imageContentView.frame = imageFrame
+    videoPlayerLayer?.frame = imageContentView.bounds
+
+    // 更新删除按钮位置
+    deleteButton.frame = CGRect(
+      x: bounds.width / 2 - toolButtonSize / 2,
+      y: inset - toolButtonSize / 2,
+      width: toolButtonSize,
+      height: toolButtonSize
+    )
+
+    updateControlPointsPosition()
+  }
+
+  private func updateControlPointsPosition() {
+    guard controlPoints.count == 4 else { return }
+
+    let inset = controlPointTouchSize / 2
+    // 创建四个角落的控制点，使用 imageContentView 的边界来定位
+    let positions = [
+      CGPoint(x: inset, y: inset), // 左上
+      CGPoint(x: bounds.width - inset, y: inset), // 右上
+      CGPoint(x: inset, y: bounds.height - inset), // 左下
+      CGPoint(x: bounds.width - inset, y: bounds.height - inset), // 右下
+    ]
+
+    for (index, position) in positions.enumerated() {
+      controlPoints[index].center = position
+    }
+  }
+
+  private func setupDragGesture() {
+    let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handleImageTranslationPan(_:)))
+    panGesture.maximumNumberOfTouches = 1
+    addGestureRecognizer(panGesture)
+  }
+
+  @objc private func handleControlPointPan(_ gesture: UIPanGestureRecognizer) {
+    if isLocked { return }
+    guard let controlPoint = gesture.view else { return }
+
+    switch gesture.state {
+    case .began:
+      alpha = 0.5
+    case .changed:
+      let translation = gesture.translation(in: self)
+      let cornerIndex = controlPoint.tag
+      var newSize = bounds.size
+      var scale: CGFloat = 1.0
+
+      switch cornerIndex {
+      case 0: // 左上角
+        let widthChange = -translation.x
+        scale = (bounds.width + widthChange) / bounds.width
+      case 1: // 右上角
+        let widthChange = translation.x
+        scale = (bounds.width + widthChange) / bounds.width
+      case 2: // 左下角
+        let widthChange = -translation.x
+        scale = (bounds.width + widthChange) / bounds.width
+      case 3: // 右下角
+        let widthChange = translation.x
+        scale = (bounds.width + widthChange) / bounds.width
+      default:
+        break
+      }
+
+      // 保持宽高比
+      newSize.width *= scale
+      newSize.height *= scale
+
+      // 限制最小尺寸
+      let minSize: CGFloat = 50
+      if newSize.width >= minSize, newSize.height >= minSize {
+        frame.size = newSize
+      }
+
+      gesture.setTranslation(.zero, in: self)
+
+    case .ended, .cancelled:
+      alpha = 1.0
+      // 只在手势结束时才触发回调更新数据
+      onSizeChanged?(bounds.size)
+    default:
+      alpha = 1.0
+    }
+  }
+
+  @objc private func handleImageTranslationPan(_ gesture: UIPanGestureRecognizer) {
+    if isLocked { return }
+    switch gesture.state {
+    case .began:
+      dragStartPoint = gesture.location(in: superview)
+    case .changed:
+      guard let startPoint = dragStartPoint else { return }
+      let currentPoint = gesture.location(in: superview)
+      let distance = hypot(currentPoint.x - startPoint.x, currentPoint.y - startPoint.y)
+
+      // 如果还没开始拖动且距离小于最小触发距离，则不处理
+      if alpha == 1.0, distance < minimumDragDistance {
+        return
+      }
+
+      // 开始拖动时的视觉反馈
+      if alpha == 1.0 {
+        alpha = 0.5
+        deleteButton.isHidden = true
+      }
+
+      let translation = gesture.translation(in: superview)
+      center = CGPoint(
+        x: center.x + translation.x,
+        y: center.y + translation.y
+      )
+      gesture.setTranslation(.zero, in: superview)
+    case .ended, .cancelled:
+      dragStartPoint = nil
+      alpha = 1.0
+      updateDeleteButtonVisibility()
+      onPositionChanged?(frame.origin)
+    default:
+      dragStartPoint = nil
+    }
+  }
+
+  private func setupTapGesture() {
+    let doubleTapGesture = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap(_:)))
+    doubleTapGesture.numberOfTapsRequired = 2
+    doubleTapGesture.delegate = self
+    doubleTapGesture.cancelsTouchesInView = false
+    doubleTapGesture.delaysTouchesBegan = false
+    doubleTapGesture.delaysTouchesEnded = false
+    addGestureRecognizer(doubleTapGesture)
+
+    let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+    tapGesture.delegate = self
+    tapGesture.cancelsTouchesInView = false
+    tapGesture.delaysTouchesBegan = false
+    tapGesture.delaysTouchesEnded = false
+    tapGesture.require(toFail: doubleTapGesture)
+    addGestureRecognizer(tapGesture)
+  }
+
+  @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+    if !isLocked, !isSelectorActive, imageId == editingId {
+      onTapped?()
+    }
+  }
+
+  @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
+    if !isLocked, !isSelectorActive, imageId == editingId {
+      onTapped?()
+    }
+  }
+
+  private func setupPinchGesture() {
+    let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+    pinchGesture.delegate = self
+    addGestureRecognizer(pinchGesture)
+  }
+
+  @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+    if isLocked { return }
+
+    switch gesture.state {
+    case .began:
+      onQuickSelected?()
+      alpha = 0.5
+      deleteButton.isHidden = true
+    case .changed:
+      let scale = gesture.scale
+      let minContentSize: CGFloat = 50
+      let minSize = minContentSize + controlPointTouchSize
+      let newSize = CGSize(
+        width: max(bounds.width * scale, minSize),
+        height: max(bounds.height * scale, minSize)
+      )
+      let oldCenter = center
+      bounds.size = newSize
+      center = oldCenter
+      gesture.scale = 1
+    case .ended, .cancelled:
+      alpha = 1.0
+      updateDeleteButtonVisibility()
+      onSizeChanged?(bounds.size)
+      onPositionChanged?(frame.origin)
+    default:
+      alpha = 1.0
+    }
+  }
+
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    false
+  }
+
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    var view = touch.view
+    while let currentView = view {
+      if currentView is UIControl {
+        return false
+      }
+      view = currentView.superview
+    }
+    return true
+  }
+
+  private func videoButtonConfiguration(systemName: String) -> UIButton.Configuration {
+    var config = UIButton.Configuration.plain()
+    config.image = UIImage(systemName: systemName)
+    config.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 34, weight: .regular)
+    config.baseForegroundColor = UIColor.white.withAlphaComponent(0.92)
+    config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
+    return config
+  }
+
+  @objc private func toggleVideoPlayback() {
+    guard let videoURL else { return }
+
+    if videoPlayer == nil {
+      let player = AVPlayer(url: videoURL)
+      let playerLayer = AVPlayerLayer(player: player)
+      playerLayer.videoGravity = .resizeAspect
+      playerLayer.frame = imageContentView.bounds
+      imageContentView.layer.insertSublayer(playerLayer, at: 0)
+      videoPlayer = player
+      videoPlayerLayer = playerLayer
+      addPeriodicTimeObserver(to: player)
+      playbackEndObserver = NotificationCenter.default.addObserver(
+        forName: .AVPlayerItemDidPlayToEndTime,
+        object: player.currentItem,
+        queue: .main
+      ) { [weak self] _ in
+        self?.videoPlayer?.seek(to: .zero)
+        self?.videoPlayer?.pause()
+        self?.progressSlider?.value = 0
+        self?.setVideoControlsPlaying(false)
+      }
+    }
+
+    guard let videoPlayer else { return }
+    if videoPlayer.timeControlStatus == .playing {
+      videoPlayer.pause()
+      setVideoControlsPlaying(false)
+    } else {
+      videoPlayer.play()
+      setVideoControlsPlaying(true)
+    }
+  }
+
+  private func addPeriodicTimeObserver(to player: AVPlayer) {
+    let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
+    timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+      guard let self = self, !self.isScrubbing else { return }
+      let duration = player.currentItem?.duration.seconds ?? 0
+      guard duration.isFinite, duration > 0 else { return }
+      self.progressSlider?.value = Float(time.seconds / duration)
+    }
+  }
+
+  private func setVideoControlsPlaying(_ isPlaying: Bool) {
+    if isPlaying {
+      videoButton?.isHidden = true
+      pauseButton?.isHidden = false
+      progressSlider?.isHidden = false
+      fullscreenButton?.isHidden = false
+    } else {
+      videoButton?.isHidden = false
+      pauseButton?.isHidden = true
+      progressSlider?.isHidden = true
+      fullscreenButton?.isHidden = true
+    }
+  }
+
+  @objc private func beginScrubbing(_ slider: UISlider) {
+    isScrubbing = true
+  }
+
+  @objc private func scrubVideo(_ slider: UISlider) {
+    seekVideo(to: slider.value)
+  }
+
+  @objc private func endScrubbing(_ slider: UISlider) {
+    seekVideo(to: slider.value)
+    isScrubbing = false
+  }
+
+  private func seekVideo(to value: Float) {
+    guard let item = videoPlayer?.currentItem else { return }
+    let duration = item.duration.seconds
+    guard duration.isFinite, duration > 0 else { return }
+    videoPlayer?.seek(to: CMTime(seconds: duration * Double(value), preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+  }
+
+  @objc private func enterVideoFullScreen() {
+    videoPlayer?.pause()
+    onEnterFullScreen?()
+  }
+
+  private func cleanupVideoPlayback() {
+    videoPlayer?.pause()
+    if let timeObserver {
+      videoPlayer?.removeTimeObserver(timeObserver)
+      self.timeObserver = nil
+    }
+    videoPlayer = nil
+    videoPlayerLayer?.removeFromSuperlayer()
+    videoPlayerLayer = nil
+    if let playbackEndObserver {
+      NotificationCenter.default.removeObserver(playbackEndObserver)
+      self.playbackEndObserver = nil
+    }
+    videoButton?.removeTarget(nil, action: nil, for: .allEvents)
+    pauseButton?.removeTarget(nil, action: nil, for: .allEvents)
+    fullscreenButton?.removeTarget(nil, action: nil, for: .allEvents)
+    progressSlider?.removeTarget(nil, action: nil, for: .allEvents)
+    videoButton = nil
+    pauseButton = nil
+    fullscreenButton = nil
+    progressSlider = nil
+  }
+
+  override func removeFromSuperview() {
+    cleanupVideoPlayback()
+    deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    gestureRecognizers?.forEach { removeGestureRecognizer($0) }
+    controlPoints.forEach {
+      $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
+      $0.removeFromSuperview()
+    }
+    controlPoints.forEach { $0.removeFromSuperview() }
+    controlPoints.removeAll()
+    onSizeChanged = nil
+    onPositionChanged = nil
+    onTapped = nil
+    onQuickSelected = nil
+    onDelete = nil
+    onEnterFullScreen = nil
+
+    super.removeFromSuperview()
+  }
+
+  deinit {
+    cleanupVideoPlayback()
+    deleteButton.removeTarget(nil, action: nil, for: .allEvents)
+    gestureRecognizers?.forEach { removeGestureRecognizer($0) }
+    controlPoints.forEach {
+      $0.gestureRecognizers?.forEach { $0.removeTarget(nil, action: nil) }
+      $0.removeFromSuperview()
+    }
+    controlPoints.forEach { $0.removeFromSuperview() }
+    controlPoints.removeAll()
+    onSizeChanged = nil
+    onPositionChanged = nil
+    onTapped = nil
+    onQuickSelected = nil
+    onDelete = nil
+    onEnterFullScreen = nil
+  }
+}
+
+class ControlPointView: UIView {
+  private let visualSize: CGFloat
+  private let touchSize: CGFloat
+
+  init(visualSize: CGFloat, touchSize: CGFloat) {
+    self.visualSize = visualSize
+    self.touchSize = touchSize
+    super.init(frame: .zero)
+    setupView()
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  deinit {
+    gestureRecognizers?.forEach { removeGestureRecognizer($0) }
+  }
+
+  private func setupView() {
+    // 创建视觉点视图
+    let visualPoint = UIView(frame: CGRect(
+      x: (touchSize - visualSize) / 2,
+      y: (touchSize - visualSize) / 2,
+      width: visualSize,
+      height: visualSize
+    ))
+    visualPoint.backgroundColor = .systemBlue
+    visualPoint.layer.cornerRadius = visualSize / 2
+    visualPoint.layer.borderWidth = 2
+    visualPoint.layer.borderColor = UIColor.white.cgColor
+
+    addSubview(visualPoint)
+  }
+}

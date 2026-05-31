@@ -61,10 +61,28 @@ struct DrawingView: View {
         miniView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
           .overlay {
             drawingRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
-              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
-              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement ? 1 : 0)
-              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 0 : 200)
-              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement)
+              .scaleEffect(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !isFullScreenElementActive ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !appModel.isInPlaceCanvasImmersive && !appModel.isBeginingPlacement && !isFullScreenElementActive ? 1 : 0)
+              .blur(radius: appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini && !isFullScreenElementActive ? 0 : 200)
+              .disabled(!appModel.showDrawing || appModel.showNotes || appModel.hideInMini || appModel.isInPlaceCanvasImmersive || appModel.isBeginingPlacement || isFullScreenElementActive)
+              .offset(y: proxy.size.height / 2)
+              .offset(z: -proxy.size.depth)
+          }
+          .overlay {
+            fullScreenWebRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+              .scaleEffect(appModel.isFullScreenWebActive && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .blur(radius: appModel.isFullScreenWebActive && !appModel.hideInMini ? 0 : 200)
+              .opacity(appModel.isFullScreenWebActive && !appModel.hideInMini ? 1 : 0)
+              .disabled(!appModel.isFullScreenWebActive || appModel.hideInMini)
+              .offset(y: proxy.size.height / 2)
+              .offset(z: -proxy.size.depth)
+          }
+          .overlay {
+            fullScreenVideoRealityView(width: proxy.size.width, height: proxy.size.height, depth: proxy.size.depth)
+              .scaleEffect(appModel.isFullScreenVideoActive && !appModel.hideInMini ? 1 : 0.1, anchor: appModel.hideInMini ? .leadingBack : .center)
+              .blur(radius: appModel.isFullScreenVideoActive && !appModel.hideInMini ? 0 : 200)
+              .opacity(appModel.isFullScreenVideoActive && !appModel.hideInMini ? 1 : 0)
+              .disabled(!appModel.isFullScreenVideoActive || appModel.hideInMini)
               .offset(y: proxy.size.height / 2)
               .offset(z: -proxy.size.depth)
           }
@@ -102,8 +120,14 @@ struct DrawingView: View {
       .animation(.spring, value: appModel.showDrawing)
       .animation(.spring, value: appModel.showNotes)
       .animation(.spring, value: appModel.hideInMini)
+      .animation(.spring, value: appModel.isFullScreenWebActive)
+      .animation(.spring, value: appModel.isFullScreenVideoActive)
       .animation(.spring, value: isHorizontal)
     }
+  }
+
+  private var isFullScreenElementActive: Bool {
+    appModel.isFullScreenWebActive || appModel.isFullScreenVideoActive
   }
 
   @MainActor
@@ -168,6 +192,11 @@ struct DrawingView: View {
               .offset(z: isHorizontal ? zOffset * 1.3 : zOffset * 1)
               .offset(y: isHorizontal ? -20 : 0)
           }
+          .overlay {
+            CanvasResizeCornerHints()
+              .padding(10)
+              .opacity(appModel.showDrawing && !appModel.showNotes && !appModel.hideInMini ? 1 : 0)
+          }
       }
     }
     .frame(width: width, height: depth)
@@ -181,7 +210,7 @@ struct DrawingView: View {
     if appModel.drawings.isEmpty || appModel.drawingId == nil {
       ProgressView()
     } else {
-      DrawingUIViewRepresentable(
+      DrawingUIView(
         canvas: canvas,
         model: Binding(
           get: {
@@ -234,6 +263,31 @@ struct DrawingView: View {
         },
         deleteImage: { imageId in
           appModel.deleteImage(imageId)
+        },
+        deleteVideo: { videoId in
+          appModel.deleteVideo(videoId)
+        },
+        deleteWeb: { webId in
+          appModel.deleteWeb(webId)
+        },
+        getVideoThumbnail: { videoElement in
+          appModel.getOrCreateVideoThumbnail(for: videoElement)
+        },
+        enterFullScreenWeb: { webId in
+          appModel.enterFullScreenWeb(webId: webId)
+        },
+        enterFullScreenVideo: { videoId in
+          appModel.enterFullScreenVideo(videoId: videoId)
+        },
+        updateWebSnapshot: { webId, image in
+          appModel.updateWebSnapshot(webId: webId, image: image)
+        },
+        updateWebCachedMetadata: { webId, title, iconData in
+          appModel.updateWebCachedMetadata(webId: webId, title: title, iconData: iconData)
+        },
+        refreshThumbnailAfterWebSnapshot: {
+          guard let drawingId = appModel.drawingId else { return }
+          appModel.generateThumbnail(drawingId)
         }
       )
     }
@@ -261,13 +315,52 @@ struct DrawingView: View {
 
   @MainActor
   @ViewBuilder
+  private func fullScreenWebRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    RealityView { content, attachments in
+      if let webView = attachments.entity(for: "fullScreenWebView") {
+        webView.position = .init(x: 0, y: 0, z: 0)
+        webView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        content.add(webView)
+      }
+    } attachments: {
+      Attachment(id: "fullScreenWebView") {
+        FullScreenWebViewContainer(width: width, contentHeight: depth)
+          .frame(width: width, height: depth)
+      }
+    }
+    .frame(width: width)
+    .frame(depth: depth)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private func fullScreenVideoRealityView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
+    RealityView { content, attachments in
+      if let videoView = attachments.entity(for: "fullScreenVideoView") {
+        videoView.position = .init(x: 0, y: 0, z: 0)
+        videoView.setOrientation(.init(angle: -.pi / 2, axis: .init(x: 1, y: 0, z: 0)), relativeTo: nil)
+        content.add(videoView)
+      }
+    } attachments: {
+      Attachment(id: "fullScreenVideoView") {
+        FullScreenVideoViewContainer(width: width, contentHeight: depth)
+          .frame(width: width, height: depth)
+      }
+    }
+    .frame(width: width)
+    .frame(depth: depth)
+  }
+
+  @MainActor
+  @ViewBuilder
   private func topToolbarView(width: CGFloat, height: CGFloat, depth: CGFloat) -> some View {
     DrawingToolsView(
       toolStatus: $toolStatus,
       pencilType: $pencilType,
       eraserType: $eraserType,
       isSelectorActive: $isSelectorActive,
-      canvas: canvas
+      canvas: canvas,
+      width: width
     )
     .environment(appModel)
     .frame(width: width, height: 120)
@@ -310,6 +403,74 @@ struct DrawingView: View {
       }
       lastCanvasPosition = position
     }
+  }
+}
+
+private struct CanvasResizeCornerHints: View {
+  var body: some View {
+    GeometryReader { proxy in
+      ZStack {
+        CanvasResizeCornerHint(side: .left)
+          .frame(width: 24, height: 24)
+          .position(x: 6, y: proxy.size.height - 6)
+
+        CanvasResizeCornerHint(side: .right)
+          .frame(width: 24, height: 24)
+          .position(x: proxy.size.width - 6, y: proxy.size.height - 6)
+      }
+    }
+    .allowsHitTesting(false)
+  }
+}
+
+private struct CanvasResizeCornerHint: View {
+  enum Side {
+    case left
+    case right
+  }
+
+  let side: Side
+
+  var body: some View {
+    CornerArcShape(side: side)
+      .stroke(
+        Color.white.opacity(0.88),
+        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+      )
+      .shadow(color: .black.opacity(0.35), radius: 2, x: 0, y: 1)
+  }
+}
+
+private struct CornerArcShape: Shape {
+  let side: CanvasResizeCornerHint.Side
+  var inset: CGFloat = 0
+
+  func path(in rect: CGRect) -> Path {
+    var path = Path()
+    let radius = max(0, min(rect.width, rect.height) - inset)
+    let center: CGPoint
+    let startAngle: Angle
+    let endAngle: Angle
+
+    switch side {
+    case .left:
+      center = CGPoint(x: rect.maxX, y: rect.minY)
+      startAngle = .degrees(105)
+      endAngle = .degrees(150)
+    case .right:
+      center = CGPoint(x: rect.minX, y: rect.minY)
+      startAngle = .degrees(30)
+      endAngle = .degrees(75)
+    }
+
+    path.addArc(
+      center: center,
+      radius: radius,
+      startAngle: startAngle,
+      endAngle: endAngle,
+      clockwise: false
+    )
+    return path
   }
 }
 

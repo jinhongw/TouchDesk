@@ -120,7 +120,7 @@ struct MiniMapView: View {
 
   // 根据缩放比例更新画布内容
   private func updateCanvasForZoom() {
-    // 画布的缩放由 DrawingUIViewRepresentable 处理
+    // 画布的缩放由 DrawingUIView 处理
     // 这里只需触发画布内容的重新布局
     canvas.setNeedsDisplay()
   }

@@ -10,6 +10,14 @@ import PencilKit
 import RealityKit
 import SwiftUI
 
+private struct DrawingToolsWidthPreferenceKey: PreferenceKey {
+  static var defaultValue: CGFloat = 0
+
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = max(value, nextValue())
+  }
+}
+
 struct DrawingToolsView: View {
   @Environment(AppModel.self) private var appModel
   @Environment(\.openWindow) private var openWindow
@@ -27,10 +35,14 @@ struct DrawingToolsView: View {
   @AppStorage("showRecentColors") private var showRecentColors = true
   @AppStorage("recentColors") private var recentColorsArray: ColorArrayStorageModel = .init(colors: [])
   @AppStorage("maxRecentColors") private var maxRecentColors: Int = 3
+  @AppStorage("webURLString") private var webURLString: String = "https://www.google.com"
 
   @State private var toolSettingType: ToolSettingType? = nil
   @State private var showColorPicker = false
   @State private var showMoreFuncsMenu = false
+
+  @State private var showWebURLInput: Bool = false
+  @State private var toolbarContentWidth: CGFloat = 0
 
   @Binding var toolStatus: DrawingView.CanvasToolStatus
   @Binding var pencilType: PKInkingTool.InkType
@@ -38,6 +50,7 @@ struct DrawingToolsView: View {
   @Binding var isSelectorActive: Bool
 
   let canvas: PKCanvasView
+  let width: CGFloat
 
   enum ToolSettingType {
     case pen
@@ -64,15 +77,93 @@ struct DrawingToolsView: View {
     recentColorsArray = ColorArrayStorageModel(colors: colors)
   }
 
-  var body: some View {
+  private var toolbarScale: CGFloat {
+    guard toolbarContentWidth > 0, width > 0 else { return 1 }
+    return min(1, width / toolbarContentWidth)
+  }
+
+  private func normalizedWebURLString(from input: String) -> String? {
+    let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedInput.isEmpty else { return nil }
+
+    if trimmedInput.contains(" ") {
+      return googleSearchURLString(for: trimmedInput)
+    }
+
+    if let url = URL(string: trimmedInput), url.scheme != nil, url.host != nil {
+      return url.absoluteString
+    }
+
+    if isLikelyWebAddress(trimmedInput) {
+      return "https://\(trimmedInput)"
+    }
+
+    return googleSearchURLString(for: trimmedInput)
+  }
+
+  private func isLikelyWebAddress(_ input: String) -> Bool {
+    guard !input.contains(" ") else { return false }
+
+    if input.hasPrefix("localhost") {
+      return true
+    }
+
+    let host = input.split(separator: "/").first?.split(separator: ":").first ?? ""
+    return host.contains(".") && !host.hasPrefix(".") && !host.hasSuffix(".")
+  }
+
+  private func googleSearchURLString(for query: String) -> String? {
+    var components = URLComponents(string: "https://www.google.com/search")
+    components?.queryItems = [
+      URLQueryItem(name: "q", value: query)
+    ]
+    return components?.url?.absoluteString
+  }
+
+  @MainActor
+  private func addWebFromInput() {
+    guard let urlString = normalizedWebURLString(from: webURLString) else { return }
+    let visibleCenter = CGPoint(
+      x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+      y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+    )
+    webURLString = urlString
+    appModel.addWeb(urlString, at: visibleCenter, size: CGSize(width: 160, height: 116))
+    showWebURLInput = false
+  }
+
+  @MainActor
+  private var toolbarContent: some View {
     HStack(spacing: 8) {
       leftTools
       Spacer(minLength: 20)
       rightTools
     }
+  }
+
+  var body: some View {
+    toolbarContent
     .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
     .padding(.leading, 28)
     .padding(.trailing, 28)
+    .frame(width: toolbarScale < 1 ? toolbarContentWidth : width)
+    .scaleEffect(toolbarScale, anchor: .center)
+    .frame(width: width)
+    .background {
+      toolbarContent
+        .rotation3DEffect(.init(radians: isHorizontal ? -.pi / 4 : .pi / 6), axis: (x: 1, y: 0, z: 0))
+        .padding(.leading, 28)
+        .padding(.trailing, 28)
+        .fixedSize(horizontal: true, vertical: false)
+        .background {
+          GeometryReader { proxy in
+            Color.clear
+              .preference(key: DrawingToolsWidthPreferenceKey.self, value: proxy.size.width)
+          }
+        }
+        .hidden()
+    }
+    .onPreferenceChange(DrawingToolsWidthPreferenceKey.self) { toolbarContentWidth = $0 }
     .animation(.spring, value: isHorizontal)
     .animation(.spring.speed(2), value: appModel.isLocked)
   }
@@ -424,10 +515,30 @@ struct DrawingToolsView: View {
       pencilTool
       crayonTool
       fountainPenTool
-      selectTool
-      imageTool
+      elementToolPanel
       colorPicker
     }
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var elementToolPanel: some View {
+    HStack(spacing: -8) {
+      selectTool
+      webTool
+      imageTool
+      videoTool
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    .overlay(alignment: .bottom) {
+      webURLInput
+    }
+    .animation(.spring.speed(2), value: showWebURLInput)
+    .disabled(appModel.isLocked)
+    .opacity(appModel.isLocked ? 0 : 1)
+    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -436,19 +547,16 @@ struct DrawingToolsView: View {
     HStack {
       Button(action: {
         isSelectorActive.toggle()
+        appModel.imageEditingId = nil
       }, label: {
-        Image(systemName: "hand.point.up.left")
+        Image(systemName: "squareshape.controlhandles.on.squareshape.controlhandles")
           .frame(width: 8)
       })
+      .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .background(isSelectorActive ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
   }
 
   @MainActor
@@ -463,17 +571,95 @@ struct DrawingToolsView: View {
         dismissWindow(id: "imagePicker")
         openWindow(id: "imagePicker", value: visibleCenter)
       }, label: {
-        Image(systemName: "photo.on.rectangle.angled")
+        Image(systemName: "photo.badge.plus")
           .frame(width: 8)
       })
       .frame(width: 44, height: 44)
     }
     .buttonStyle(.borderless)
     .controlSize(.small)
-    .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
-    .disabled(appModel.isLocked)
-    .opacity(appModel.isLocked ? 0 : 1)
-    .scaleEffect(appModel.isLocked ? 0 : 1, anchor: .center)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var videoTool: some View {
+    HStack {
+      Button(action: {
+        let visibleCenter = CGPoint(
+          x: (canvas.contentOffset.x + canvas.bounds.width / 2) / (appModel.canvasZoomFactor / 100),
+          y: (canvas.contentOffset.y + canvas.bounds.height / 2) / (appModel.canvasZoomFactor / 100)
+        )
+        dismissWindow(id: "videoPicker")
+        openWindow(id: "videoPicker", value: visibleCenter)
+      }, label: {
+        Image(systemName: "video.badge.plus")
+          .frame(width: 8)
+      })
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var webTool: some View {
+    HStack {
+      Button(action: {
+        showWebURLInput.toggle()
+      }, label: {
+        Image(systemName: "link.badge.plus")
+          .frame(width: 8)
+      })
+      .background(showWebURLInput ? .white.opacity(0.3) : .clear, in: RoundedRectangle(cornerRadius: 32))
+      .frame(width: 44, height: 44)
+    }
+    .buttonStyle(.borderless)
+    .controlSize(.small)
+  }
+
+  @MainActor
+  @ViewBuilder
+  private var webURLInput: some View {
+    HStack(spacing: 8) {
+      HStack(spacing: 8) {
+        Image(systemName: "magnifyingglass")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+        TextField("Search or enter website", text: $webURLString)
+          .frame(minWidth: 220)
+          .textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+          .onSubmit {
+            addWebFromInput()
+          }
+        Button(action: {
+          webURLString = ""
+        }, label: {
+          Image(systemName: "xmark.circle.fill")
+            .font(.caption)
+            .foregroundStyle(.placeholder)
+        })
+        .buttonStyle(.plain)
+        .buttonBorderShape(.circle)
+        .fixedSize()
+      }
+      .padding(12)
+      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+      Button(action: {
+        addWebFromInput()
+      }, label: {
+        Image(systemName: "checkmark")
+          .frame(width: 8)
+      })
+      .glassBackgroundEffect(in: RoundedRectangle(cornerRadius: 32))
+    }
+    .opacity(showWebURLInput ? 1 : 0)
+    .rotation3DEffect(.degrees(-30), axis: (1, 0, 0), anchor: .center)
+    .scaleEffect(showWebURLInput ? 0.8 : 0, anchor: .bottomFront)
+    .offset(y: -64)
+    .offset(z: 24)
+    .disabled(!showWebURLInput)
   }
 
   @MainActor
@@ -998,12 +1184,13 @@ struct RecentColorButton: View {
         pencilType: $pencilType,
         eraserType: $eraserType,
         isSelectorActive: $isSelectorActive,
-        canvas: canvas
+        canvas: canvas,
+        width: 520
       )
       .environment(AppModel())
-      .frame(width: 1024, height: 44)
+      .frame(width: 520, height: 44)
       .rotation3DEffect(.degrees(90), axis: (1, 0, 0))
     }
   }
-  .frame(width: 1024)
+  .frame(width: 520)
 })

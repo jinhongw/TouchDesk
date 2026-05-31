@@ -7,13 +7,28 @@ struct DrawingModel: Codable {
   var name: String
   var drawing: PKDrawing
   var images: [ImageElement]
+  var videos: [VideoElement]
+  var webs: [WebElement]
   var texts: [TextElement]
   var createdAt: Date
   var modifiedAt: Date
   var isFavorite: Bool
 
   var bounds: CGRect {
-    drawing.bounds
+    var contentBounds = drawing.bounds
+    for image in images {
+      let frame = CGRect(origin: image.position, size: image.size)
+      contentBounds = contentBounds.isNull ? frame : contentBounds.union(frame)
+    }
+    for video in videos {
+      let frame = CGRect(origin: video.position, size: video.size)
+      contentBounds = contentBounds.isNull ? frame : contentBounds.union(frame)
+    }
+    for web in webs {
+      let frame = CGRect(origin: web.position, size: web.size)
+      contentBounds = contentBounds.isNull ? frame : contentBounds.union(frame)
+    }
+    return contentBounds
   }
 
   init(id: UUID = UUID(), name: String, drawing: PKDrawing, isFavorite: Bool = false) {
@@ -22,6 +37,8 @@ struct DrawingModel: Codable {
     self.drawing = drawing
     self.isFavorite = isFavorite
     images = []
+    videos = []
+    webs = []
     texts = []
     createdAt = Date()
     modifiedAt = Date()
@@ -33,6 +50,8 @@ struct DrawingModel: Codable {
     name = try container.decode(String.self, forKey: .name)
     drawing = try container.decode(PKDrawing.self, forKey: .drawing)
     images = try container.decode([ImageElement].self, forKey: .images)
+    videos = (try? container.decode([VideoElement].self, forKey: .videos)) ?? []
+    webs = (try? container.decode([WebElement].self, forKey: .webs)) ?? []
     texts = try container.decode([TextElement].self, forKey: .texts)
     createdAt = try container.decode(Date.self, forKey: .createdAt)
     modifiedAt = try container.decode(Date.self, forKey: .modifiedAt)
@@ -44,10 +63,58 @@ struct DrawingModel: Codable {
     case name
     case drawing
     case images
+    case videos
+    case webs
     case texts
     case createdAt
     case modifiedAt
     case isFavorite
+  }
+}
+
+struct VideoElement: Codable, Equatable, Sendable {
+  let id: UUID
+  let assetId: UUID
+  var fileName: String
+  var thumbnailFileName: String
+  var mimeType: String
+  var originalFileName: String?
+  var sizeBytes: Int64
+  var duration: Double
+  var pixelWidth: CGFloat
+  var pixelHeight: CGFloat
+  var position: CGPoint
+  var size: CGSize
+  var rotation: Double
+
+  init(
+    id: UUID,
+    assetId: UUID,
+    fileName: String,
+    thumbnailFileName: String,
+    mimeType: String,
+    originalFileName: String?,
+    sizeBytes: Int64,
+    duration: Double,
+    pixelWidth: CGFloat,
+    pixelHeight: CGFloat,
+    position: CGPoint,
+    size: CGSize,
+    rotation: Double
+  ) {
+    self.id = id
+    self.assetId = assetId
+    self.fileName = fileName
+    self.thumbnailFileName = thumbnailFileName
+    self.mimeType = mimeType
+    self.originalFileName = originalFileName
+    self.sizeBytes = sizeBytes
+    self.duration = duration
+    self.pixelWidth = pixelWidth
+    self.pixelHeight = pixelHeight
+    self.position = position
+    self.size = size
+    self.rotation = rotation
   }
 }
 
@@ -80,6 +147,70 @@ struct ImageElement: Codable, Equatable {
     lhs.position == rhs.position &&
     lhs.size == rhs.size &&
     lhs.rotation == rhs.rotation
+  }
+}
+
+struct WebElement: Codable, Equatable {
+  let id: UUID
+  var url: String
+  var position: CGPoint
+  var size: CGSize
+  var rotation: Double
+  /// Cached card title from LPMetadataProvider (persisted for thumbnail and offline display).
+  var cachedTitle: String?
+  /// Cached favicon/site icon as PNG data (persisted like ImageElement.imageData).
+  var cachedIconData: Data?
+
+  init(id: UUID, url: String, position: CGPoint, size: CGSize, rotation: Double, cachedTitle: String? = nil, cachedIconData: Data? = nil) {
+    self.id = id
+    self.url = url
+    self.position = position
+    self.size = size
+    self.rotation = rotation
+    self.cachedTitle = cachedTitle
+    self.cachedIconData = cachedIconData
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id
+    case url
+    case position
+    case size
+    case rotation
+    case cachedTitle
+    case cachedIconData
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    id = try container.decode(UUID.self, forKey: .id)
+    url = try container.decode(String.self, forKey: .url)
+    position = try container.decode(CGPoint.self, forKey: .position)
+    size = try container.decode(CGSize.self, forKey: .size)
+    rotation = try container.decode(Double.self, forKey: .rotation)
+    cachedTitle = try container.decodeIfPresent(String.self, forKey: .cachedTitle)
+    cachedIconData = try container.decodeIfPresent(Data.self, forKey: .cachedIconData)
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(id, forKey: .id)
+    try container.encode(url, forKey: .url)
+    try container.encode(position, forKey: .position)
+    try container.encode(size, forKey: .size)
+    try container.encode(rotation, forKey: .rotation)
+    try container.encodeIfPresent(cachedTitle, forKey: .cachedTitle)
+    try container.encodeIfPresent(cachedIconData, forKey: .cachedIconData)
+  }
+
+  static func == (lhs: WebElement, rhs: WebElement) -> Bool {
+    lhs.id == rhs.id &&
+    lhs.url == rhs.url &&
+    lhs.position == rhs.position &&
+    lhs.size == rhs.size &&
+    lhs.rotation == rhs.rotation &&
+    lhs.cachedTitle == rhs.cachedTitle &&
+    lhs.cachedIconData == rhs.cachedIconData
   }
 }
 

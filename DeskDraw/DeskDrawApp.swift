@@ -118,6 +118,15 @@ struct DeskDrawApp: App {
     .defaultWindowPlacement { content, context in
       WindowPlacement(.utilityPanel)
     }
+
+    WindowGroup(id: "videoPicker", for: CGPoint.self) { point in
+      VideoPickerView(point: point.wrappedValue ?? .zero)
+        .environment(appModel)
+    }
+    .windowResizability(.contentSize)
+    .defaultWindowPlacement { content, context in
+      WindowPlacement(.utilityPanel)
+    }
     
     WindowGroup(id: "canvasInspectView") {
       CanvasInspectView()

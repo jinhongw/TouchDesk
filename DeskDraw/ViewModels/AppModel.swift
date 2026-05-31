@@ -8,6 +8,7 @@
 import Foundation
 @preconcurrency import PencilKit
 import SwiftUI
+import UIKit
 
 @MainActor
 @Observable
@@ -29,6 +30,10 @@ class AppModel {
   var isOpeningPlaceCanvasImmersive = false
   var isBeginingPlacement = true
   var isShareImageViewShowing = false
+  var isFullScreenWebActive = false
+  var fullScreenWebId: UUID?
+  var isFullScreenVideoActive = false
+  var fullScreenVideoId: UUID?
   var exportImage: UIImage?
   var aboutNavigationPath = NavigationPath()
   var canvasZoomFactor: Double = 100
@@ -52,6 +57,8 @@ class AppModel {
   private var thumbnailWorkItem: DispatchWorkItem?
   private let thumbnailDebounceInterval: TimeInterval = 0.5
   private var imageCache: [UUID: UIImage] = [:]
+  private var videoThumbnailCache: [UUID: UIImage] = [:]
+  private var webSnapshotCache: [UUID: UIImage] = [:]
   private var currentThumbnailId: UUID?
   
   var currentDrawing: DrawingModel? {
@@ -197,6 +204,15 @@ class AppModel {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
       contentBounds = contentBounds.union(imageFrame)
     }
+    for videoElement in drawingModel.videos {
+      let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+      contentBounds = contentBounds.union(videoFrame)
+    }
+    // 将网页元素的区域纳入整体边界（缩略图不实际渲染网页，仅用于裁剪范围）
+    for webElement in drawingModel.webs {
+      let webFrame = CGRect(origin: webElement.position, size: webElement.size)
+      contentBounds = contentBounds.union(webFrame)
+    }
 
     if contentBounds.isNull || contentBounds.isEmpty {
       contentBounds = CGRect(x: 0, y: 0, width: thumbnailSize.width, height: thumbnailSize.height)
@@ -274,6 +290,84 @@ class AppModel {
               context.cgContext.restoreGState()
             }
           }
+          for videoElement in drawingModel.videos {
+            if let thumbnail = DispatchQueue.main.sync(execute: { self.getOrCreateVideoThumbnail(for: videoElement) }) {
+              context.cgContext.saveGState()
+
+              let relativeX = (videoElement.position.x - contentBounds.minX) * scale
+              let relativeY = (videoElement.position.y - contentBounds.minY) * scale
+              let scaledPosition = CGPoint(
+                x: drawingOrigin.x + relativeX,
+                y: drawingOrigin.y + relativeY
+              )
+              let scaledSize = CGSize(
+                width: videoElement.size.width * scale,
+                height: videoElement.size.height * scale
+              )
+
+              context.cgContext.translateBy(
+                x: scaledPosition.x + scaledSize.width / 2,
+                y: scaledPosition.y + scaledSize.height / 2
+              )
+              context.cgContext.rotate(by: videoElement.rotation)
+
+              let videoRect = CGRect(
+                x: -scaledSize.width / 2,
+                y: -scaledSize.height / 2,
+                width: scaledSize.width,
+                height: scaledSize.height
+              )
+              thumbnail.draw(in: videoRect)
+              Self.drawVideoPlayBadge(context: context.cgContext, rect: videoRect)
+
+              context.cgContext.restoreGState()
+            }
+          }
+          for webElement in drawingModel.webs {
+            context.cgContext.saveGState()
+            let relativeX = (webElement.position.x - contentBounds.minX) * scale
+            let relativeY = (webElement.position.y - contentBounds.minY) * scale
+            let scaledPosition = CGPoint(
+              x: drawingOrigin.x + relativeX,
+              y: drawingOrigin.y + relativeY
+            )
+            let scaledSize = CGSize(
+              width: webElement.size.width * scale,
+              height: webElement.size.height * scale
+            )
+            context.cgContext.translateBy(
+              x: scaledPosition.x + scaledSize.width / 2,
+              y: scaledPosition.y + scaledSize.height / 2
+            )
+            context.cgContext.rotate(by: webElement.rotation)
+            let webRect = CGRect(
+              x: -scaledSize.width / 2,
+              y: -scaledSize.height / 2,
+              width: scaledSize.width,
+              height: scaledSize.height
+            )
+            if let cachedImage = DispatchQueue.main.sync(execute: { self.webSnapshotCache[webElement.id] }) {
+              cachedImage.draw(in: webRect)
+            } else if webElement.cachedTitle != nil || webElement.cachedIconData != nil {
+              let iconImage = webElement.cachedIconData.flatMap { UIImage(data: $0) }
+              Self.drawWebCardFromCachedMetadata(
+                context: context.cgContext,
+                rect: webRect,
+                title: webElement.cachedTitle ?? "Web",
+                iconImage: iconImage,
+                url: webElement.url,
+                scale: scale
+              )
+            } else {
+              Self.drawWebPlaceholderCard(
+                context: context.cgContext,
+                rect: webRect,
+                url: webElement.url,
+                scale: scale
+              )
+            }
+            context.cgContext.restoreGState()
+          }
 
           let drawingImage = drawing.thumbnail(
             rect: contentBounds,
@@ -317,14 +411,169 @@ class AppModel {
     return nil
   }
 
+  func getOrCreateVideoThumbnail(for videoElement: VideoElement) -> UIImage? {
+    if let cachedImage = videoThumbnailCache[videoElement.assetId] {
+      return cachedImage
+    }
+
+    if let image = DrawingFileManager.shared.loadVideoThumbnail(fileName: videoElement.thumbnailFileName) {
+      videoThumbnailCache[videoElement.assetId] = image
+      return image
+    }
+
+    return nil
+  }
+
   private func cleanupImageCache() {
     imageCache.removeAll()
   }
 
+  private func cleanupVideoThumbnailCache() {
+    videoThumbnailCache.removeAll()
+  }
+
+  func updateWebSnapshot(webId: UUID, image: UIImage) {
+    webSnapshotCache[webId] = image
+  }
+
+  /// Persists loaded card metadata (title, icon) into the current drawing's WebElement for thumbnails and offline display.
+  func updateWebCachedMetadata(webId: UUID, title: String, iconData: Data?) {
+    guard let drawingId, var drawing = drawings[drawingId],
+          let index = drawing.webs.firstIndex(where: { $0.id == webId }) else { return }
+    drawing.webs[index].cachedTitle = title
+    drawing.webs[index].cachedIconData = iconData
+    drawings[drawingId] = drawing
+    saveDrawing(drawingId)
+  }
+
+  private func cleanupWebSnapshotCache() {
+    webSnapshotCache.removeAll()
+  }
+
   @objc private func handleMemoryWarning() {
     cleanupImageCache()
+    cleanupVideoThumbnailCache()
+    cleanupWebSnapshotCache()
     thumbnailWorkItem?.cancel()
     thumbnailWorkItem = nil
+  }
+
+  /// Draws a web card in thumbnails using persisted metadata (title, optional icon).
+  private static func drawWebCardFromCachedMetadata(
+    context: CGContext,
+    rect: CGRect,
+    title: String,
+    iconImage: UIImage?,
+    url: String,
+    scale: CGFloat
+  ) {
+    let cornerRadius = min(rect.width, rect.height) * 0.1
+    let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+    context.addPath(path)
+    context.setFillColor(UIColor.systemGray5.withAlphaComponent(0.9).cgColor)
+    context.fillPath()
+    context.addPath(path)
+    context.clip()
+    let iconSize = min(rect.width, rect.height) * 0.25
+    if let icon = iconImage {
+      let iconRect = CGRect(
+        x: rect.midX - iconSize / 2,
+        y: rect.midY - iconSize / 2 - rect.height * 0.08,
+        width: iconSize,
+        height: iconSize
+      )
+      icon.draw(in: iconRect)
+    } else {
+      let config = UIImage.SymbolConfiguration(pointSize: iconSize * 0.8, weight: .regular)
+      guard let globeImage = UIImage(systemName: "globe", withConfiguration: config)?
+        .withTintColor(.darkGray, renderingMode: .alwaysOriginal) else { return }
+      let iconRect = CGRect(
+        x: rect.midX - iconSize / 2,
+        y: rect.midY - iconSize / 2 - rect.height * 0.08,
+        width: iconSize,
+        height: iconSize
+      )
+      globeImage.draw(in: iconRect)
+    }
+    let fontSize = max(8, min(rect.width, rect.height) * 0.12)
+    let font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: UIColor.darkGray
+    ]
+    let truncated = title.count > 20 ? String(title.prefix(17)) + "..." : title
+    let textSize = (truncated as NSString).size(withAttributes: attrs)
+    let textRect = CGRect(
+      x: rect.midX - textSize.width / 2,
+      y: rect.midY + rect.height * 0.05,
+      width: min(rect.width - 4, textSize.width),
+      height: textSize.height
+    )
+    (truncated as NSString).draw(in: textRect, withAttributes: attrs)
+  }
+
+  /// Draws a placeholder card for web elements in thumbnails (rounded rect, fill, globe icon, truncated URL).
+  private static func drawWebPlaceholderCard(context: CGContext, rect: CGRect, url: String, scale: CGFloat) {
+    let cornerRadius = min(rect.width, rect.height) * 0.1
+    let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+    context.addPath(path)
+    context.setFillColor(UIColor.systemGray5.withAlphaComponent(0.9).cgColor)
+    context.fillPath()
+    context.addPath(path)
+    context.clip()
+    let config = UIImage.SymbolConfiguration(pointSize: min(rect.width, rect.height) * 0.25, weight: .regular)
+    guard let globeImage = UIImage(systemName: "globe", withConfiguration: config)?
+      .withTintColor(.darkGray, renderingMode: .alwaysOriginal) else { return }
+    let iconW = globeImage.size.width
+    let iconH = globeImage.size.height
+    let iconRect = CGRect(
+      x: rect.midX - iconW / 2,
+      y: rect.midY - iconH / 2 - rect.height * 0.08,
+      width: iconW,
+      height: iconH
+    )
+    globeImage.draw(in: iconRect)
+    let label = (URL(string: url)?.host).map { String($0) } ?? "Web"
+    let fontSize = max(8, min(rect.width, rect.height) * 0.12)
+    let font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: UIColor.darkGray
+    ]
+    let truncated = label.count > 20 ? String(label.prefix(17)) + "..." : label
+    let textSize = (truncated as NSString).size(withAttributes: attrs)
+    let textRect = CGRect(
+      x: rect.midX - textSize.width / 2,
+      y: rect.midY + rect.height * 0.05,
+      width: min(rect.width - 4, textSize.width),
+      height: textSize.height
+    )
+    (truncated as NSString).draw(in: textRect, withAttributes: attrs)
+  }
+
+  private static func drawVideoPlayBadge(context: CGContext, rect: CGRect) {
+    let diameter = min(rect.width, rect.height) * 0.22
+    guard diameter > 8 else { return }
+
+    let circleRect = CGRect(
+      x: rect.midX - diameter / 2,
+      y: rect.midY - diameter / 2,
+      width: diameter,
+      height: diameter
+    )
+    context.setFillColor(UIColor.black.withAlphaComponent(0.35).cgColor)
+    context.fillEllipse(in: circleRect)
+
+    let triangleWidth = diameter * 0.28
+    let triangleHeight = diameter * 0.36
+    let path = CGMutablePath()
+    path.move(to: CGPoint(x: rect.midX - triangleWidth * 0.35, y: rect.midY - triangleHeight / 2))
+    path.addLine(to: CGPoint(x: rect.midX - triangleWidth * 0.35, y: rect.midY + triangleHeight / 2))
+    path.addLine(to: CGPoint(x: rect.midX + triangleWidth * 0.55, y: rect.midY))
+    path.closeSubpath()
+    context.addPath(path)
+    context.setFillColor(UIColor.white.withAlphaComponent(0.92).cgColor)
+    context.fillPath()
   }
 }
 
@@ -443,6 +692,39 @@ extension AppModel {
     imageEditingId = imageElement.id
   }
 
+  func addVideo(from url: URL, at position: CGPoint) {
+    guard let drawingId else { return }
+    Task.detached(priority: .utility) { [weak self] in
+      do {
+        let videoElement = try await DrawingFileManager.shared.importVideo(from: url, at: position)
+
+        await MainActor.run { [weak self] in
+          guard let self = self, self.drawings[drawingId] != nil else {
+            DrawingFileManager.shared.deleteVideoAsset(videoElement)
+            return
+          }
+          self.drawings[drawingId]?.videos.append(videoElement)
+          if let thumbnail = DrawingFileManager.shared.loadVideoThumbnail(fileName: videoElement.thumbnailFileName) {
+            self.videoThumbnailCache[videoElement.assetId] = thumbnail
+          }
+          self.updateDrawing(drawingId)
+          self.imageEditingId = videoElement.id
+        }
+      } catch {
+        logger.info("\(#function) Could not import video: \(error.localizedDescription)")
+      }
+    }
+  }
+
+  func addWeb(_ url: String, at position: CGPoint, size: CGSize, rotation: Double = 0) {
+    let webElement = WebElement(id: UUID(), url: url, position: position, size: size, rotation: rotation)
+    guard let drawingId else { return }
+    drawings[drawingId]?.webs.append(webElement)
+    updateDrawing(drawingId)
+    // 复用 imageEditingId 作为通用编辑目标 ID
+    imageEditingId = webElement.id
+  }
+
   func addText(_ text: String, at position: CGPoint, fontSize: CGFloat = 16, fontWeight: Font.Weight = .regular, color: Color = .black, rotation: Double = 0) {
     let textElement = TextElement(id: UUID(), text: text, position: position, fontSize: fontSize, fontWeight: fontWeight, color: color, rotation: rotation)
     guard let drawingId else { return }
@@ -457,6 +739,61 @@ extension AppModel {
     imageEditingId = nil
     // 保存更改
     updateDrawing(drawingId)
+  }
+
+  func deleteVideo(_ videoId: UUID) {
+    guard let drawingId else { return }
+    guard let video = drawings[drawingId]?.videos.first(where: { $0.id == videoId }) else { return }
+    drawings[drawingId]?.videos.removeAll { $0.id == videoId }
+    imageEditingId = nil
+    updateDrawing(drawingId)
+    deleteVideoAssetIfUnused(video)
+  }
+
+  func deleteWeb(_ webId: UUID) {
+    guard let drawingId else { return }
+    drawings[drawingId]?.webs.removeAll { $0.id == webId }
+    imageEditingId = nil
+    updateDrawing(drawingId)
+  }
+
+  private func deleteVideoAssetIfUnused(_ video: VideoElement) {
+    let isStillReferenced = drawings.values.contains { drawing in
+      drawing.videos.contains { $0.assetId == video.assetId }
+    }
+    guard !isStillReferenced else { return }
+    videoThumbnailCache.removeValue(forKey: video.assetId)
+    DrawingFileManager.shared.deleteVideoAsset(video)
+  }
+
+  func enterFullScreenWeb(webId: UUID) {
+    guard let drawingId else { return }
+    guard let drawing = drawings[drawingId] else { return }
+    guard drawing.webs.contains(where: { $0.id == webId }) else { return }
+    isFullScreenVideoActive = false
+    fullScreenVideoId = nil
+    fullScreenWebId = webId
+    isFullScreenWebActive = true
+  }
+
+  func exitFullScreenWeb() {
+    isFullScreenWebActive = false
+    fullScreenWebId = nil
+  }
+
+  func enterFullScreenVideo(videoId: UUID) {
+    guard let drawingId else { return }
+    guard let drawing = drawings[drawingId] else { return }
+    guard drawing.videos.contains(where: { $0.id == videoId }) else { return }
+    isFullScreenWebActive = false
+    fullScreenWebId = nil
+    fullScreenVideoId = videoId
+    isFullScreenVideoActive = true
+  }
+
+  func exitFullScreenVideo() {
+    isFullScreenVideoActive = false
+    fullScreenVideoId = nil
   }
 }
 

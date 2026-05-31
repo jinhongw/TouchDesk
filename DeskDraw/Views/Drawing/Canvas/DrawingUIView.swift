@@ -9,7 +9,7 @@ import ObjectiveC
 import PencilKit
 import SwiftUI
 
-struct DrawingUIViewRepresentable: UIViewRepresentable {
+struct DrawingUIView: UIViewRepresentable {
   private let canvasOverscrollDistance: CGFloat = 600
   private let canvasOverscrollMiniDistance: CGFloat = 300
   let canvas: PKCanvasView
@@ -35,6 +35,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   let saveDrawing: () -> Void
   let updateExportImage: () -> Void
   let deleteImage: (UUID) -> Void
+  let deleteVideo: (UUID) -> Void
+  let deleteWeb: (UUID) -> Void
+  let getVideoThumbnail: (VideoElement) -> UIImage?
+  let enterFullScreenWeb: (UUID) -> Void
+  let enterFullScreenVideo: (UUID) -> Void
+  let updateWebSnapshot: (UUID, UIImage) -> Void
+  let updateWebCachedMetadata: (UUID, String, Data?) -> Void
+  let refreshThumbnailAfterWebSnapshot: () -> Void
 
   var ink: PKInkingTool {
     var tool = PKInkingTool(pencilType, color: UIColor(color))
@@ -79,7 +87,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
   var zoomFactorValue: CGFloat {
     CGFloat(zoomFactor / 100)
   }
-  
+
   var realConentSize: CGSize {
     .init(width: canvas.contentSize.width / zoomFactorValue,
           height: canvas.contentSize.height / zoomFactorValue)
@@ -141,7 +149,9 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     canvas.becomeFirstResponder()
     context.coordinator.lastDrawingId = model.id
     context.coordinator.lastImages = model.images
+    context.coordinator.lastVideos = model.videos
     canvas.delegate = context.coordinator
+    context.coordinator.installElementSelectionGestures(on: canvas)
 
     // 创建并设置图片容器
     let imageContainer = ImageContainerView(frame: CGRect(origin: .zero, size: defaultSize))
@@ -154,7 +164,7 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     let observer = canvas.observe(\.contentOffset, options: [.new]) { _, change in
       if let newOffset = change.newValue {
         DispatchQueue.main.async {
-            context.coordinator.parent.contentOffset = newOffset
+          context.coordinator.parent.contentOffset = newOffset
         }
         // 只有当满足以下条件时才保存位置：
         // 1. 不在初始化阶段
@@ -205,6 +215,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
     // 使用新的图片视图管理逻辑
     updateImageViews(in: canvas, context: context)
+    updateVideoViews(in: canvas, context: context)
+    updateWebViews(in: canvas, context: context)
 
     return canvas
   }
@@ -233,6 +245,8 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
       // 清理图片视图缓存
       context.coordinator.cleanupImageViewCache(currentImageIds: Set(model.images.map { $0.id }))
+      context.coordinator.cleanupVideoViewCache(currentVideoIds: Set(model.videos.map { $0.id }))
+      context.coordinator.cleanupWebViewCache(currentWebIds: Set(model.webs.map { $0.id }))
 
       // 先重置 contentSize 到默认大小
       canvas.contentSize = defaultSize * zoomFactorValue
@@ -262,9 +276,12 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
 
       // 更新图片视图
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
+      updateWebViews(in: canvas, context: context)
 
       context.coordinator.lastDrawingId = model.id
       context.coordinator.lastImages = model.images
+      context.coordinator.lastVideos = model.videos
       context.coordinator.isUpdatingFromModel = false
     } else if context.coordinator.lastImages != model.images {
       print(#function, "DEBUG Change images")
@@ -276,116 +293,41 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       updateContentSizeForDrawing(coordinator: context.coordinator)
       saveDrawing()
       updateExportImage()
+    } else if context.coordinator.lastVideos != model.videos {
+      print(#function, "DEBUG Change videos")
+
+      updateVideoViews(in: canvas, context: context)
+
+      context.coordinator.lastVideos = model.videos
+      updateContentSizeForDrawing(coordinator: context.coordinator)
+      saveDrawing()
+      updateExportImage()
+    } else if context.coordinator.lastWebs != model.webs {
+      print(#function, "DEBUG Change webs")
+      updateWebViews(in: canvas, context: context)
+      context.coordinator.lastWebs = model.webs
+      updateContentSizeForDrawing(coordinator: context.coordinator)
+      saveDrawing()
+      updateExportImage()
     } else if context.coordinator.lastSelectorActive != isSelectorActive || context.coordinator.lastImageEditingId != imageEditingId {
       print(#function, "DEBUG Change selector active state")
       context.coordinator.lastSelectorActive = isSelectorActive
+      context.coordinator.lastImageEditingId = imageEditingId
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
+      updateWebViews(in: canvas, context: context)
     } else if context.coordinator.lastImageEditingId != imageEditingId {
       print(#function, "DEBUG Change imageEditingId")
       context.coordinator.lastImageEditingId = imageEditingId
       updateImageViews(in: canvas, context: context)
+      updateVideoViews(in: canvas, context: context)
+      updateWebViews(in: canvas, context: context)
     } else if context.coordinator.lastLocked != isLocked {
       print(#function, "DEBUG Change locked state")
       context.coordinator.lastLocked = isLocked
       updateImageViews(in: canvas, context: context)
-    }
-  }
-
-  private func updateImageViews(in canvas: PKCanvasView, context: Context) {
-    // 创建当前图片ID集合
-    let currentImageIds = Set(model.images.map { $0.id })
-
-    // 直接使用 imageViewCache
-    let existingImageViews = context.coordinator.imageViewCache
-
-    // 删除不再需要的图片视图
-    for (imageId, imageView) in existingImageViews {
-      if !currentImageIds.contains(imageId) {
-        context.coordinator.imageContainer?.removeImageView(imageView)
-        context.coordinator.imageViewCache.removeValue(forKey: imageId)
-      }
-    }
-
-    // 更新或添加图片视图
-    for imageElement in model.images {
-      guard let imageView = context.coordinator.getOrCreateImageView(for: imageElement, in: canvas) else { continue }
-
-      // 设置编辑状态
-      imageView.editingId = imageEditingId
-
-      // 设置锁定状态
-      imageView.isLocked = isLocked
-
-      // 设置是否可以响应点击事件
-      imageView.isUserInteractionEnabled = isSelectorActive || imageView.editingId == imageElement.id
-
-      // 使用字典快速查找上一次的图片信息
-      let lastElement = context.coordinator.lastImageElements[imageElement.id]
-      let needsUpdate = existingImageViews[imageElement.id] == nil ||
-        lastElement?.imageData != imageElement.imageData ||
-        lastElement?.position != imageElement.position ||
-        lastElement?.size != imageElement.size ||
-        lastElement?.rotation != imageElement.rotation
-
-      if needsUpdate {
-        // 考虑控制点触控区域，调整 frame
-        let inset = imageView.controlPointTouchSize / 2
-        let adjustedFrame = CGRect(
-          x: imageElement.position.x - inset,
-          y: imageElement.position.y - inset,
-          width: imageElement.size.width + inset * 2,
-          height: imageElement.size.height + inset * 2
-        )
-        imageView.frame = adjustedFrame
-        imageView.transform = CGAffineTransform(rotationAngle: imageElement.rotation)
-
-        // 如果视图不在容器中，添加它
-        if imageView.superview == nil {
-          context.coordinator.imageContainer?.addImageView(imageView)
-        }
-      }
-
-      // 更新回调
-      imageView.onPositionChanged = { [weak coordinator = context.coordinator] newPosition in
-        guard let coordinator = coordinator else { return }
-        // 需要考虑控制点触控区域的偏移
-        let inset = imageView.controlPointTouchSize / 2
-        let actualPosition = CGPoint(
-          x: newPosition.x + inset,
-          y: newPosition.y + inset
-        )
-        coordinator.updateImagePosition(imageId: imageElement.id, position: actualPosition)
-      }
-
-      imageView.onSizeChanged = { [weak coordinator = context.coordinator] newSize in
-        guard let coordinator = coordinator else { return }
-        // 需要考虑控制点触控区域的大小
-        let inset = imageView.controlPointTouchSize
-        let actualSize = CGSize(
-          width: newSize.width - inset,
-          height: newSize.height - inset
-        )
-        coordinator.updateImageSize(imageId: imageElement.id, size: actualSize)
-      }
-
-      imageView.onTapped = {
-        guard let imageId = imageView.imageId else { return }
-
-        if imageId == imageEditingId {
-          imageEditingId = nil
-        } else {
-          imageEditingId = imageId
-        }
-
-        imageView.editingId = imageEditingId
-        imageView.isUserInteractionEnabled = isSelectorActive || imageEditingId == imageId
-      }
-
-      // 添加删除回调
-      imageView.onDelete = { [weak coordinator = context.coordinator] in
-        guard let coordinator = coordinator else { return }
-        coordinator.parent.deleteImage(imageElement.id)
-      }
+      updateVideoViews(in: canvas, context: context)
+      updateWebViews(in: canvas, context: context)
     }
   }
 
@@ -400,8 +342,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
     // 检查是否有任何内容（绘画或图片）
     let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
     let hasImages = !model.images.isEmpty
+    let hasVideos = !model.videos.isEmpty
+    let hasWebs = !model.webs.isEmpty
 
-    guard hasDrawing || hasImages else {
+    guard hasDrawing || hasImages || hasVideos || hasWebs else {
       print(#function, "canvasWidth set \(defaultSize) width: \(canvasWidth) height \(canvasHeight)")
       CATransaction.begin()
       CATransaction.setDisableActions(true)
@@ -422,6 +366,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
       print(#function, "bounds \(bounds) imageFrame \(imageFrame)")
       bounds = bounds == .zero ? imageFrame : bounds.union(imageFrame)
+    }
+    for videoElement in model.videos {
+      let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+      bounds = bounds == .zero ? videoFrame : bounds.union(videoFrame)
+    }
+    for webElement in model.webs {
+      let webFrame = CGRect(origin: webElement.position, size: webElement.size)
+      bounds = bounds == .zero ? webFrame : bounds.union(webFrame)
     }
 
     let minX = bounds.minX
@@ -469,6 +421,22 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         )
         model.images[i] = imageElement
       }
+      for i in 0 ..< model.webs.count {
+        var webElement = model.webs[i]
+        webElement.position = CGPoint(
+          x: webElement.position.x + transformX,
+          y: webElement.position.y + transformY
+        )
+        model.webs[i] = webElement
+      }
+      for i in 0 ..< model.videos.count {
+        var videoElement = model.videos[i]
+        videoElement.position = CGPoint(
+          x: videoElement.position.x + transformX,
+          y: videoElement.position.y + transformY
+        )
+        model.videos[i] = videoElement
+      }
 
       canvas.setContentOffset(CGPoint(x: canvas.contentOffset.x + transformX, y: canvas.contentOffset.y + transformY), animated: false)
       CATransaction.commit()
@@ -504,8 +472,10 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
       // 如果没有保存的位置，使用原有逻辑
       let hasDrawing = !canvas.drawing.strokes.isEmpty && !canvas.drawing.bounds.isNull
       let hasImages = !model.images.isEmpty
+      let hasVideos = !model.videos.isEmpty
+      let hasWebs = !model.webs.isEmpty
 
-      guard hasDrawing || hasImages else {
+      guard hasDrawing || hasImages || hasVideos || hasWebs else {
         print(#function, "Set default position")
         canvas.setContentOffset(CGPoint(x: defaultSize.width / 2, y: defaultSize.height / 2), animated: true)
         // 延迟重置标志
@@ -521,6 +491,14 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
         contentBounds = contentBounds == .zero ? imageFrame : contentBounds.union(imageFrame)
       }
+      for videoElement in model.videos {
+        let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+        contentBounds = contentBounds == .zero ? videoFrame : contentBounds.union(videoFrame)
+      }
+      for webElement in model.webs {
+        let webFrame = CGRect(origin: webElement.position, size: webElement.size)
+        contentBounds = contentBounds == .zero ? webFrame : contentBounds.union(webFrame)
+      }
 
       print(#function, "contentBounds \(contentBounds) canvas.frame \(canvas.frame) width: \(canvasWidth) height \(canvasHeight)")
       let x = max(contentBounds.width > canvas.frame.width ? contentBounds.minX : contentBounds.midX - canvas.frame.width / 2, 0)
@@ -533,122 +511,6 @@ struct DrawingUIViewRepresentable: UIViewRepresentable {
         try await Task.sleep(for: .milliseconds(100))
         coordinator?.isSettingPosition = false
       }
-    }
-  }
-
-  class Coordinator: NSObject, PKCanvasViewDelegate, UIScrollViewDelegate {
-    var parent: DrawingUIViewRepresentable
-    var lastDrawingId: UUID = .init()
-    var lastImages: [ImageElement] = []
-    var saveWorkItem: DispatchWorkItem?
-    var saveScrollWorkItem: DispatchWorkItem?
-    var isUpdatingFromModel = false
-    var lastImageEditingId: UUID?
-    var lastImageElements: [UUID: ImageElement] = [:]
-    var lastSelectorActive: Bool = false
-    var lastLocked: Bool = false
-    var isInitializing: Bool = false
-    var isSettingPosition: Bool = false
-    var imageViewCache: [UUID: ResizableImageView] = [:]
-    var imageContainer: ImageContainerView?
-    var contentOffsetObserver: NSKeyValueObservation?
-
-    init(_ parent: DrawingUIViewRepresentable) {
-      self.parent = parent
-      lastLocked = parent.isLocked
-      super.init()
-    }
-
-    func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-      guard !isUpdatingFromModel else { return }
-
-      saveWorkItem?.cancel()
-      saveWorkItem = nil
-
-      let workItem = DispatchWorkItem { [weak self] in
-        guard let self = self else { return }
-        if self.parent.model.drawing != canvasView.drawing {
-          Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            self.parent.model.drawing = canvasView.drawing
-            self.parent.updateContentSizeForDrawing(coordinator: self)
-            self.parent.saveDrawing()
-            if self.parent.isShareImageViewShowing {
-              self.parent.updateExportImage()
-            }
-          }
-        }
-      }
-
-      saveWorkItem = workItem
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: workItem)
-    }
-
-    func updateImagePosition(imageId: UUID, position: CGPoint) {
-      guard let index = parent.model.images.firstIndex(where: { $0.id == imageId }) else { return }
-      var updatedImage = parent.model.images[index]
-      updatedImage.position = position
-      parent.model.images[index] = updatedImage
-
-      parent.saveDrawing()
-      if parent.isShareImageViewShowing {
-        parent.updateExportImage()
-      }
-    }
-
-    func updateImageSize(imageId: UUID, size: CGSize) {
-      guard let index = parent.model.images.firstIndex(where: { $0.id == imageId }) else { return }
-      var updatedImage = parent.model.images[index]
-      updatedImage.size = size
-      parent.model.images[index] = updatedImage
-
-      parent.saveDrawing()
-      if parent.isShareImageViewShowing {
-        parent.updateExportImage()
-      }
-    }
-
-    func getOrCreateImageView(for imageElement: ImageElement, in canvas: PKCanvasView) -> ResizableImageView? {
-      if let cachedView = imageViewCache[imageElement.id] {
-        // 复用现有视图
-        if let image = UIImage(data: imageElement.imageData) {
-          cachedView.image = image
-        }
-        return cachedView
-      }
-
-      // 创建新视图
-      if let image = UIImage(data: imageElement.imageData) {
-        let imageView = ResizableImageView(image: image, size: image.size)
-        imageView.contentMode = .scaleAspectFit
-        imageView.imageId = imageElement.id
-        imageViewCache[imageElement.id] = imageView
-        return imageView
-      }
-
-      print(#function, "Failed to create image view")
-      return nil
-    }
-
-    func cleanupImageViewCache(currentImageIds: Set<UUID>) {
-      let unusedIds = Set(imageViewCache.keys).subtracting(currentImageIds)
-      print("Cleaning up \(unusedIds.count) unused image views")
-
-      unusedIds.forEach { id in
-        imageViewCache[id]?.removeFromSuperview()
-        imageViewCache[id] = nil
-      }
-    }
-
-    deinit {
-      saveWorkItem?.cancel()
-      saveWorkItem = nil
-      saveScrollWorkItem?.cancel()
-      saveScrollWorkItem = nil
-      contentOffsetObserver?.invalidate()
-
-      // 清理所有缓存的视图
-      cleanupImageViewCache(currentImageIds: [])
     }
   }
 }

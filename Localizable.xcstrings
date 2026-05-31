@@ -779,6 +779,9 @@
         }
       }
     },
+    "Create Together, Share Rewards" : {
+
+    },
     "Credits" : {
       "localizations" : {
         "de" : {
@@ -1091,6 +1094,9 @@
           }
         }
       }
+    },
+    "Enter text" : {
+
     },
     "Eraser Type" : {
       "localizations" : {
@@ -1580,6 +1586,9 @@
         }
       }
     },
+    "Join TouchDesk on Copany" : {
+
+    },
     "Learn More" : {
       "localizations" : {
         "de" : {
@@ -1858,6 +1867,9 @@
     },
     "Little Sunshine - SunClock" : {
       "shouldTranslate" : false
+    },
+    "Load Failed" : {
+
     },
     "Lock Canvas" : {
       "localizations" : {
@@ -2849,6 +2861,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "iCloud 同步"
+          }
+        }
+      }
+    },
+    "Search or enter website" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suchen oder Website eingeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search or enter website"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rechercher ou saisir un site web"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索またはWebサイトを入力"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "검색하거나 웹사이트 입력"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索或输入网站"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋或輸入網站"
           }
         }
       }

@@ -117,6 +117,12 @@ struct ScrollableCanvasView: UIViewRepresentable {
       coordinator.lastImages = model.images
       coordinator.updateContentSize(with: model)
     }
+
+    if coordinator.lastVideos != model.videos {
+      coordinator.updateVideos(with: model.videos)
+      coordinator.lastVideos = model.videos
+      coordinator.updateContentSize(with: model)
+    }
   }
   
   class Coordinator: NSObject, UIScrollViewDelegate {
@@ -126,8 +132,11 @@ struct ScrollableCanvasView: UIViewRepresentable {
     var contentView: UIView?
     var lastDrawingId: UUID = .init()
     var lastImages: [ImageElement] = []
+    var lastVideos: [VideoElement] = []
     var lastImageElements: [UUID: ImageElement] = [:]
+    var lastVideoElements: [UUID: VideoElement] = [:]
     var imageViewCache: [UUID: ResizableImageView] = [:]
+    var videoViewCache: [UUID: ResizableImageView] = [:]
     
     override init() {
       super.init()
@@ -150,6 +159,10 @@ struct ScrollableCanvasView: UIViewRepresentable {
       for imageElement in model.images {
         let imageFrame = CGRect(origin: imageElement.position, size: imageElement.size)
         bounds = bounds.union(imageFrame)
+      }
+      for videoElement in model.videos {
+        let videoFrame = CGRect(origin: videoElement.position, size: videoElement.size)
+        bounds = bounds.union(videoFrame)
       }
       // 添加过度滚动距离
       let contentSize = CGSize(
@@ -209,6 +222,51 @@ struct ScrollableCanvasView: UIViewRepresentable {
         }
       }
     }
+
+    func updateVideos(with videos: [VideoElement]) {
+      guard let imageContainer = imageContainer else { return }
+
+      let currentVideoIds = Set(videos.map { $0.id })
+      for (id, videoView) in videoViewCache {
+        if !currentVideoIds.contains(id) {
+          videoView.removeFromSuperview()
+          videoViewCache.removeValue(forKey: id)
+        }
+      }
+
+      for videoElement in videos {
+        guard let videoView = getOrCreateVideoView(for: videoElement) else { continue }
+        videoView.editingId = nil
+        videoView.isLocked = true
+        videoView.isUserInteractionEnabled = false
+
+        let lastElement = lastVideoElements[videoElement.id]
+        let needsUpdate = videoViewCache[videoElement.id] == nil ||
+          lastElement?.assetId != videoElement.assetId ||
+          lastElement?.thumbnailFileName != videoElement.thumbnailFileName ||
+          lastElement?.position != videoElement.position ||
+          lastElement?.size != videoElement.size ||
+          lastElement?.rotation != videoElement.rotation
+
+        if needsUpdate {
+          let inset = videoView.controlPointTouchSize / 2
+          let adjustedFrame = CGRect(
+            x: videoElement.position.x - inset,
+            y: videoElement.position.y - inset,
+            width: videoElement.size.width + inset * 2,
+            height: videoElement.size.height + inset * 2
+          )
+          videoView.frame = adjustedFrame
+          videoView.transform = CGAffineTransform(rotationAngle: videoElement.rotation)
+
+          if videoView.superview == nil {
+            imageContainer.addImageView(videoView)
+          }
+        }
+      }
+
+      lastVideoElements = Dictionary(uniqueKeysWithValues: videos.map { ($0.id, $0) })
+    }
     
     func getOrCreateImageView(for imageElement: ImageElement) -> ResizableImageView? {
       if let cachedView = imageViewCache[imageElement.id] {
@@ -227,6 +285,24 @@ struct ScrollableCanvasView: UIViewRepresentable {
       }
       
       return nil
+    }
+
+    func getOrCreateVideoView(for videoElement: VideoElement) -> ResizableImageView? {
+      if let cachedView = videoViewCache[videoElement.id] {
+        cachedView.image = DrawingFileManager.shared.loadVideoThumbnail(fileName: videoElement.thumbnailFileName)
+        return cachedView
+      }
+
+      guard let thumbnail = DrawingFileManager.shared.loadVideoThumbnail(fileName: videoElement.thumbnailFileName) else {
+        return nil
+      }
+
+      let videoView = ResizableImageView(image: thumbnail, size: videoElement.size)
+      videoView.contentMode = .scaleAspectFit
+      videoView.imageId = videoElement.id
+      videoView.addVideoBadge()
+      videoViewCache[videoElement.id] = videoView
+      return videoView
     }
     
     // MARK: - Scroll Position Management

@@ -83,20 +83,71 @@ class ImageContainerView: UIScrollView {
     imageView.removeFromSuperview()
   }
 
+  // 添加网页视图到容器
+  func addWebView(_ webView: ResizableWebView) {
+    contentView.addSubview(webView)
+  }
+
+  // 移除网页视图
+  func removeWebView(_ webView: ResizableWebView) {
+    webView.removeFromSuperview()
+  }
+
   // 清除所有图片视图
   func removeAllImageViews() {
     contentView.subviews.forEach { $0.removeFromSuperview() }
   }
 
+  func topSelectableView(at point: CGPoint) -> UIView? {
+    for subview in contentView.subviews.reversed() {
+      let convertedPoint = subview.convert(point, from: self)
+      if subview.point(inside: convertedPoint, with: nil) {
+        return subview
+      }
+    }
+    return nil
+  }
+
   override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    if event?.allTouches?.contains(where: { $0.type == .pencil }) == true {
+      return nil
+    }
+
     // 遍历所有子视图，看看触摸点是否在子视图内
     for subview in contentView.subviews.reversed() {
       let convertedPoint = subview.convert(point, from: self)
-      if let hitView = subview.hitTest(convertedPoint, with: event), hitView.isUserInteractionEnabled {
+      let hitView = subview.hitTest(convertedPoint, with: event)
+
+      if let imageView = subview as? ResizableImageView,
+         !imageView.shouldReceiveElementTouches {
+        if let hitView, isControlHit(hitView) {
+          return hitView
+        }
+        continue
+      }
+      if let webView = subview as? ResizableWebView,
+         !webView.shouldReceiveElementTouches {
+        if let hitView, isControlHit(hitView) {
+          return hitView
+        }
+        continue
+      }
+      if let hitView, hitView.isUserInteractionEnabled {
           return hitView  // 只有启用交互的子视图才能接收事件
       }
     }
     return nil // 父视图不响应
+  }
+
+  private func isControlHit(_ view: UIView) -> Bool {
+    var currentView: UIView? = view
+    while let current = currentView {
+      if current is UIControl {
+        return true
+      }
+      currentView = current.superview
+    }
+    return false
   }
 }
 
